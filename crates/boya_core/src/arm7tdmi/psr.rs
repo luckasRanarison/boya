@@ -11,10 +11,18 @@ use crate::utils::bitflags::Bitflag;
 /// | 6    | F - FIQ disable   | (0: Enable, 1: Disable)       |
 /// | 5    | T - State bit     | (0: ARM, 1: THUMB)            |
 /// | 4-0  | M4-M0 Mode bits   | Operating mode (see below)    |
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct Psr(u32);
 
 impl Psr {
+    pub fn new() -> Self {
+        let mut flags = 0b0_u32;
+
+        flags.set_bits(0, 4, OperatingMode::Sys as u32);
+
+        Self(flags)
+    }
+
     pub fn value(self) -> u32 {
         self.0
     }
@@ -65,11 +73,11 @@ pub mod flags {
 
 #[derive(Debug)]
 pub enum OperatingMode {
-    Usr,
-    Fiq,
-    Irq,
-    Svc,
-    Abt,
-    Und,
-    Sys,
+    Usr = 0b10000,
+    Fiq = 0b10001,
+    Irq = 0b10010,
+    Svc = 0b10011,
+    Abt = 0b10111,
+    Und = 0b11011,
+    Sys = 0b11111,
 }

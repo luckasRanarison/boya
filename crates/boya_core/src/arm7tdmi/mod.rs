@@ -7,10 +7,13 @@ use std::ops::{BitAnd, BitOr, BitXor};
 use common::{AddSubOp, Operand, OperandKind, ToOperand};
 use psr::{OperatingMode, Psr};
 
-use crate::utils::ops;
+use crate::{
+    bus::Bus,
+    utils::{ops, ringbuffer::RingBuffer},
+};
 
 #[derive(Debug)]
-pub struct Arm7tdmi {
+pub struct Arm7tdmi<B: Bus> {
     reg: [u32; 16],    //  R0-R15
     reg_fiq: [u32; 7], //  R8-R14
     reg_svc: [u32; 2], // R13-R14
@@ -22,9 +25,35 @@ pub struct Arm7tdmi {
     spsr: [Psr; 5],
 
     cycles: u64,
+    bus: B,
 }
 
-impl Arm7tdmi {
+impl<B: Bus> Arm7tdmi<B> {
+    pub fn new(bus: B) -> Self {
+        Self {
+            reg: [0; 16],
+            reg_fiq: [0; 7],
+            reg_svc: [0; 2],
+            reg_abt: [0; 2],
+            reg_irq: [0; 2],
+            reg_und: [0; 2],
+            cpsr: Psr::new(),
+            spsr: [Psr::default(); 5],
+            cycles: 0,
+            bus,
+        }
+    }
+
+    #[inline(always)]
+    fn pc(&self) -> u32 {
+        self.reg[15]
+    }
+
+    #[inline(always)]
+    fn increment_pc(&mut self, value: u32) {
+        self.reg[15] = self.pc().wrapping_add(value);
+    }
+
     fn get_reg<I: Into<usize>>(&self, index: I) -> u32 {
         let mode = self.cpsr.operating_mode();
         let index = index.into();
@@ -67,17 +96,11 @@ impl Arm7tdmi {
             OperandKind::Register => self.get_reg(operand.value as usize),
         };
 
-        if operand.mask {
-            value & 0xFF
-        } else if operand.negate {
-            !value
-        } else {
-            value
-        }
+        if operand.negate { !value } else { value }
     }
 }
 
-impl Arm7tdmi {
+impl<B: Bus> Arm7tdmi<B> {
     pub fn lsl(&mut self, lhs: u8, rhs: Operand, dst: u8) {
         self.shift_op(u32::wrapping_shl, lhs, rhs, dst);
     }
@@ -136,7 +159,7 @@ impl Arm7tdmi {
     }
 
     pub fn tst(&mut self, rd: u8, rs: u8) {
-        self.logical_op(u32::bitand, rd, rs.register().mask(), None);
+        self.logical_op(u32::bitand, rd, rs.register(), None);
     }
 
     pub fn bic(&mut self, rd: u8, rs: u8) {
@@ -219,7 +242,7 @@ impl Arm7tdmi {
         F: Fn(u32, u32) -> u32,
     {
         let lhs = self.get_reg(lhs);
-        let rhs = self.get_operand(rhs.mask());
+        let rhs = self.get_operand(rhs) & 0xFF;
         let result = func(lhs, rhs);
 
         self.cpsr.update_zero(result);

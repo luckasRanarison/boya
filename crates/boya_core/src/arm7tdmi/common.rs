@@ -4,7 +4,6 @@ pub struct Operand {
     pub kind: OperandKind,
     pub value: u32,
     pub negate: bool,
-    pub mask: bool,
 }
 
 impl Debug for Operand {
@@ -21,11 +20,6 @@ impl Debug for Operand {
 impl Operand {
     pub fn not(mut self) -> Self {
         self.negate = true;
-        self
-    }
-
-    pub fn mask(mut self) -> Self {
-        self.mask = true;
         self
     }
 }
@@ -56,7 +50,6 @@ where
             kind: OperandKind::Register,
             value: self.into(),
             negate: false,
-            mask: false,
         }
     }
 
@@ -65,7 +58,6 @@ where
             kind: OperandKind::Immediate,
             value: self.into(),
             negate: false,
-            mask: false,
         }
     }
 }

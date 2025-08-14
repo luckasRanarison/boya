@@ -33,13 +33,13 @@ impl Bitflag for u32 {
 
     #[inline(always)]
     fn set_bits(&mut self, start: u32, end: u32, value: u32) {
-        let mask = (!0 << start) & !(!0 << (end + 1));
-        *self = (*self & !mask) | (value << start);
+        let mask = ((1 << (end - start + 1)) - 1) << start;
+        *self = (*self & !mask) | ((value << start) & mask);
     }
 
     #[inline(always)]
     fn get_bits(self, start: u32, end: u32) -> u32 {
-        (self >> start) & !(!0 << end)
+        (self >> start) & ((1 << (end - start + 1)) - 1)
     }
 
     #[inline(always)]
@@ -66,13 +66,13 @@ impl Bitflag for u16 {
 
     #[inline(always)]
     fn set_bits(&mut self, start: u16, end: u16, value: u16) {
-        let mask = (!0 << start) & !(!0 << (end + 1));
-        *self = (*self & !mask) | (value << start);
+        let mask = ((1 << (end - start + 1)) - 1) << start;
+        *self = (*self & !mask) | ((value << start) & mask);
     }
 
     #[inline(always)]
     fn get_bits(self, start: u16, end: u16) -> u16 {
-        (self >> start) & !(!0 << end)
+        (self >> start) & ((1 << (end - start + 1)) - 1)
     }
 
     #[inline(always)]

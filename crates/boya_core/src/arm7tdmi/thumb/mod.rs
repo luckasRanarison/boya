@@ -2,23 +2,25 @@ mod formats;
 
 use formats::*;
 
-use crate::utils::bitflags::Bitflag;
+use crate::{bus::Bus, utils::bitflags::Bitflag};
 
 use super::{Arm7tdmi, common::ToOperand};
 
-impl Arm7tdmi {
-    pub fn exec_thumb(&mut self, instruction: u16) {
-        let format = self.decode_thumb_format(instruction);
+impl<B: Bus> Arm7tdmi<B> {
+    pub fn fetch_thumb(&mut self) -> u16 {
+        let word = self.bus.read_u32(self.pc());
 
-        match format {
-            InstructionFormat::Format1(op) => self.exec_thumb_format1(op),
-            InstructionFormat::Format2(op) => self.exec_thumb_format2(op),
-            InstructionFormat::Format3(op) => self.exec_thumb_format3(op),
-            InstructionFormat::Format4(op) => self.exec_thumb_format4(op),
-        }
+        let instruction = match self.pc() % 2 == 0 {
+            false => (word & 0xFFFF0000) >> 16,
+            true => word & 0xFFFF,
+        };
+
+        self.increment_pc(2);
+
+        instruction as u16
     }
 
-    pub fn decode_thumb_format(&self, instruction: u16) -> InstructionFormat {
+    pub fn decode_thumb(&self, instruction: u16) -> InstructionFormat {
         if instruction.get_bits(13, 15) == 0b000 {
             InstructionFormat::Format1(Format1::from(instruction))
         } else if instruction.get_bits(11, 15) == 0b00011 {
@@ -29,6 +31,15 @@ impl Arm7tdmi {
             InstructionFormat::Format4(Format4::from(instruction))
         } else {
             todo!()
+        }
+    }
+
+    pub fn exec_thumb(&mut self, instruction: InstructionFormat) {
+        match instruction {
+            InstructionFormat::Format1(op) => self.exec_thumb_format1(op),
+            InstructionFormat::Format2(op) => self.exec_thumb_format2(op),
+            InstructionFormat::Format3(op) => self.exec_thumb_format3(op),
+            InstructionFormat::Format4(op) => self.exec_thumb_format4(op),
         }
     }
 

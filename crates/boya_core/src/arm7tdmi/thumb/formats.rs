@@ -48,7 +48,7 @@ impl From<u16> for Format1 {
     fn from(value: u16) -> Self {
         let opcode = value.get_bits(11, 12).into();
         let offset = value.get_bits(6, 10) as u8;
-        let rs = value.get_bits(5, 3) as u8;
+        let rs = value.get_bits(3, 5) as u8;
         let rd = value.get_bits(0, 2) as u8;
 
         Self {
