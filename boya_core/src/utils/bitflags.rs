@@ -1,0 +1,103 @@
+pub trait Bitflag: Sized {
+    fn get(self, bit: Self) -> Self;
+    fn set(&mut self, bit: Self);
+    fn clear(&mut self, bit: Self);
+    fn set_bits(&mut self, start: Self, end: Self, value: Self);
+    fn get_bits(self, start: Self, end: Self) -> Self;
+    fn contains(self, bit: Self) -> bool;
+
+    fn update(&mut self, bit: Self, cond: bool) {
+        if cond {
+            self.set(bit);
+        } else {
+            self.clear(bit);
+        }
+    }
+}
+
+impl Bitflag for u32 {
+    #[inline(always)]
+    fn get(self, bit: u32) -> u32 {
+        (self >> bit) & 1
+    }
+
+    #[inline(always)]
+    fn set(&mut self, bit: u32) {
+        *self |= 1 << bit;
+    }
+
+    #[inline(always)]
+    fn clear(&mut self, bit: u32) {
+        *self &= !(1 << bit);
+    }
+
+    #[inline(always)]
+    fn set_bits(&mut self, start: u32, end: u32, value: u32) {
+        let mask = (!0 << start) & !(!0 << (end + 1));
+        *self = (*self & !mask) | (value << start);
+    }
+
+    #[inline(always)]
+    fn get_bits(self, start: u32, end: u32) -> u32 {
+        (self >> start) & !(!0 << end)
+    }
+
+    #[inline(always)]
+    fn contains(self, bit: u32) -> bool {
+        self.get(bit) == 1
+    }
+}
+
+impl Bitflag for u16 {
+    #[inline(always)]
+    fn get(self, bit: u16) -> u16 {
+        (self >> bit) & 1
+    }
+
+    #[inline(always)]
+    fn set(&mut self, bit: u16) {
+        *self |= 1 << bit;
+    }
+
+    #[inline(always)]
+    fn clear(&mut self, bit: u16) {
+        *self &= !(1 << bit);
+    }
+
+    #[inline(always)]
+    fn set_bits(&mut self, start: u16, end: u16, value: u16) {
+        let mask = (!0 << start) & !(!0 << (end + 1));
+        *self = (*self & !mask) | (value << start);
+    }
+
+    #[inline(always)]
+    fn get_bits(self, start: u16, end: u16) -> u16 {
+        (self >> start) & !(!0 << end)
+    }
+
+    #[inline(always)]
+    fn contains(self, bit: u16) -> bool {
+        self.get(bit) == 1
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Bitflag;
+
+    #[test]
+    fn test_get_range() {
+        let value = 0b101101_u32;
+        let range = value.get_bits(2, 5);
+
+        assert_eq!(range, 0b1011)
+    }
+
+    #[test]
+    fn test_set_range() {
+        let mut value = 0b101101_u16;
+        value.set_bits(2, 5, 0b0100);
+
+        assert_eq!(value, 0b010001)
+    }
+}
