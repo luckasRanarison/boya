@@ -4,7 +4,7 @@ pub trait Bitflag: Sized {
     fn clear(&mut self, bit: Self);
     fn set_bits(&mut self, start: Self, end: Self, value: Self);
     fn get_bits(self, start: Self, end: Self) -> Self;
-    fn contains(self, bit: Self) -> bool;
+    fn has(self, bit: Self) -> bool;
 
     fn update(&mut self, bit: Self, cond: bool) {
         if cond {
@@ -43,7 +43,7 @@ impl Bitflag for u32 {
     }
 
     #[inline(always)]
-    fn contains(self, bit: u32) -> bool {
+    fn has(self, bit: u32) -> bool {
         self.get(bit) == 1
     }
 }
@@ -76,7 +76,7 @@ impl Bitflag for u16 {
     }
 
     #[inline(always)]
-    fn contains(self, bit: u16) -> bool {
+    fn has(self, bit: u16) -> bool {
         self.get(bit) == 1
     }
 }

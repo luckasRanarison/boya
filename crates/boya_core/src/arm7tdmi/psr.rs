@@ -5,7 +5,7 @@ use crate::utils::bitflags::Bitflag;
 /// +----------------------------------------------------------------------------+
 /// | N(31) | Z(30) | C(29) |   V(28)  |  U(27-8) | I(7) | F(6) | T(5)  | M(4-0) |
 /// |-------|-------|-------|----------|----------|------|------|-------|--------|
-/// | sign  | zero  | carry | overflow | reserved |  irq |  fiq | thumb |  mode  |
+/// | sign  | zero  | carry | overflow | reserved | irq  | fiq  | thumb |  mode  |
 /// +----------------------------------------------------------------------------+
 #[derive(Default, Clone, Copy)]
 pub struct Psr(u32);
@@ -63,20 +63,17 @@ impl Psr {
         self.0.get(bit)
     }
 
-    pub fn contains(&self, bit: u32) -> bool {
-        self.0.contains(bit)
+    pub fn has(&self, bit: u32) -> bool {
+        self.0.has(bit)
     }
 
     pub fn update(&mut self, bit: u32, value: bool) {
         self.0.update(bit, value);
     }
 
-    pub fn update_zero(&mut self, value: u32) {
+    pub fn update_zn(&mut self, value: u32) {
         self.0.update(Self::Z, value == 0);
-    }
-
-    pub fn update_sign(&mut self, value: u32) {
-        self.0.update(Self::N, value.contains(31));
+        self.0.update(Self::N, value.has(31));
     }
 
     pub fn set_operating_mode(&mut self, mode: OperatingMode) {

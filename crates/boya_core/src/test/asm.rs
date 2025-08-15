@@ -5,7 +5,7 @@ use std::{
 
 pub fn compile_asm(code: &str) -> io::Result<Vec<u8>> {
     let mut child = Command::new("bash")
-        .args(["-c", "cat | fasmarm /dev/stdin >(cat) | tail -n +3"]) // skip logs
+        .args(["-c", "cat | fasmarm /dev/stdin -"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -15,13 +15,27 @@ pub fn compile_asm(code: &str) -> io::Result<Vec<u8>> {
         stdin.write(code.as_bytes())?; // EOF is signaled after stdin is droped
     }
 
-    child.wait_with_output().map(|output| output.stdout)
+    let output = child.wait_with_output()?;
+
+    if output.stdout.is_empty() {
+        return Err(io::Error::new(io::ErrorKind::Other, "empty stream"));
+    }
+
+    Ok(output.stdout)
 }
 
 pub fn format_hex_bytes(bytes: &[u8]) -> String {
     bytes
         .iter()
-        .map(|b| format!("{b:x}"))
+        .map(|b| format!("{b:02x}"))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+pub fn format_bin_bytes(bytes: &[u8]) -> String {
+    bytes
+        .iter()
+        .map(|b| format!("{b:08b}"))
         .collect::<Vec<_>>()
         .join(" ")
 }

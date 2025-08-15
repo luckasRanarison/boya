@@ -1,4 +1,4 @@
-pub trait ExtendedOps {
+pub trait ExtendedOps: Sized {
     fn wrapping_asr(self, rhs: Self) -> Self;
 }
 

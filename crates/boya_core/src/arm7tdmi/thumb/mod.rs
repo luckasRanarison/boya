@@ -21,10 +21,10 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn decode_thumb(&self, instruction: u16) -> InstructionFormat {
-        if instruction.get_bits(13, 15) == 0b000 {
-            InstructionFormat::Format1(Format1::from(instruction))
-        } else if instruction.get_bits(11, 15) == 0b00011 {
+        if instruction.get_bits(11, 15) == 0b00011 {
             InstructionFormat::Format2(Format2::from(instruction))
+        } else if instruction.get_bits(13, 15) == 0b000 {
+            InstructionFormat::Format1(Format1::from(instruction))
         } else if instruction.get_bits(13, 15) == 0b001 {
             InstructionFormat::Format3(Format3::from(instruction))
         } else if instruction.get_bits(10, 15) == 0b010000 {
@@ -147,6 +147,103 @@ mod tests {
             .assert_flag(Psr::C, true)
             .assert_flag(Psr::Z, false)
             .assert_flag(Psr::N, true)
+            .run(3);
+    }
+
+    #[test]
+    fn test_add_sub_basic() {
+        let asm = r"
+            mov r0, 2
+            mov r1, 3
+            add r2, r1, r0
+            add r3, r2, 3 
+            sub r4, r3, r0
+            cmp r4, 6
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(2, 5)
+            .assert_reg(3, 8)
+            .assert_reg(4, 6)
+            .assert_flag(Psr::C, true) // no borrow
+            .assert_flag(Psr::Z, true)
+            .assert_flag(Psr::N, false)
+            .assert_flag(Psr::V, false)
+            .run(6);
+    }
+
+    #[test]
+    fn test_add_carry() {
+        let asm = r"
+            mov r0, 5
+            sub r1, r0, 2
+            adc r0, r1
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(0, 9)
+            .assert_flag(Psr::C, false)
+            .assert_flag(Psr::Z, false)
+            .assert_flag(Psr::N, false)
+            .assert_flag(Psr::V, false)
+            .run(4);
+    }
+
+    #[test]
+    fn test_sub_carry() {
+        let asm = r"
+            mov r0, 5
+            mov r1, 1
+            sbc r0, r1
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(0, 3)
+            .assert_flag(Psr::C, false)
+            .assert_flag(Psr::Z, false)
+            .assert_flag(Psr::N, false)
+            .assert_flag(Psr::V, false)
+            .run(4);
+    }
+
+    #[test]
+    fn test_negation() {
+        let asm = r"
+            mov r0, 2
+            neg r1, r0
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(1, -2i32 as u32)
+            .assert_flag(Psr::C, false)
+            .assert_flag(Psr::Z, false)
+            .assert_flag(Psr::N, true)
+            .assert_flag(Psr::V, false)
+            .run(2);
+    }
+
+    #[test]
+    fn test_logical_op() {
+        let asm = r"
+            mov r0, 2
+            mov r1, 1
+            orr r1, r0
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(1, 3)
+            .assert_flag(Psr::Z, false)
+            .assert_flag(Psr::N, false)
             .run(3);
     }
 }

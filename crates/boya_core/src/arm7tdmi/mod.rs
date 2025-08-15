@@ -9,7 +9,7 @@ use psr::{OperatingMode, Psr};
 
 use crate::{
     bus::Bus,
-    utils::{ops::ExtendedOps, ringbuffer::RingBuffer},
+    utils::{bitflags::Bitflag, ops::ExtendedOps, ringbuffer::RingBuffer},
 };
 
 #[derive(Debug)]
@@ -45,7 +45,7 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn step(&mut self) {
-        if self.cpsr.contains(Psr::T) {
+        if self.cpsr.has(Psr::T) {
             let raw = self.fetch_thumb();
             let decoded = self.decode_thumb(raw);
             self.exec_thumb(decoded);
@@ -128,32 +128,31 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn add(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        self.add_sub_op(AddSubOp::Add, lhs.register(), rhs, dst.into(), false);
+        self.add_sub_op(lhs.register(), rhs, dst.into(), false);
     }
 
     pub fn adc(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        self.add_sub_op(AddSubOp::Add, lhs.register(), rhs, dst.into(), true);
+        self.add_sub_op(lhs.register(), rhs, dst.into(), self.cpsr.has(Psr::C));
     }
 
     pub fn sub(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        self.add_sub_op(AddSubOp::Sub, lhs.register(), rhs, dst.into(), false);
+        self.add_sub_op(lhs.register(), rhs.not(), dst.into(), true);
     }
 
     pub fn sbc(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        self.add_sub_op(AddSubOp::Sub, lhs.register(), rhs, dst.into(), true);
+        self.add_sub_op(lhs.register(), rhs.not(), dst.into(), self.cpsr.has(Psr::C));
     }
 
     pub fn cmp(&mut self, lhs: u8, rhs: Operand) {
-        self.add_sub_op(AddSubOp::Sub, lhs.register(), rhs, None, false);
+        self.add_sub_op(lhs.register(), rhs.not(), None, true);
     }
 
     pub fn cmn(&mut self, lhs: u8, rhs: Operand) {
-        self.add_sub_op(AddSubOp::Add, lhs.register(), rhs, None, false);
+        self.add_sub_op(lhs.register(), rhs, None, false);
     }
 
     pub fn neg(&mut self, rd: u8, rs: u8) {
-        let lhs = 0_u32.immediate();
-        self.add_sub_op(AddSubOp::Sub, lhs, rs.register(), rd.into(), false);
+        self.add_sub_op(0_u32.immediate(), rs.register().not(), rd.into(), true);
     }
 
     pub fn and(&mut self, rd: u8, rs: u8) {
@@ -179,9 +178,7 @@ impl<B: Bus> Arm7tdmi<B> {
     pub fn mov(&mut self, rd: u8, operand: Operand) {
         let value = self.get_operand(operand);
 
-        self.cpsr.update_zero(value);
-        self.cpsr.update_sign(value);
-
+        self.cpsr.update_zn(value);
         self.set_reg(rd, value);
     }
 
@@ -194,56 +191,28 @@ impl<B: Bus> Arm7tdmi<B> {
         let rhs = self.get_operand(rhs);
         let result = lhs.wrapping_mul(rhs);
 
-        self.cpsr.update_zero(result);
-        self.cpsr.update_sign(result);
+        self.cpsr.update_zn(result);
         self.cpsr.update(Psr::C, false);
 
         self.set_reg(dst, result);
     }
 
     #[inline(always)]
-    pub fn add_sub_op(
-        &mut self,
-        op: AddSubOp,
-        lhs: Operand,
-        rhs: Operand,
-        dst: Option<u8>,
-        carry: bool,
-    ) {
+    pub fn add_sub_op(&mut self, lhs: Operand, rhs: Operand, dst: Option<u8>, carry: bool) {
         let lhs = self.get_operand(lhs);
         let rhs = self.get_operand(rhs);
 
-        let (result, overflow, carry) = if carry {
-            let carry_bit = self.cpsr.get(Psr::C);
-            let (res1, of1, cr1) = self.add_sub_op_inner(op, lhs, rhs);
-            let (res2, of2, cr2) = self.add_sub_op_inner(op, res1, !carry_bit);
-            (res2, of1 || of2, cr1 || cr2)
-        } else {
-            self.add_sub_op_inner(op, lhs, rhs)
-        };
+        let (res1, ov1) = lhs.overflowing_add(rhs);
+        let (res2, ov2) = res1.overflowing_add(carry.into());
+        let overflow = ((res2 ^ lhs) & (res2 ^ rhs)).has(31);
 
-        self.cpsr.update_zero(result);
-        self.cpsr.update_sign(result);
-        self.cpsr.update(Psr::C, carry);
+        self.cpsr.update_zn(res2);
+        self.cpsr.update(Psr::C, ov1 || ov2);
         self.cpsr.update(Psr::V, overflow);
 
         if let Some(rd) = dst {
-            self.set_reg(rd, result);
+            self.set_reg(rd, res2);
         }
-    }
-
-    pub fn add_sub_op_inner(&self, op: AddSubOp, lhs: u32, rhs: u32) -> (u32, bool, bool) {
-        let (result, overflow) = match op {
-            AddSubOp::Add => lhs.overflowing_add(rhs),
-            AddSubOp::Sub => lhs.overflowing_sub(rhs),
-        };
-
-        let carry = match op {
-            AddSubOp::Add => result < lhs, // C=1 if unsigned overflow
-            AddSubOp::Sub => lhs >= rhs,   // C=1 if no borrow
-        };
-
-        (result, overflow, carry)
     }
 
     #[inline(always)]
@@ -255,8 +224,7 @@ impl<B: Bus> Arm7tdmi<B> {
         let rhs = self.get_operand(rhs) & 0xFF;
         let result = func(lhs, rhs);
 
-        self.cpsr.update_zero(result);
-        self.cpsr.update_sign(result);
+        self.cpsr.update_zn(result);
         self.cpsr.update(Psr::C, rhs > 0);
 
         self.set_reg(dst, result);
@@ -271,8 +239,7 @@ impl<B: Bus> Arm7tdmi<B> {
         let rhs = self.get_operand(rhs);
         let result = func(lhs, rhs);
 
-        self.cpsr.update_zero(result);
-        self.cpsr.update_sign(result);
+        self.cpsr.update_zn(result);
 
         if let Some(rd) = dst {
             self.set_reg(rd, result);
@@ -308,7 +275,7 @@ impl<B: Bus> Arm7tdmi<B> {
 
     pub fn assert_flag(&self, assertions: Vec<(u32, bool)>) {
         for (flag, expected) in assertions {
-            let value = self.cpsr.contains(flag);
+            let value = self.cpsr.has(flag);
             let name = Psr::format_flag(flag);
             let status = if expected { "set" } else { "cleared" };
             assert_eq!(

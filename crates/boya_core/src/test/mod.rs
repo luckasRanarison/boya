@@ -1,7 +1,7 @@
 pub mod asm;
 pub mod bus;
 
-use asm::{compile_asm, format_hex_bytes};
+use asm::{compile_asm, format_bin_bytes, format_hex_bytes};
 use bus::TestBus;
 
 use crate::arm7tdmi::{Arm7tdmi, utils::Psr};
@@ -71,6 +71,13 @@ impl AsmTestBuilder {
     }
 
     pub fn run(self, steps: usize) {
+        let formated_bits = format_bin_bytes(&self.bytes);
+        let formated_bytes = format_hex_bytes(&self.bytes);
+
+        println!("code: {}", self.code);
+        println!("hex: {formated_bytes}");
+        println!("bin: {formated_bits}");
+
         let mut cpu = Arm7tdmi::new(self.bus);
         cpu.update_flag(Psr::T, self.thumb);
 
@@ -81,11 +88,6 @@ impl AsmTestBuilder {
         for _ in 0..steps {
             cpu.step();
         }
-
-        let formated_bytes = format_hex_bytes(&self.bytes);
-
-        println!("code: {}", self.code);
-        println!("bytes: {formated_bytes}");
 
         cpu.assert_mem(self.mem_assertions);
         cpu.assert_reg(self.reg_assertions);

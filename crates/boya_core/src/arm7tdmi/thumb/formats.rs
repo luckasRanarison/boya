@@ -102,7 +102,7 @@ impl From<u16> for Format2 {
         let rs = value.get_bits(3, 5) as u8;
         let rd = value.get_bits(0, 2) as u8;
 
-        let nn = match value.contains(9) {
+        let nn = match value.has(10) {
             true => operand.immediate(),
             false => operand.register(),
         };
