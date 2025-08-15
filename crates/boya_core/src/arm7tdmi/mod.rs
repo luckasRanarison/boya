@@ -60,6 +60,11 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
+    fn set_pc(&mut self, value: u32) {
+        self.reg[15] = value;
+    }
+
+    #[inline(always)]
     fn increment_pc(&mut self, value: u32) {
         self.reg[15] = self.pc().wrapping_add(value);
     }
@@ -127,32 +132,35 @@ impl<B: Bus> Arm7tdmi<B> {
         self.shift_op(u32::rotate_right, lhs, rhs, dst);
     }
 
-    pub fn add(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        self.add_sub_op(lhs.register(), rhs, dst.into(), false);
+    pub fn add(&mut self, lhs: u8, rhs: Operand, dst: u8, update: bool) {
+        self.add_sub_op(lhs.register(), rhs, dst.into(), 0, update);
     }
 
     pub fn adc(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        self.add_sub_op(lhs.register(), rhs, dst.into(), self.cpsr.has(Psr::C));
+        let carry = self.cpsr.get(Psr::C);
+        self.add_sub_op(lhs.register(), rhs, dst.into(), carry, true);
     }
 
     pub fn sub(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        self.add_sub_op(lhs.register(), rhs.not(), dst.into(), true);
+        self.add_sub_op(lhs.register(), rhs.not(), dst.into(), 1, true);
     }
 
     pub fn sbc(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        self.add_sub_op(lhs.register(), rhs.not(), dst.into(), self.cpsr.has(Psr::C));
+        let carry = self.cpsr.get(Psr::C);
+        self.add_sub_op(lhs.register(), rhs.not(), dst.into(), carry, true);
     }
 
     pub fn cmp(&mut self, lhs: u8, rhs: Operand) {
-        self.add_sub_op(lhs.register(), rhs.not(), None, true);
+        self.add_sub_op(lhs.register(), rhs.not(), None, 1, true);
     }
 
     pub fn cmn(&mut self, lhs: u8, rhs: Operand) {
-        self.add_sub_op(lhs.register(), rhs, None, false);
+        self.add_sub_op(lhs.register(), rhs, None, 0, true);
     }
 
     pub fn neg(&mut self, rd: u8, rs: u8) {
-        self.add_sub_op(0_u32.immediate(), rs.register().not(), rd.into(), true);
+        let lhs = 0_u32.immediate();
+        self.add_sub_op(lhs, rs.register().not(), rd.into(), 1, true);
     }
 
     pub fn and(&mut self, rd: u8, rs: u8) {
@@ -172,18 +180,21 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn bic(&mut self, rd: u8, rs: u8) {
-        self.logical_op(u32::bitand, rd, rs.register().not(), None);
+        self.logical_op(u32::bitand, rd, rs.register().not(), rd.into());
     }
 
-    pub fn mov(&mut self, rd: u8, operand: Operand) {
+    pub fn mov(&mut self, rd: u8, operand: Operand, update: bool) {
         let value = self.get_operand(operand);
 
-        self.cpsr.update_zn(value);
+        if update {
+            self.cpsr.update_zn(value);
+        }
+
         self.set_reg(rd, value);
     }
 
     pub fn mvn(&mut self, rd: u8, rs: u8) {
-        self.mov(rd, rs.register().not());
+        self.mov(rd, rs.register().not(), true);
     }
 
     pub fn mul(&mut self, lhs: u8, rhs: Operand, dst: u8) {
@@ -197,18 +208,37 @@ impl<B: Bus> Arm7tdmi<B> {
         self.set_reg(dst, result);
     }
 
+    pub fn bx(&mut self, rs: u8) {
+        let mut value = self.get_reg(rs);
+
+        if value.get(0) == 0 {
+            self.cpsr.update(Psr::T, false);
+            value.clear(1); // 32 word alignement
+        }
+
+        self.set_pc(value);
+    }
+
     #[inline(always)]
-    pub fn add_sub_op(&mut self, lhs: Operand, rhs: Operand, dst: Option<u8>, carry: bool) {
+    pub fn add_sub_op(
+        &mut self,
+        lhs: Operand,
+        rhs: Operand,
+        dst: Option<u8>,
+        carry: u32,
+        update: bool,
+    ) {
         let lhs = self.get_operand(lhs);
         let rhs = self.get_operand(rhs);
-
         let (res1, ov1) = lhs.overflowing_add(rhs);
-        let (res2, ov2) = res1.overflowing_add(carry.into());
+        let (res2, ov2) = res1.overflowing_add(carry);
         let overflow = ((res2 ^ lhs) & (res2 ^ rhs)).has(31);
 
-        self.cpsr.update_zn(res2);
-        self.cpsr.update(Psr::C, ov1 || ov2);
-        self.cpsr.update(Psr::V, overflow);
+        if update {
+            self.cpsr.update_zn(res2);
+            self.cpsr.update(Psr::C, ov1 || ov2);
+            self.cpsr.update(Psr::V, overflow);
+        }
 
         if let Some(rd) = dst {
             self.set_reg(rd, res2);

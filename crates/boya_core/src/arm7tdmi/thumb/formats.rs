@@ -14,6 +14,8 @@ pub enum InstructionFormat {
     Format3(Format3),
     /// ALU operations
     Format4(Format4),
+    /// Hi register operations/branch exchange
+    Format5(Format5),
 }
 
 impl Debug for InstructionFormat {
@@ -23,10 +25,17 @@ impl Debug for InstructionFormat {
             InstructionFormat::Format2(op) => write!(f, "{op:?} ; format 2"),
             InstructionFormat::Format3(op) => write!(f, "{op:?} ; format 3"),
             InstructionFormat::Format4(op) => write!(f, "{op:?} ; format 4"),
+            InstructionFormat::Format5(op) => write!(f, "{op:?} ; format 5"),
         }
     }
 }
 
+//// Move shifted register
+/// +-------------------------------------------------------------------------------+
+/// | 15 | 14 | 13 | 12 | 11 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
+/// |-------------------------------------------------------------------------------|
+/// |  0 |  0 |  0 |    Op   |         Offset5        |      Rs      |      Rd      |
+/// +-------------------------------------------------------------------------------+
 pub struct Format1 {
     pub opcode: Opcode1,
     pub offset: u8,
@@ -78,6 +87,12 @@ impl From<u16> for Opcode1 {
     }
 }
 
+//// Add/Substract
+/// +-------------------------------------------------------------------------------+
+/// | 15 | 14 | 13 | 12 | 11 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
+/// |-------------------------------------------------------------------------------|
+/// |  0 |  0 |  0 |  1 |  1 |  I | Op |  Rn/Offset3  |      Rs      |      Rd      |
+/// +-------------------------------------------------------------------------------+
 pub struct Format2 {
     pub opcode: Opcode2,
     pub nn: Operand,
@@ -127,6 +142,12 @@ impl From<u16> for Opcode2 {
     }
 }
 
+/// Move/Compare/Add/Substract immediate
+/// +-------------------------------------------------------------------------------+
+/// | 15 | 14 | 13 | 12 | 11 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
+/// |-------------------------------------------------------------------------------|
+/// |  0 |  0 |  1 |    Op   |    Rd   |                   Offset8                  |
+/// +-------------------------------------------------------------------------------+
 pub struct Format3 {
     pub opcode: Opcode3,
     pub rd: u8,
@@ -169,6 +190,12 @@ impl From<u16> for Opcode3 {
     }
 }
 
+/// ALU operations
+/// +-------------------------------------------------------------------------------+
+/// | 15 | 14 | 13 | 12 | 11 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
+/// |-------------------------------------------------------------------------------|
+/// |  0 |  1 |  0 |  0 |  0 |  0 |         Op        |      Rs      |      Rd      |
+/// +-------------------------------------------------------------------------------+
 pub struct Format4 {
     pub opcode: Opcode4,
     pub rs: u8,
@@ -177,7 +204,7 @@ pub struct Format4 {
 
 impl Debug for Format4 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?} R{}, R{}", self.opcode, self.rs, self.rd)
+        write!(f, "{:?} R{}, R{}", self.opcode, self.rd, self.rs)
     }
 }
 
@@ -231,6 +258,63 @@ impl From<u16> for Opcode4 {
             0xE => Self::BIC,
             0xF => Self::MVN,
             _ => unreachable!("invalid format 4 opcode: {value:b}"),
+        }
+    }
+}
+
+/// ALU operations
+/// +-------------------------------------------------------------------------------+
+/// | 15 | 14 | 13 | 12 | 11 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
+/// |-------------------------------------------------------------------------------|
+/// |  0 |  1 |  0 |  0 |  0 |  1 |    Op   | Hd | Hs |     Rs/Hs    |     Rd/Hd    |
+/// +-------------------------------------------------------------------------------+
+pub struct Format5 {
+    pub opcode: Opcode5,
+    pub rs: u8,
+    pub rd: u8,
+}
+
+impl Debug for Format5 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.opcode {
+            Opcode5::BX => write!(f, "BX R{}", self.rs),
+            opcode => write!(f, "{opcode:?} R{}, R{}", self.rd, self.rs),
+        }
+    }
+}
+
+impl From<u16> for Format5 {
+    fn from(value: u16) -> Self {
+        let opcode = Opcode5::from(value.get_bits(08, 09));
+        let msbd = value.get(7) as u8;
+        let msbs = value.get(6) as u8;
+        let rs = value.get_bits(3, 5) as u8;
+        let rd = value.get_bits(0, 2) as u8;
+
+        Self {
+            opcode,
+            rs: rs | (msbs << 3),
+            rd: rd | (msbd << 3),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum Opcode5 {
+    ADD,
+    CMP,
+    MOV,
+    BX,
+}
+
+impl From<u16> for Opcode5 {
+    fn from(value: u16) -> Self {
+        match value {
+            0 => Self::ADD,
+            1 => Self::CMP,
+            2 => Self::MOV,
+            3 => Self::BX,
+            _ => unreachable!("invalid format 5 opcode: {value:b}"),
         }
     }
 }

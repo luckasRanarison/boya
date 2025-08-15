@@ -29,6 +29,8 @@ impl<B: Bus> Arm7tdmi<B> {
             InstructionFormat::Format3(Format3::from(instruction))
         } else if instruction.get_bits(10, 15) == 0b010000 {
             InstructionFormat::Format4(Format4::from(instruction))
+        } else if instruction.get_bits(10, 15) == 0b010001 {
+            InstructionFormat::Format5(Format5::from(instruction))
         } else {
             todo!()
         }
@@ -40,6 +42,7 @@ impl<B: Bus> Arm7tdmi<B> {
             InstructionFormat::Format2(op) => self.exec_thumb_format2(op),
             InstructionFormat::Format3(op) => self.exec_thumb_format3(op),
             InstructionFormat::Format4(op) => self.exec_thumb_format4(op),
+            InstructionFormat::Format5(op) => self.exec_thumb_format5(op),
         }
     }
 
@@ -55,7 +58,7 @@ impl<B: Bus> Arm7tdmi<B> {
 
     pub fn exec_thumb_format2(&mut self, op: Format2) {
         match op.opcode {
-            Opcode2::ADD => self.add(op.rs, op.nn, op.rd),
+            Opcode2::ADD => self.add(op.rs, op.nn, op.rd, true),
             Opcode2::SUB => self.sub(op.rs, op.nn, op.rd),
         }
     }
@@ -64,9 +67,9 @@ impl<B: Bus> Arm7tdmi<B> {
         let nn = op.nn.immediate();
 
         match op.opcode {
-            Opcode3::MOV => self.mov(op.rd, nn),
+            Opcode3::MOV => self.mov(op.rd, nn, true),
             Opcode3::CMP => self.cmp(op.rd, nn),
-            Opcode3::ADD => self.add(op.rd, nn, op.rd),
+            Opcode3::ADD => self.add(op.rd, nn, op.rd, true),
             Opcode3::SUB => self.sub(op.rd, nn, op.rd),
         }
     }
@@ -89,6 +92,15 @@ impl<B: Bus> Arm7tdmi<B> {
             Opcode4::MUL => self.mul(op.rd, op.rs.register(), op.rd),
             Opcode4::BIC => self.bic(op.rd, op.rs),
             Opcode4::MVN => self.mvn(op.rd, op.rs),
+        }
+    }
+
+    pub fn exec_thumb_format5(&mut self, op: Format5) {
+        match op.opcode {
+            Opcode5::ADD => self.add(op.rd, op.rs.register(), op.rd.into(), false),
+            Opcode5::CMP => self.cmp(op.rd, op.rs.register()),
+            Opcode5::MOV => self.mov(op.rd, op.rs.register(), false),
+            Opcode5::BX => self.bx(op.rs),
         }
     }
 }
@@ -235,15 +247,41 @@ mod tests {
         let asm = r"
             mov r0, 2
             mov r1, 1
+            mov r2, 2
+            mov r3, 3
             orr r1, r0
+            bic r3, r2
         ";
 
         AsmTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(1, 3)
+            .assert_reg(3, 1)
             .assert_flag(Psr::Z, false)
             .assert_flag(Psr::N, false)
-            .run(3);
+            .run(6);
+    }
+
+    #[test]
+    fn test_mul_basic() {
+        let asm = r"
+            mov r0, 2
+            mov r1, 3
+            sub r2, r1, r0 ; sets carry
+            mul r0, r1
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(0, 6)
+            .assert_flag(Psr::C, false)
+            .run(4);
+    }
+
+    #[test]
+    fn test_bx() {
+        todo!()
     }
 }

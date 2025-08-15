@@ -59,11 +59,11 @@ impl Psr {
         self.0
     }
 
-    pub fn get(&mut self, bit: u32) -> u32 {
+    pub fn get(self, bit: u32) -> u32 {
         self.0.get(bit)
     }
 
-    pub fn has(&self, bit: u32) -> bool {
+    pub fn has(self, bit: u32) -> bool {
         self.0.has(bit)
     }
 
