@@ -95,7 +95,7 @@ impl<B: Bus> Arm7tdmi<B> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{arm7tdmi::psr::flags, utils::test::TestBuilder};
+    use crate::{arm7tdmi::psr::flags, test::AsmTestBuilder};
 
     #[test]
     fn test_move() {
@@ -105,7 +105,7 @@ mod tests {
             mov r3, 0
         ";
 
-        TestBuilder::new()
+        AsmTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(1, 5)
