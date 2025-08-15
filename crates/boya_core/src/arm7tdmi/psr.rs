@@ -2,32 +2,43 @@ use std::fmt::Debug;
 
 use crate::utils::bitflags::Bitflag;
 
-/// | Bit  | Name              | Value                         |
-/// | :--- | :---------------- | :---------------------------- |
-/// | 31   | N - Sign flag     | (0: Not Signed, 1:Signed)     |
-/// | 30   | Z - Zero flag     | (0: Not Zero, 1: Zero)        |
-/// | 29   | C - Carry flag    | (0: No Carry, 1: Carry)       |
-/// | 28   | V - Overflow flag | (0: No Overflow, 1: Overflow) |
-/// | 27-8 | Reserved          |                               |
-/// | 7    | I - IRQ disable   | (0: Enable, 1: Disable)       |
-/// | 6    | F - FIQ disable   | (0: Enable, 1: Disable)       |
-/// | 5    | T - State bit     | (0: ARM, 1: THUMB)            |
-/// | 4-0  | M4-M0 Mode bits   | Operating mode (see below)    |
+/// +----------------------------------------------------------------------------+
+/// | N(31) | Z(30) | C(29) |   V(28)  |  U(27-8) | I(7) | F(6) | T(5)  | M(4-0) |
+/// |-------|-------|-------|----------|----------|------|------|-------|--------|
+/// | sign  | zero  | carry | overflow | reserved |  irq |  fiq | thumb |  mode  |
+/// +----------------------------------------------------------------------------+
 #[derive(Default, Clone, Copy)]
 pub struct Psr(u32);
+
+impl Psr {
+    /// N - Sign flag (0: Not Signed, 1:Signed)
+    pub const N: u32 = 31;
+    /// Z - Zero flag (0: Not Zero, 1: Zero)
+    pub const Z: u32 = 30;
+    /// C - Carry flag (0: No Carry, 1: Carry)
+    pub const C: u32 = 29;
+    /// V - Overflow flag (0: No Overflow, 1: Overflow)
+    pub const V: u32 = 28;
+    /// I - IRQ disable (0: Enable, 1: Disable)
+    pub const I: u32 = 7;
+    /// F - FIQ disable (0: Enable, 1: Disable)
+    pub const F: u32 = 6;
+    /// T - State bit (0: ARM, 1: THUMB)
+    pub const T: u32 = 5;
+}
 
 impl Debug for Psr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "N: {}, Z: {}, C: {}, V: {}, I: {}, F: {}, T: {}, M: {:?}",
-            self.0.get(flags::N),
-            self.0.get(flags::Z),
-            self.0.get(flags::C),
-            self.0.get(flags::V),
-            self.0.get(flags::I),
-            self.0.get(flags::F),
-            self.0.get(flags::T),
+            self.0.get(Self::N),
+            self.0.get(Self::Z),
+            self.0.get(Self::C),
+            self.0.get(Self::V),
+            self.0.get(Self::I),
+            self.0.get(Self::F),
+            self.0.get(Self::T),
             self.operating_mode()
         )
     }
@@ -37,8 +48,8 @@ impl Psr {
     pub fn new() -> Self {
         let mut flags = 0b0_u32;
 
-        flags.set(flags::I);
-        flags.set(flags::F);
+        flags.set(Self::I);
+        flags.set(Self::F);
         flags.set_bits(0, 4, OperatingMode::Svc as u32);
 
         Self(flags)
@@ -48,36 +59,28 @@ impl Psr {
         self.0
     }
 
-    pub fn contains(&self, flag: u32) -> bool {
-        self.0.contains(flag)
+    pub fn get(&mut self, bit: u32) -> u32 {
+        self.0.get(bit)
+    }
+
+    pub fn contains(&self, bit: u32) -> bool {
+        self.0.contains(bit)
+    }
+
+    pub fn update(&mut self, bit: u32, value: bool) {
+        self.0.update(bit, value);
     }
 
     pub fn update_zero(&mut self, value: u32) {
-        self.0.update(flags::Z, value == 0);
+        self.0.update(Self::Z, value == 0);
     }
 
     pub fn update_sign(&mut self, value: u32) {
-        self.0.update(flags::N, value.contains(31));
+        self.0.update(Self::N, value.contains(31));
     }
 
-    pub fn update_carry(&mut self, cond: bool) {
-        self.0.update(flags::C, cond);
-    }
-
-    pub fn update_overflow(&mut self, cond: bool) {
-        self.0.update(flags::V, cond);
-    }
-
-    pub fn update_thumb(&mut self, cond: bool) {
-        self.0.update(flags::T, cond);
-    }
-
-    pub fn carry_bit(self) -> u32 {
-        self.0.get(flags::C)
-    }
-
-    pub fn thumb_state(&self) -> bool {
-        self.0.contains(flags::T)
+    pub fn set_operating_mode(&mut self, mode: OperatingMode) {
+        self.0.set_bits(0, 4, mode as u32);
     }
 
     pub fn operating_mode(self) -> OperatingMode {
@@ -92,16 +95,19 @@ impl Psr {
             value => unreachable!("invalid operating mode: {value:b}"),
         }
     }
-}
 
-pub mod flags {
-    pub const N: u32 = 31;
-    pub const Z: u32 = 30;
-    pub const C: u32 = 29;
-    pub const V: u32 = 28;
-    pub const I: u32 = 7;
-    pub const F: u32 = 6;
-    pub const T: u32 = 5;
+    pub fn format_flag(bit: u32) -> &'static str {
+        match bit {
+            Self::N => "N",
+            Self::Z => "Z",
+            Self::C => "C",
+            Self::V => "V",
+            Self::I => "I",
+            Self::F => "F",
+            Self::T => "T",
+            _ => unreachable!("invalid status bit: {bit}"),
+        }
+    }
 }
 
 #[derive(Debug)]

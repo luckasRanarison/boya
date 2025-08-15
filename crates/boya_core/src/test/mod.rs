@@ -4,19 +4,19 @@ pub mod bus;
 use asm::{compile_asm, format_hex_bytes};
 use bus::TestBus;
 
-use crate::arm7tdmi::Arm7tdmi;
+use crate::arm7tdmi::{Arm7tdmi, utils::Psr};
 
-#[derive(Default, Debug)]
+#[derive(Default)]
 pub struct AsmTestBuilder {
     bus: TestBus,
     thumb: bool,
+    code: String,
+    bytes: Vec<u8>,
+    setup: Option<Box<dyn Fn(&mut Arm7tdmi<TestBus>)>>,
 
     mem_assertions: Vec<(u32, u32)>,
     reg_assertions: Vec<(usize, u32)>,
     flag_assertions: Vec<(u32, bool)>,
-
-    code: String,
-    bytes: Vec<u8>,
 }
 
 impl AsmTestBuilder {
@@ -62,13 +62,21 @@ impl AsmTestBuilder {
         self
     }
 
-    pub fn run(self) {
-        self.run_steps(1);
+    pub fn setup<F>(mut self, func: F) -> Self
+    where
+        F: Fn(&mut Arm7tdmi<TestBus>) + 'static,
+    {
+        self.setup = Some(Box::new(func));
+        self
     }
 
-    pub fn run_steps(self, steps: usize) {
+    pub fn run(self, steps: usize) {
         let mut cpu = Arm7tdmi::new(self.bus);
-        cpu.update_thumb_state(self.thumb);
+        cpu.update_flag(Psr::T, self.thumb);
+
+        if let Some(setup) = self.setup {
+            setup(&mut cpu);
+        }
 
         for _ in 0..steps {
             cpu.step();

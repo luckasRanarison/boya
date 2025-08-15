@@ -9,7 +9,7 @@ use psr::{OperatingMode, Psr};
 
 use crate::{
     bus::Bus,
-    utils::{ops, ringbuffer::RingBuffer},
+    utils::{ops::ExtendedOps, ringbuffer::RingBuffer},
 };
 
 #[derive(Debug)]
@@ -45,7 +45,7 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn step(&mut self) {
-        if self.cpsr.thumb_state() {
+        if self.cpsr.contains(Psr::T) {
             let raw = self.fetch_thumb();
             let decoded = self.decode_thumb(raw);
             self.exec_thumb(decoded);
@@ -120,7 +120,7 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn asr(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        self.shift_op(ops::asr_u32, lhs, rhs, dst);
+        self.shift_op(u32::wrapping_asr, lhs, rhs, dst);
     }
 
     pub fn ror(&mut self, lhs: u8, rhs: Operand, dst: u8) {
@@ -196,7 +196,7 @@ impl<B: Bus> Arm7tdmi<B> {
 
         self.cpsr.update_zero(result);
         self.cpsr.update_sign(result);
-        self.cpsr.update_carry(false);
+        self.cpsr.update(Psr::C, false);
 
         self.set_reg(dst, result);
     }
@@ -214,7 +214,7 @@ impl<B: Bus> Arm7tdmi<B> {
         let rhs = self.get_operand(rhs);
 
         let (result, overflow, carry) = if carry {
-            let carry_bit = self.cpsr.carry_bit();
+            let carry_bit = self.cpsr.get(Psr::C);
             let (res1, of1, cr1) = self.add_sub_op_inner(op, lhs, rhs);
             let (res2, of2, cr2) = self.add_sub_op_inner(op, res1, !carry_bit);
             (res2, of1 || of2, cr1 || cr2)
@@ -224,8 +224,8 @@ impl<B: Bus> Arm7tdmi<B> {
 
         self.cpsr.update_zero(result);
         self.cpsr.update_sign(result);
-        self.cpsr.update_carry(carry);
-        self.cpsr.update_overflow(overflow);
+        self.cpsr.update(Psr::C, carry);
+        self.cpsr.update(Psr::V, overflow);
 
         if let Some(rd) = dst {
             self.set_reg(rd, result);
@@ -257,7 +257,7 @@ impl<B: Bus> Arm7tdmi<B> {
 
         self.cpsr.update_zero(result);
         self.cpsr.update_sign(result);
-        self.cpsr.update_carry(rhs > 0);
+        self.cpsr.update(Psr::C, rhs > 0);
 
         self.set_reg(dst, result);
     }
@@ -282,8 +282,8 @@ impl<B: Bus> Arm7tdmi<B> {
 
 #[cfg(test)]
 impl<B: Bus> Arm7tdmi<B> {
-    pub fn update_thumb_state(&mut self, status: bool) {
-        self.cpsr.update_thumb(status);
+    pub fn update_flag(&mut self, flag: u32, value: bool) {
+        self.cpsr.update(flag, value);
     }
 
     pub fn assert_mem(&self, assertions: Vec<(u32, u32)>) {
@@ -309,13 +309,18 @@ impl<B: Bus> Arm7tdmi<B> {
     pub fn assert_flag(&self, assertions: Vec<(u32, bool)>) {
         for (flag, expected) in assertions {
             let value = self.cpsr.contains(flag);
+            let name = Psr::format_flag(flag);
+            let status = if expected { "set" } else { "cleared" };
             assert_eq!(
-                value,
-                expected,
-                "expected bit {flag} to be {}, flag: {:?}",
-                if expected { "set" } else { "unset" },
+                value, expected,
+                "expected flag {name} to be {status}, flags: {:?}",
                 self.cpsr
             )
         }
     }
+}
+
+#[cfg(test)]
+pub mod utils {
+    pub use super::psr::Psr;
 }

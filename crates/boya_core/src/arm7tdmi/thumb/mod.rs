@@ -95,7 +95,7 @@ impl<B: Bus> Arm7tdmi<B> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{arm7tdmi::psr::flags, test::AsmTestBuilder};
+    use crate::{arm7tdmi::psr::Psr, test::AsmTestBuilder};
 
     #[test]
     fn test_move() {
@@ -110,7 +110,43 @@ mod tests {
             .asm(asm)
             .assert_reg(1, 5)
             .assert_reg(2, !5)
-            .assert_flag(flags::Z, true)
-            .run_steps(3);
+            .assert_flag(Psr::Z, true)
+            .assert_flag(Psr::N, false)
+            .run(3);
+    }
+
+    #[test]
+    fn test_logic_shift() {
+        let asm = r"
+            mov r1, 2
+            lsl r2, r1, 2
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(2, 8)
+            .assert_flag(Psr::C, true)
+            .assert_flag(Psr::Z, false)
+            .assert_flag(Psr::N, false)
+            .run(2);
+    }
+
+    #[test]
+    fn test_arithmetic_shift() {
+        let asm = r"
+            mov r0, 0
+            mvn r1, r0
+            asr r2, r1, 1
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(2, !0)
+            .assert_flag(Psr::C, true)
+            .assert_flag(Psr::Z, false)
+            .assert_flag(Psr::N, true)
+            .run(3);
     }
 }
