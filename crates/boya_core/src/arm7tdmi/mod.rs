@@ -44,6 +44,16 @@ impl<B: Bus> Arm7tdmi<B> {
         }
     }
 
+    pub fn step(&mut self) {
+        if self.cpsr.thumb_state() {
+            let raw = self.fetch_thumb();
+            let decoded = self.decode_thumb(raw);
+            self.exec_thumb(decoded);
+        } else {
+            todo!()
+        }
+    }
+
     #[inline(always)]
     fn pc(&self) -> u32 {
         self.reg[15]
@@ -266,6 +276,46 @@ impl<B: Bus> Arm7tdmi<B> {
 
         if let Some(rd) = dst {
             self.set_reg(rd, result);
+        }
+    }
+}
+
+#[cfg(test)]
+impl<B: Bus> Arm7tdmi<B> {
+    pub fn update_thumb_state(&mut self, status: bool) {
+        self.cpsr.update_thumb(status);
+    }
+
+    pub fn assert_mem(&self, assertions: Vec<(u32, u32)>) {
+        for (address, expected) in assertions {
+            let value = self.bus.read_u32(address);
+            assert_eq!(
+                value, expected,
+                "expected 0x{expected:x} at @{address:x}, got 0x{value:x}"
+            )
+        }
+    }
+
+    pub fn assert_reg(&self, assertions: Vec<(usize, u32)>) {
+        for (index, expected) in assertions {
+            let value = self.get_reg(index);
+            assert_eq!(
+                value, expected,
+                "expected 0x{expected:x} at R{index}, got 0x{value:x}"
+            )
+        }
+    }
+
+    pub fn assert_flag(&self, assertions: Vec<(u32, bool)>) {
+        for (flag, expected) in assertions {
+            let value = self.cpsr.contains(flag);
+            assert_eq!(
+                value,
+                expected,
+                "expected bit {flag} to be {}, flag: {:?}",
+                if expected { "set" } else { "unset" },
+                self.cpsr
+            )
         }
     }
 }

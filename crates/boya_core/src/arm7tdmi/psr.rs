@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use crate::utils::bitflags::Bitflag;
 
 /// | Bit  | Name              | Value                         |
@@ -11,20 +13,43 @@ use crate::utils::bitflags::Bitflag;
 /// | 6    | F - FIQ disable   | (0: Enable, 1: Disable)       |
 /// | 5    | T - State bit     | (0: ARM, 1: THUMB)            |
 /// | 4-0  | M4-M0 Mode bits   | Operating mode (see below)    |
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Default, Clone, Copy)]
 pub struct Psr(u32);
+
+impl Debug for Psr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "N: {}, Z: {}, C: {}, V: {}, I: {}, F: {}, T: {}, M: {:?}",
+            self.0.get(flags::N),
+            self.0.get(flags::Z),
+            self.0.get(flags::C),
+            self.0.get(flags::V),
+            self.0.get(flags::I),
+            self.0.get(flags::F),
+            self.0.get(flags::T),
+            self.operating_mode()
+        )
+    }
+}
 
 impl Psr {
     pub fn new() -> Self {
         let mut flags = 0b0_u32;
 
-        flags.set_bits(0, 4, OperatingMode::Sys as u32);
+        flags.set(flags::I);
+        flags.set(flags::F);
+        flags.set_bits(0, 4, OperatingMode::Svc as u32);
 
         Self(flags)
     }
 
     pub fn value(self) -> u32 {
         self.0
+    }
+
+    pub fn contains(&self, flag: u32) -> bool {
+        self.0.contains(flag)
     }
 
     pub fn update_zero(&mut self, value: u32) {
@@ -43,8 +68,16 @@ impl Psr {
         self.0.update(flags::V, cond);
     }
 
+    pub fn update_thumb(&mut self, cond: bool) {
+        self.0.update(flags::T, cond);
+    }
+
     pub fn carry_bit(self) -> u32 {
         self.0.get(flags::C)
+    }
+
+    pub fn thumb_state(&self) -> bool {
+        self.0.contains(flags::T)
     }
 
     pub fn operating_mode(self) -> OperatingMode {
