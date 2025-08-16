@@ -9,8 +9,8 @@ mod format_7;
 mod prelude {
     pub use std::fmt::Debug;
 
-    pub use crate::arm7tdmi::common::{DataType, Operand, ToOperand};
     pub use crate::arm7tdmi::Arm7tdmi;
+    pub use crate::arm7tdmi::common::{Operand, ToOperand};
     pub use crate::bus::Bus;
     pub use crate::utils::bitflags::Bitflag;
 }
@@ -22,6 +22,7 @@ use format_4::Format4;
 use format_5::Format5;
 use format_6::Format6;
 
+use format_7::Format7;
 use prelude::*;
 
 pub enum InstructionFormat {
@@ -37,6 +38,8 @@ pub enum InstructionFormat {
     Format5(Format5),
     /// Load PC-relative
     Format6(Format6),
+    /// Load/Store with register offset
+    Format7(Format7),
 }
 
 impl Debug for InstructionFormat {
@@ -48,6 +51,7 @@ impl Debug for InstructionFormat {
             InstructionFormat::Format4(op) => write!(f, "{op:?} ; format 4"),
             InstructionFormat::Format5(op) => write!(f, "{op:?} ; format 5"),
             InstructionFormat::Format6(op) => write!(f, "{op:?} ; format 6"),
+            InstructionFormat::Format7(op) => write!(f, "{op:?} ; format 7"),
         }
     }
 }
@@ -70,6 +74,8 @@ impl<B: Bus> Arm7tdmi<B> {
             InstructionFormat::Format5(Format5::from(instruction))
         } else if instruction.get_bits(11, 15) == 0b01001 {
             InstructionFormat::Format6(Format6::from(instruction))
+        } else if instruction.get_bits(12, 15) == 0b0101 {
+            InstructionFormat::Format7(Format7::from(instruction))
         } else {
             todo!()
         }
@@ -83,6 +89,7 @@ impl<B: Bus> Arm7tdmi<B> {
             InstructionFormat::Format4(op) => self.exec_thumb_format4(op),
             InstructionFormat::Format5(op) => self.exec_thumb_format5(op),
             InstructionFormat::Format6(op) => self.exec_thumb_format6(op),
+            InstructionFormat::Format7(op) => self.exec_thumb_format7(op),
         }
     }
 }
@@ -262,36 +269,45 @@ mod tests {
             .run(4);
     }
 
-    // #[test]
-    // fn test_bx() {
-    //     let asm = r"
-    //         start:
-    //             mov r0, 13 ; 0b1101
-    //             bx  r0
-    //
-    //         target EQU 13
-    //             mov r1, 2
-    //     ";
-    //
-    //     AsmTestBuilder::new()
-    //         .thumb()
-    //         .asm(asm)
-    //         .assert_reg(1, 2)
-    //         .assert_flag(Psr::T, true)
-    //         .run(3);
-    // }
-
     #[test]
-    fn test_ldr_offset() {
+    fn test_hi_reg_ops() {
         let asm = r"
-            ldr r1, [PC, #16]
+            mov r0, 5
+            mov pc, r0
         ";
 
         AsmTestBuilder::new()
             .thumb()
-            .setup(|cpu| cpu.bus.write_u32(20, 5))
             .asm(asm)
+            .assert_reg(15, 6) // half-word alignement
+            .run(2);
+    }
+
+    #[test]
+    fn test_ldr_pc_offset() {
+        AsmTestBuilder::new()
+            .thumb()
+            .setup(|cpu| cpu.bus.write_u32(20, 5))
+            .asm("ldr r1, [PC, #16]")
             .assert_reg(1, 5)
             .run(1);
+    }
+
+    #[test]
+    fn test_ldr_str_reg_offset() {
+        let asm = r"
+            mov r0, 3
+            mov r1, 5
+            mov r2, 6
+            str r0, [r1, r2]
+            ldr r3, [r1, r2]
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_mem(11, 3)
+            .assert_reg(3, 3)
+            .run(5);
     }
 }

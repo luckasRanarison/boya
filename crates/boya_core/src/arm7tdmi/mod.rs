@@ -1,20 +1,17 @@
 mod bank;
 mod common;
+mod isa;
+mod ops;
 mod pipeline;
 mod psr;
 mod thumb;
 
-use std::ops::{BitAnd, BitOr, BitXor};
-
 use bank::Bank;
-use common::{DataType, Operand, OperandKind, ToOperand};
+use common::{Operand, OperandKind};
 use pipeline::Pipeline;
-use psr::{Exception, OperatingMode, Psr};
+use psr::{Exception, Psr};
 
-use crate::{
-    bus::Bus,
-    utils::{bitflags::Bitflag, ops::ExtendedOps},
-};
+use crate::bus::Bus;
 
 #[derive(Debug)]
 pub struct Arm7tdmi<B: Bus> {
@@ -51,6 +48,10 @@ impl<B: Bus> Arm7tdmi<B> {
             self.exec_thumb(decoded); // PC is PC + 4
         } else {
             todo!()
+        }
+
+        if self.pipeline.last_pc() != self.pc() {
+            self.reload_pipeline();
         }
     }
 
@@ -116,194 +117,7 @@ impl<B: Bus> Arm7tdmi<B> {
             OperandKind::Register => self.get_reg(operand.value as usize),
         };
 
-        if operand.negate {
-            !value
-        } else {
-            value
-        }
-    }
-}
-
-impl<B: Bus> Arm7tdmi<B> {
-    pub fn lsl(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        self.shift_op(u32::wrapping_shl, lhs, rhs, dst);
-    }
-
-    pub fn lsr(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        self.shift_op(u32::wrapping_shr, lhs, rhs, dst);
-    }
-
-    pub fn asr(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        self.shift_op(u32::wrapping_asr, lhs, rhs, dst);
-    }
-
-    pub fn ror(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        self.shift_op(u32::rotate_right, lhs, rhs, dst);
-    }
-
-    pub fn add(&mut self, lhs: u8, rhs: Operand, dst: u8, update: bool) {
-        self.add_sub_op(lhs.register(), rhs, dst.into(), 0, update);
-    }
-
-    pub fn adc(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        let carry = self.cpsr.get(Psr::C);
-        self.add_sub_op(lhs.register(), rhs, dst.into(), carry, true);
-    }
-
-    pub fn sub(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        self.add_sub_op(lhs.register(), rhs.not(), dst.into(), 1, true);
-    }
-
-    pub fn sbc(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        let carry = self.cpsr.get(Psr::C);
-        self.add_sub_op(lhs.register(), rhs.not(), dst.into(), carry, true);
-    }
-
-    pub fn cmp(&mut self, lhs: u8, rhs: Operand) {
-        self.add_sub_op(lhs.register(), rhs.not(), None, 1, true);
-    }
-
-    pub fn cmn(&mut self, lhs: u8, rhs: Operand) {
-        self.add_sub_op(lhs.register(), rhs, None, 0, true);
-    }
-
-    pub fn neg(&mut self, rd: u8, rs: u8) {
-        let lhs = 0_u32.immediate();
-        self.add_sub_op(lhs, rs.register().not(), rd.into(), 1, true);
-    }
-
-    pub fn and(&mut self, rd: u8, rs: u8) {
-        self.logical_op(u32::bitand, rs, rd.register(), rd.into());
-    }
-
-    pub fn eor(&mut self, rd: u8, rs: u8) {
-        self.logical_op(u32::bitxor, rs, rd.register(), rd.into());
-    }
-
-    pub fn orr(&mut self, rd: u8, rs: u8) {
-        self.logical_op(u32::bitor, rs, rd.register(), rd.into());
-    }
-
-    pub fn tst(&mut self, rd: u8, rs: u8) {
-        self.logical_op(u32::bitand, rd, rs.register(), None);
-    }
-
-    pub fn bic(&mut self, rd: u8, rs: u8) {
-        self.logical_op(u32::bitand, rd, rs.register().not(), rd.into());
-    }
-
-    pub fn mov(&mut self, rd: u8, operand: Operand, update: bool) {
-        let value = self.get_operand(operand);
-
-        if update {
-            self.cpsr.update_zn(value);
-        }
-
-        self.set_reg(rd, value);
-    }
-
-    pub fn mvn(&mut self, rd: u8, rs: u8) {
-        self.mov(rd, rs.register().not(), true);
-    }
-
-    pub fn mul(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        let lhs = self.get_reg(lhs);
-        let rhs = self.get_operand(rhs);
-        let result = lhs.wrapping_mul(rhs);
-
-        self.cpsr.update_zn(result);
-        self.cpsr.update(Psr::C, false);
-
-        self.set_reg(dst, result);
-    }
-
-    pub fn bx(&mut self, rs: u8) {
-        let mut value = self.get_reg(rs);
-
-        if value.get(0) == 0 {
-            self.cpsr.set_arm_mode();
-            value.clear(1); // 32 word alignement
-        }
-
-        self.set_pc(value);
-        self.reload_pipeline();
-    }
-
-    pub fn ldr(&mut self, rd: u8, addr: u32, kind: DataType) {
-        let value = match kind {
-            DataType::Byte => self.bus.read_u8(addr).into(),
-            DataType::HalfWord => self.bus.read_u16(addr).into(),
-            DataType::Word => self.bus.read_u32(addr),
-        };
-
-        self.set_reg(rd, value)
-    }
-
-    pub fn str(&mut self, rs: u8, addr: u32, kind: DataType) {
-        let value = self.get_reg(rs);
-
-        match kind {
-            DataType::Byte => self.bus.write_u8(addr, (value & 0xFF) as u8),
-            DataType::HalfWord => self.bus.write_u16(addr, (value & 0xFFFF) as u16),
-            DataType::Word => self.bus.write_u32(addr, value),
-        }
-    }
-
-    #[inline(always)]
-    pub fn add_sub_op(
-        &mut self,
-        lhs: Operand,
-        rhs: Operand,
-        dst: Option<u8>,
-        carry: u32,
-        update: bool,
-    ) {
-        let lhs = self.get_operand(lhs);
-        let rhs = self.get_operand(rhs);
-        let (res1, ov1) = lhs.overflowing_add(rhs);
-        let (res2, ov2) = res1.overflowing_add(carry);
-        let overflow = ((res2 ^ lhs) & (res2 ^ rhs)).has(31);
-
-        if update {
-            self.cpsr.update_zn(res2);
-            self.cpsr.update(Psr::C, ov1 || ov2);
-            self.cpsr.update(Psr::V, overflow);
-        }
-
-        if let Some(rd) = dst {
-            self.set_reg(rd, res2);
-        }
-    }
-
-    #[inline(always)]
-    pub fn shift_op<F>(&mut self, func: F, lhs: u8, rhs: Operand, dst: u8)
-    where
-        F: Fn(u32, u32) -> u32,
-    {
-        let lhs = self.get_reg(lhs);
-        let rhs = self.get_operand(rhs) & 0xFF;
-        let result = func(lhs, rhs);
-
-        self.cpsr.update_zn(result);
-        self.cpsr.update(Psr::C, rhs > 0);
-
-        self.set_reg(dst, result);
-    }
-
-    #[inline(always)]
-    pub fn logical_op<F>(&mut self, func: F, lhs: u8, rhs: Operand, dst: Option<u8>)
-    where
-        F: Fn(u32, u32) -> u32,
-    {
-        let lhs = self.get_reg(lhs);
-        let rhs = self.get_operand(rhs);
-        let result = func(lhs, rhs);
-
-        self.cpsr.update_zn(result);
-
-        if let Some(rd) = dst {
-            self.set_reg(rd, result);
-        }
+        if operand.negate { !value } else { value }
     }
 }
 

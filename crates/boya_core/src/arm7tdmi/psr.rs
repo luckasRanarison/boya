@@ -99,6 +99,7 @@ impl Psr {
         }
     }
 
+    #[cfg(test)]
     pub fn format_flag(bit: u32) -> &'static str {
         match bit {
             Self::N => "N",
@@ -148,7 +149,7 @@ impl<B: Bus> Arm7tdmi<B> {
         };
 
         self.cpsr.update(Psr::I, irq);
-        self.cpsr.update(Psr::F, irq);
+        self.cpsr.update(Psr::F, fiq);
         self.cpsr.set_arm_mode();
         self.cpsr.set_operating_mode(op_mode);
         self.bank.set_spsr(op_mode, self.cpsr);

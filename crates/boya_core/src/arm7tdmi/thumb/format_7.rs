@@ -25,7 +25,7 @@ impl Debug for Format7 {
 
 impl From<u16> for Format7 {
     fn from(value: u16) -> Self {
-        let opcode = Opcode7::from(value);
+        let opcode = Opcode7::from(value.get_bits(10, 11));
         let ro = value.get_bits_u8(6, 8);
         let rb = value.get_bits_u8(3, 5);
         let rd = value.get_bits_u8(0, 2);
@@ -59,10 +59,10 @@ impl<B: Bus> Arm7tdmi<B> {
         let address = self.get_reg(op.rb) + self.get_reg(op.ro);
 
         match op.opcode {
-            Opcode7::STR => self.str(op.rd, address, DataType::Word),
-            Opcode7::STRB => self.str(op.rd, address, DataType::Byte),
-            Opcode7::LDR => self.ldr(op.rd, address, DataType::Word),
-            Opcode7::LDRB => self.ldr(op.rd, address, DataType::Byte),
+            Opcode7::STR => self.str(op.rd, address),
+            Opcode7::STRB => self.strb(op.rd, address),
+            Opcode7::LDR => self.ldr(op.rd, address),
+            Opcode7::LDRB => self.ldrb(op.rd, address),
         }
     }
 }

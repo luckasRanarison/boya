@@ -1,0 +1,88 @@
+use crate::{bus::Bus, utils::bitflags::Bitflag};
+
+use super::{
+    Arm7tdmi,
+    common::{DataType, Operand},
+    psr::Psr,
+};
+
+impl<B: Bus> Arm7tdmi<B> {
+    #[inline(always)]
+    pub fn ldr_op(&mut self, rd: u8, addr: u32, kind: DataType) {
+        let value = match kind {
+            DataType::Byte => self.bus.read_u8(addr).into(),
+            DataType::HalfWord => self.bus.read_u16(addr).into(),
+            DataType::Word => self.bus.read_u32(addr),
+        };
+
+        self.set_reg(rd, value)
+    }
+
+    #[inline(always)]
+    pub fn str_op(&mut self, rs: u8, addr: u32, kind: DataType) {
+        let value = self.get_reg(rs);
+
+        match kind {
+            DataType::Byte => self.bus.write_u8(addr, (value & 0xFF) as u8),
+            DataType::HalfWord => self.bus.write_u16(addr, (value & 0xFFFF) as u16),
+            DataType::Word => self.bus.write_u32(addr, value),
+        }
+    }
+
+    #[inline(always)]
+    pub fn add_sub_op(
+        &mut self,
+        lhs: Operand,
+        rhs: Operand,
+        dst: Option<u8>,
+        carry: u32,
+        update: bool,
+    ) {
+        let lhs = self.get_operand(lhs);
+        let rhs = self.get_operand(rhs);
+        let (res1, ov1) = lhs.overflowing_add(rhs);
+        let (res2, ov2) = res1.overflowing_add(carry);
+        let overflow = ((res2 ^ lhs) & (res2 ^ rhs)).has(31);
+
+        if update {
+            self.cpsr.update_zn(res2);
+            self.cpsr.update(Psr::C, ov1 || ov2);
+            self.cpsr.update(Psr::V, overflow);
+        }
+
+        if let Some(rd) = dst {
+            self.set_reg(rd, res2);
+        }
+    }
+
+    #[inline(always)]
+    pub fn shift_op<F>(&mut self, func: F, lhs: u8, rhs: Operand, dst: u8)
+    where
+        F: Fn(u32, u32) -> u32,
+    {
+        let lhs = self.get_reg(lhs);
+        let rhs = self.get_operand(rhs) & 0xFF;
+        let result = func(lhs, rhs);
+
+        self.cpsr.update_zn(result);
+        self.cpsr.update(Psr::C, rhs > 0);
+
+        self.set_reg(dst, result);
+    }
+
+    #[inline(always)]
+    pub fn logical_op<F>(&mut self, func: F, lhs: u8, rhs: Operand, dst: Option<u8>)
+    where
+        F: Fn(u32, u32) -> u32,
+    {
+        let lhs = self.get_reg(lhs);
+        let rhs = self.get_operand(rhs);
+        let result = func(lhs, rhs);
+
+        self.cpsr.update_zn(result);
+
+        if let Some(rd) = dst {
+            self.set_reg(rd, result);
+        }
+    }
+}
