@@ -1,3 +1,21 @@
+pub trait BitArray {
+    fn to_bit_array<const N: usize>(self, start: usize, end: usize) -> [u8; N];
+}
+
+impl BitArray for u16 {
+    fn to_bit_array<const N: usize>(self, start: usize, end: usize) -> [u8; N] {
+        let mut buffer = [0; N];
+        let mut shifted = self >> start;
+
+        for i in 0..=end - start {
+            buffer[i] = (shifted & 1) as u8;
+            shifted >>= 1;
+        }
+
+        buffer
+    }
+}
+
 pub trait Bitflag: Sized {
     fn get(self, bit: Self) -> Self;
     fn has(self, bit: Self) -> bool;
@@ -11,7 +29,11 @@ pub trait Bitflag: Sized {
     fn get_bits_u8(self, start: Self, end: Self) -> u8;
 
     fn update(&mut self, bit: Self, cond: bool) {
-        if cond { self.set(bit) } else { self.clear(bit) }
+        if cond {
+            self.set(bit)
+        } else {
+            self.clear(bit)
+        }
     }
 }
 
