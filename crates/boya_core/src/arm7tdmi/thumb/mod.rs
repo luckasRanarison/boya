@@ -15,8 +15,8 @@ mod format_12;
 mod prelude {
     pub use std::fmt::Debug;
 
-    pub use crate::arm7tdmi::common::{Operand, ToOperand};
     pub use crate::arm7tdmi::Arm7tdmi;
+    pub use crate::arm7tdmi::common::{Operand, ToOperand};
     pub use crate::bus::Bus;
     pub use crate::utils::bitflags::Bitflag;
 }
@@ -37,7 +37,9 @@ use format_12::Format12;
 
 use prelude::*;
 
-pub enum ThumbInstruction {
+use crate::utils::bitflags::BitArray;
+
+pub enum ThumbInstr {
     /// Move shifted register
     Format1(Format1),
     /// Add/Substract
@@ -64,77 +66,65 @@ pub enum ThumbInstruction {
     Format12(Format12),
 }
 
-impl Debug for ThumbInstruction {
+impl Debug for ThumbInstr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ThumbInstruction::Format1(op) => write!(f, "{op:?} ; format 1 (thumb)"),
-            ThumbInstruction::Format2(op) => write!(f, "{op:?} ; format 2 (thumb)"),
-            ThumbInstruction::Format3(op) => write!(f, "{op:?} ; format 3 (thumb)"),
-            ThumbInstruction::Format4(op) => write!(f, "{op:?} ; format 4 (thumb)"),
-            ThumbInstruction::Format5(op) => write!(f, "{op:?} ; format 5 (thumb)"),
-            ThumbInstruction::Format6(op) => write!(f, "{op:?} ; format 6 (thumb)"),
-            ThumbInstruction::Format7(op) => write!(f, "{op:?} ; format 7 (thumb)"),
-            ThumbInstruction::Format8(op) => write!(f, "{op:?} ; format 8 (thumb)"),
-            ThumbInstruction::Format9(op) => write!(f, "{op:?} ; format 9 (thumb)"),
+            ThumbInstr::Format1(op) => write!(f, "{op:?} ; format 1 (thumb)"),
+            ThumbInstr::Format2(op) => write!(f, "{op:?} ; format 2 (thumb)"),
+            ThumbInstr::Format3(op) => write!(f, "{op:?} ; format 3 (thumb)"),
+            ThumbInstr::Format4(op) => write!(f, "{op:?} ; format 4 (thumb)"),
+            ThumbInstr::Format5(op) => write!(f, "{op:?} ; format 5 (thumb)"),
+            ThumbInstr::Format6(op) => write!(f, "{op:?} ; format 6 (thumb)"),
+            ThumbInstr::Format7(op) => write!(f, "{op:?} ; format 7 (thumb)"),
+            ThumbInstr::Format8(op) => write!(f, "{op:?} ; format 8 (thumb)"),
+            ThumbInstr::Format9(op) => write!(f, "{op:?} ; format 9 (thumb)"),
 
-            ThumbInstruction::Format10(op) => write!(f, "{op:?} ; format 10 (thumb)"),
-            ThumbInstruction::Format11(op) => write!(f, "{op:?} ; format 11 (thumb)"),
-            ThumbInstruction::Format12(op) => write!(f, "{op:?} ; format 12 (thumb)"),
+            ThumbInstr::Format10(op) => write!(f, "{op:?} ; format 10 (thumb)"),
+            ThumbInstr::Format11(op) => write!(f, "{op:?} ; format 11 (thumb)"),
+            ThumbInstr::Format12(op) => write!(f, "{op:?} ; format 12 (thumb)"),
         }
     }
 }
 
 impl<B: Bus> Arm7tdmi<B> {
-    pub fn decode_thumb(&self, word: u32) -> ThumbInstruction {
+    pub fn decode_thumb(&self, word: u32) -> ThumbInstr {
         let word_aligned = self.pc() & 0b1 == 0;
         let (lsb, msb) = if word_aligned { (0, 15) } else { (16, 31) };
         let instr = word.get_bits(lsb, msb) as u16;
+        let bit_array = instr.to_bit_array(9, 15);
 
-        // the order is important!
-        if instr.get_bits(11, 15) == 0b00011 {
-            ThumbInstruction::Format2(Format2::from(instr))
-        } else if instr.get_bits(13, 15) == 0b000 {
-            ThumbInstruction::Format1(Format1::from(instr))
-        } else if instr.get_bits(13, 15) == 0b001 {
-            ThumbInstruction::Format3(Format3::from(instr))
-        } else if instr.get_bits(10, 15) == 0b010000 {
-            ThumbInstruction::Format4(Format4::from(instr))
-        } else if instr.get_bits(10, 15) == 0b010001 {
-            ThumbInstruction::Format5(Format5::from(instr))
-        } else if instr.get_bits(11, 15) == 0b01001 {
-            ThumbInstruction::Format6(Format6::from(instr))
-        } else if instr.get_bits(12, 15) == 0b0101 && instr.has(9) {
-            ThumbInstruction::Format8(Format8::from(instr))
-        } else if instr.get_bits(12, 15) == 0b0101 {
-            ThumbInstruction::Format7(Format7::from(instr))
-        } else if instr.get_bits(13, 15) == 0b011 {
-            ThumbInstruction::Format9(Format9::from(instr))
-        } else if instr.get_bits(12, 15) == 0b1000 {
-            ThumbInstruction::Format10(Format10::from(instr))
-        } else if instr.get_bits(12, 15) == 0b1001 {
-            ThumbInstruction::Format11(Format11::from(instr))
-        } else if instr.get_bits(12, 15) == 0b1010 {
-            ThumbInstruction::Format12(Format12::from(instr))
-        } else {
-            todo!()
+        match bit_array {
+            [0, 0, 0, 1, 1, _, _] => ThumbInstr::Format2(Format2::from(instr)),
+            [0, 0, 0, _, _, _, _] => ThumbInstr::Format1(Format1::from(instr)),
+            [0, 0, 1, _, _, _, _] => ThumbInstr::Format3(Format3::from(instr)),
+            [0, 1, 0, 0, 0, 0, _] => ThumbInstr::Format4(Format4::from(instr)),
+            [0, 1, 0, 0, 0, 1, _] => ThumbInstr::Format5(Format5::from(instr)),
+            [0, 1, 0, 0, 1, _, _] => ThumbInstr::Format6(Format6::from(instr)),
+            [0, 1, 0, 1, _, _, 1] => ThumbInstr::Format8(Format8::from(instr)),
+            [0, 1, 0, 1, _, _, _] => ThumbInstr::Format7(Format7::from(instr)),
+            [0, 1, 1, _, _, _, _] => ThumbInstr::Format9(Format9::from(instr)),
+            [1, 0, 0, 0, _, _, _] => ThumbInstr::Format10(Format10::from(instr)),
+            [1, 0, 0, 1, _, _, _] => ThumbInstr::Format11(Format11::from(instr)),
+            [1, 0, 1, 0, _, _, _] => ThumbInstr::Format12(Format12::from(instr)),
+            _ => todo!(),
         }
     }
 
-    pub fn exec_thumb(&mut self, instruction: ThumbInstruction) {
+    pub fn exec_thumb(&mut self, instruction: ThumbInstr) {
         match instruction {
-            ThumbInstruction::Format1(op) => self.exec_thumb_format1(op),
-            ThumbInstruction::Format2(op) => self.exec_thumb_format2(op),
-            ThumbInstruction::Format3(op) => self.exec_thumb_format3(op),
-            ThumbInstruction::Format4(op) => self.exec_thumb_format4(op),
-            ThumbInstruction::Format5(op) => self.exec_thumb_format5(op),
-            ThumbInstruction::Format6(op) => self.exec_thumb_format6(op),
-            ThumbInstruction::Format7(op) => self.exec_thumb_format7(op),
-            ThumbInstruction::Format8(op) => self.exec_thumb_format8(op),
-            ThumbInstruction::Format9(op) => self.exec_thumb_format9(op),
+            ThumbInstr::Format1(op) => self.exec_thumb_format1(op),
+            ThumbInstr::Format2(op) => self.exec_thumb_format2(op),
+            ThumbInstr::Format3(op) => self.exec_thumb_format3(op),
+            ThumbInstr::Format4(op) => self.exec_thumb_format4(op),
+            ThumbInstr::Format5(op) => self.exec_thumb_format5(op),
+            ThumbInstr::Format6(op) => self.exec_thumb_format6(op),
+            ThumbInstr::Format7(op) => self.exec_thumb_format7(op),
+            ThumbInstr::Format8(op) => self.exec_thumb_format8(op),
+            ThumbInstr::Format9(op) => self.exec_thumb_format9(op),
 
-            ThumbInstruction::Format10(op) => self.exec_thumb_format10(op),
-            ThumbInstruction::Format11(op) => self.exec_thumb_format11(op),
-            ThumbInstruction::Format12(op) => self.exec_thumb_format12(op),
+            ThumbInstr::Format10(op) => self.exec_thumb_format10(op),
+            ThumbInstr::Format11(op) => self.exec_thumb_format11(op),
+            ThumbInstr::Format12(op) => self.exec_thumb_format12(op),
         }
     }
 }
