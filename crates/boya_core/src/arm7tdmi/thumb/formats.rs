@@ -16,6 +16,8 @@ pub enum InstructionFormat {
     Format4(Format4),
     /// Hi register operations/branch exchange
     Format5(Format5),
+    /// Load PC-relative
+    Format6(Format6),
 }
 
 impl Debug for InstructionFormat {
@@ -26,11 +28,12 @@ impl Debug for InstructionFormat {
             InstructionFormat::Format3(op) => write!(f, "{op:?} ; format 3"),
             InstructionFormat::Format4(op) => write!(f, "{op:?} ; format 4"),
             InstructionFormat::Format5(op) => write!(f, "{op:?} ; format 5"),
+            InstructionFormat::Format6(op) => write!(f, "{op:?} ; format 6"),
         }
     }
 }
 
-//// Move shifted register
+/// Move shifted register
 /// +-------------------------------------------------------------------------------+
 /// | 15 | 14 | 13 | 12 | 11 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
 /// |-------------------------------------------------------------------------------|
@@ -56,9 +59,9 @@ impl Debug for Format1 {
 impl From<u16> for Format1 {
     fn from(value: u16) -> Self {
         let opcode = value.get_bits(11, 12).into();
-        let offset = value.get_bits(6, 10) as u8;
-        let rs = value.get_bits(3, 5) as u8;
-        let rd = value.get_bits(0, 2) as u8;
+        let offset = value.get_bits_u8(6, 10);
+        let rs = value.get_bits_u8(3, 5);
+        let rd = value.get_bits_u8(0, 2);
 
         Self {
             opcode,
@@ -87,7 +90,7 @@ impl From<u16> for Opcode1 {
     }
 }
 
-//// Add/Substract
+/// Add/Substract
 /// +-------------------------------------------------------------------------------+
 /// | 15 | 14 | 13 | 12 | 11 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
 /// |-------------------------------------------------------------------------------|
@@ -114,8 +117,8 @@ impl From<u16> for Format2 {
     fn from(value: u16) -> Self {
         let opcode = Opcode2::from(value.get_bits(9, 10));
         let operand = value.get_bits(6, 8);
-        let rs = value.get_bits(3, 5) as u8;
-        let rd = value.get_bits(0, 2) as u8;
+        let rs = value.get_bits_u8(3, 5);
+        let rd = value.get_bits_u8(0, 2);
 
         let nn = match value.has(10) {
             true => operand.immediate(),
@@ -163,8 +166,8 @@ impl Debug for Format3 {
 impl From<u16> for Format3 {
     fn from(value: u16) -> Self {
         let opcode = Opcode3::from(value.get_bits(11, 12));
-        let rd = value.get_bits(8, 10) as u8;
-        let nn = value.get_bits(0, 7) as u8;
+        let rd = value.get_bits_u8(8, 10);
+        let nn = value.get_bits_u8(0, 7);
 
         Self { opcode, rd, nn }
     }
@@ -211,8 +214,8 @@ impl Debug for Format4 {
 impl From<u16> for Format4 {
     fn from(value: u16) -> Self {
         let opcode = Opcode4::from(value.get_bits(6, 9));
-        let rs = value.get_bits(3, 5) as u8;
-        let rd = value.get_bits(0, 2) as u8;
+        let rs = value.get_bits_u8(3, 5);
+        let rd = value.get_bits_u8(0, 2);
 
         Self { opcode, rs, rd }
     }
@@ -262,7 +265,7 @@ impl From<u16> for Opcode4 {
     }
 }
 
-/// ALU operations
+/// Hi register operations/branch exchange
 /// +-------------------------------------------------------------------------------+
 /// | 15 | 14 | 13 | 12 | 11 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
 /// |-------------------------------------------------------------------------------|
@@ -285,11 +288,11 @@ impl Debug for Format5 {
 
 impl From<u16> for Format5 {
     fn from(value: u16) -> Self {
-        let opcode = Opcode5::from(value.get_bits(08, 09));
-        let msbd = value.get(7) as u8;
-        let msbs = value.get(6) as u8;
-        let rs = value.get_bits(3, 5) as u8;
-        let rd = value.get_bits(0, 2) as u8;
+        let opcode = Opcode5::from(value.get_bits(8, 9));
+        let msbd = value.get_u8(7);
+        let msbs = value.get_u8(6);
+        let rs = value.get_bits_u8(3, 5);
+        let rd = value.get_bits_u8(0, 2);
 
         Self {
             opcode,
@@ -316,5 +319,31 @@ impl From<u16> for Opcode5 {
             3 => Self::BX,
             _ => unreachable!("invalid format 5 opcode: {value:b}"),
         }
+    }
+}
+
+/// Load PC-relative
+/// +-------------------------------------------------------------------------------+
+/// | 15 | 14 | 13 | 12 | 11 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
+/// |-------------------------------------------------------------------------------|
+/// |  0 |  1 |  0 |  0 |  1 |      Rd      |              Offset8                  |
+/// +-------------------------------------------------------------------------------+
+pub struct Format6 {
+    pub rd: u8,
+    pub nn: u16,
+}
+
+impl Debug for Format6 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "LDR, R{}, [PC,#{}]", self.rd, self.nn)
+    }
+}
+
+impl From<u16> for Format6 {
+    fn from(value: u16) -> Self {
+        let rd = value.get_bits_u8(8, 10);
+        let nn = value.get_bits(0, 7) << 2; // word aligned offset (0-1020 in steps of 4)
+
+        Self { rd, nn }
     }
 }

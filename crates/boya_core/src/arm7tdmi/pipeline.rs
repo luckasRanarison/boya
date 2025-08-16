@@ -6,17 +6,19 @@ use super::{Arm7tdmi, thumb};
 
 #[derive(Debug, Default)]
 pub struct Pipeline {
-    pub next_instr: u32,
+    next_instr: u32,
+}
+
+impl Pipeline {
+    pub fn next(&self) -> u32 {
+        self.next_instr
+    }
 }
 
 impl<B: Bus> Arm7tdmi<B> {
     pub fn reload_pipeline(&mut self) {
-        self.pipeline.next_instr = self.fetch();
-        self.increment_pc();
-    }
-
-    pub fn fetch_pipeline(&mut self) -> u32 {
-        self.pipeline.next_instr
+        self.align_pc();
+        self.pre_fetch();
     }
 
     pub fn pre_fetch(&mut self) {

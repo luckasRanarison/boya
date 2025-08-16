@@ -12,13 +12,13 @@ pub fn compile_asm(code: &str) -> io::Result<Vec<u8>> {
         .spawn()?;
 
     if let Some(mut stdin) = child.stdin.take() {
-        stdin.write(code.as_bytes())?; // EOF is signaled after stdin is droped
+        stdin.write_all(code.as_bytes())?; // EOF is signaled after stdin is droped
     }
 
     let output = child.wait_with_output()?;
 
     if output.stdout.is_empty() {
-        return Err(io::Error::new(io::ErrorKind::Other, "empty stream"));
+        return Err(io::Error::other("empty stream"));
     }
 
     Ok(output.stdout)

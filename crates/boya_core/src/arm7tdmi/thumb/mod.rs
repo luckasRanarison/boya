@@ -10,8 +10,8 @@ use super::{Arm7tdmi, common::ToOperand};
 
 impl<B: Bus> Arm7tdmi<B> {
     pub fn decode_thumb(&self, word: u32) -> InstructionFormat {
-        let is_aligned = self.pc() % 2 == 0;
-        let (lsb, msb) = if !is_aligned { (16, 31) } else { (0, 15) };
+        let word_aligned = self.pc() & 0b1 == 0;
+        let (lsb, msb) = if word_aligned { (0, 15) } else { (16, 31) };
         let instruction = word.get_bits(lsb, msb) as u16;
 
         if instruction.get_bits(11, 15) == 0b00011 {
@@ -24,6 +24,8 @@ impl<B: Bus> Arm7tdmi<B> {
             InstructionFormat::Format4(Format4::from(instruction))
         } else if instruction.get_bits(10, 15) == 0b010001 {
             InstructionFormat::Format5(Format5::from(instruction))
+        } else if instruction.get_bits(11, 15) == 0b01001 {
+            InstructionFormat::Format6(Format6::from(instruction))
         } else {
             todo!()
         }
@@ -36,6 +38,7 @@ impl<B: Bus> Arm7tdmi<B> {
             InstructionFormat::Format3(op) => self.exec_thumb_format3(op),
             InstructionFormat::Format4(op) => self.exec_thumb_format4(op),
             InstructionFormat::Format5(op) => self.exec_thumb_format5(op),
+            InstructionFormat::Format6(op) => self.exec_thumb_format6(op),
         }
     }
 
@@ -90,17 +93,24 @@ impl<B: Bus> Arm7tdmi<B> {
 
     pub fn exec_thumb_format5(&mut self, op: Format5) {
         match op.opcode {
-            Opcode5::ADD => self.add(op.rd, op.rs.register(), op.rd.into(), false),
+            Opcode5::ADD => self.add(op.rd, op.rs.register(), op.rd, false),
             Opcode5::CMP => self.cmp(op.rd, op.rs.register()),
             Opcode5::MOV => self.mov(op.rd, op.rs.register(), false),
             Opcode5::BX => self.bx(op.rs),
         }
     }
+
+    pub fn exec_thumb_format6(&mut self, op: Format6) {
+        let address = self.pc() + op.nn as u32;
+        let word = self.bus.read_u32(address);
+        println!("address: {address}, word: {word}");
+        self.set_reg(op.rd, word);
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{arm7tdmi::psr::Psr, test::AsmTestBuilder};
+    use crate::{arm7tdmi::psr::Psr, bus::Bus, test::AsmTestBuilder};
 
     #[test]
     fn test_move() {
@@ -273,8 +283,36 @@ mod tests {
             .run(4);
     }
 
+    // #[test]
+    // fn test_bx() {
+    //     let asm = r"
+    //         start:
+    //             mov r0, 13 ; 0b1101
+    //             bx  r0
+    //
+    //         target EQU 13
+    //             mov r1, 2
+    //     ";
+    //
+    //     AsmTestBuilder::new()
+    //         .thumb()
+    //         .asm(asm)
+    //         .assert_reg(1, 2)
+    //         .assert_flag(Psr::T, true)
+    //         .run(3);
+    // }
+
     #[test]
-    fn test_bx() {
-        todo!()
+    fn test_ldr_offset() {
+        let asm = r"
+            ldr r1, [PC, #16]
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .setup(|cpu| cpu.bus.write_u32(20, 5))
+            .asm(asm)
+            .assert_reg(1, 5)
+            .run(1);
     }
 }

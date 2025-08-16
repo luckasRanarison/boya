@@ -13,7 +13,7 @@ use psr::{Exception, OperatingMode, Psr};
 
 use crate::{
     bus::Bus,
-    utils::{bitflags::Bitflag, ops::ExtendedOps, ringbuffer::RingBuffer},
+    utils::{bitflags::Bitflag, ops::ExtendedOps},
 };
 
 #[derive(Debug)]
@@ -42,7 +42,7 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn step(&mut self) {
-        let instruction = self.fetch_pipeline();
+        let instruction = self.pipeline.next();
 
         if self.cpsr.has(Psr::T) {
             let decoded = self.decode_thumb(instruction);
@@ -70,8 +70,13 @@ impl<B: Bus> Arm7tdmi<B> {
 
     #[inline(always)]
     fn increment_pc(&mut self) {
-        println!("thumb: {}", self.cpsr.has(Psr::T));
         self.reg[15] += if self.cpsr.has(Psr::T) { 2 } else { 4 };
+    }
+
+    fn align_pc(&mut self) {
+        let mask = if self.cpsr.has(Psr::T) { !0b01 } else { !0b11 }; // half-word | word
+        let value = self.pc() & mask;
+        self.set_pc(value);
     }
 
     fn get_reg<I>(&self, index: I) -> u32
@@ -216,6 +221,7 @@ impl<B: Bus> Arm7tdmi<B> {
         }
 
         self.set_pc(value);
+        self.reload_pipeline();
     }
 
     #[inline(always)]

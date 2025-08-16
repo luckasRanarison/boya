@@ -1,17 +1,17 @@
 pub trait Bitflag: Sized {
     fn get(self, bit: Self) -> Self;
+    fn has(self, bit: Self) -> bool;
     fn set(&mut self, bit: Self);
     fn clear(&mut self, bit: Self);
+
     fn set_bits(&mut self, start: Self, end: Self, value: Self);
     fn get_bits(self, start: Self, end: Self) -> Self;
-    fn has(self, bit: Self) -> bool;
+
+    fn get_u8(self, bit: Self) -> u8;
+    fn get_bits_u8(self, start: Self, end: Self) -> u8;
 
     fn update(&mut self, bit: Self, cond: bool) {
-        if cond {
-            self.set(bit);
-        } else {
-            self.clear(bit);
-        }
+        if cond { self.set(bit) } else { self.clear(bit) }
     }
 }
 
@@ -19,6 +19,11 @@ impl Bitflag for u32 {
     #[inline(always)]
     fn get(self, bit: u32) -> u32 {
         (self >> bit) & 1
+    }
+
+    #[inline(always)]
+    fn get_u8(self, bit: u32) -> u8 {
+        self.get(bit) as u8
     }
 
     #[inline(always)]
@@ -43,6 +48,11 @@ impl Bitflag for u32 {
     }
 
     #[inline(always)]
+    fn get_bits_u8(self, start: u32, end: u32) -> u8 {
+        self.get_bits(start, end) as u8
+    }
+
+    #[inline(always)]
     fn has(self, bit: u32) -> bool {
         self.get(bit) == 1
     }
@@ -52,6 +62,11 @@ impl Bitflag for u16 {
     #[inline(always)]
     fn get(self, bit: u16) -> u16 {
         (self >> bit) & 1
+    }
+
+    #[inline(always)]
+    fn get_u8(self, bit: u16) -> u8 {
+        self.get(bit) as u8
     }
 
     #[inline(always)]
@@ -73,6 +88,11 @@ impl Bitflag for u16 {
     #[inline(always)]
     fn get_bits(self, start: u16, end: u16) -> u16 {
         (self >> start) & ((1 << (end - start + 1)) - 1)
+    }
+
+    #[inline(always)]
+    fn get_bits_u8(self, start: u16, end: u16) -> u8 {
+        self.get_bits(start, end) as u8
     }
 
     #[inline(always)]

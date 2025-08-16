@@ -4,7 +4,9 @@ pub mod bus;
 use asm::{compile_asm, format_bin_bytes, format_hex_bytes};
 use bus::TestBus;
 
-use crate::arm7tdmi::{Arm7tdmi, utils::Psr};
+use crate::arm7tdmi::Arm7tdmi;
+
+type CpuInitFn = Box<dyn Fn(&mut Arm7tdmi<TestBus>)>;
 
 #[derive(Default)]
 pub struct AsmTestBuilder {
@@ -12,11 +14,11 @@ pub struct AsmTestBuilder {
     thumb: bool,
     code: String,
     bytes: Vec<u8>,
-    setup: Option<Box<dyn Fn(&mut Arm7tdmi<TestBus>)>>,
+    setup: Option<CpuInitFn>,
 
     mem_assertions: Vec<(u32, u32)>,
-    reg_assertions: Vec<(usize, u32)>,
     flag_assertions: Vec<(u32, bool)>,
+    reg_assertions: Vec<(usize, u32)>,
 }
 
 impl AsmTestBuilder {
