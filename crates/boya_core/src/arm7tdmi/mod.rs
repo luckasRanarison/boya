@@ -28,17 +28,18 @@ pub struct Arm7tdmi<B: Bus> {
 
 impl<B: Bus> Arm7tdmi<B> {
     pub fn new(bus: B) -> Self {
-        let mut cpu = Self {
+        Self {
             reg: [0; 16],
             bank: Bank::default(),
-            cpsr: Psr::new(),
+            cpsr: Psr::default(),
             pipeline: Pipeline::default(),
             cycles: 0,
             bus,
-        };
+        }
+    }
 
-        cpu.handle_exception(Exception::Reset);
-        cpu
+    pub fn reset(&mut self) {
+        self.handle_exception(Exception::Reset);
     }
 
     pub fn step(&mut self) {
@@ -115,7 +116,11 @@ impl<B: Bus> Arm7tdmi<B> {
             OperandKind::Register => self.get_reg(operand.value as usize),
         };
 
-        if operand.negate { !value } else { value }
+        if operand.negate {
+            !value
+        } else {
+            value
+        }
     }
 }
 
@@ -284,14 +289,10 @@ impl<B: Bus> Arm7tdmi<B> {
 
 #[cfg(test)]
 impl<B: Bus> Arm7tdmi<B> {
-    pub fn new_thumb(bus: B) -> Self {
-        let mut cpu = Self::new(bus);
-
-        cpu.cpsr.set_thumb_mode();
-        cpu.set_pc(0x00);
-        cpu.reload_pipeline();
-
-        cpu
+    pub fn force_thumb_mode(&mut self) {
+        self.cpsr.set_thumb_mode();
+        self.set_pc(0x00);
+        self.reload_pipeline();
     }
 
     pub fn assert_mem(&self, assertions: Vec<(u32, u32)>) {

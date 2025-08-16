@@ -53,16 +53,6 @@ impl Debug for Psr {
 }
 
 impl Psr {
-    pub fn new() -> Self {
-        let mut flags = 0b0_u32;
-
-        flags.set(Self::I);
-        flags.set(Self::F);
-        flags.set_bits(0, 4, OperatingMode::SVC as u32);
-
-        Self(flags)
-    }
-
     pub fn value(self) -> u32 {
         self.0
     }
