@@ -1,6 +1,8 @@
 use std::fmt::Debug;
 
-use crate::utils::bitflags::Bitflag;
+use crate::{bus::Bus, utils::bitflags::Bitflag};
+
+use super::Arm7tdmi;
 
 /// +----------------------------------------------------------------------------+
 /// | N(31) | Z(30) | C(29) |   V(28)  |  U(27-8) | I(7) | F(6) | T(5)  | M(4-0) |
@@ -9,6 +11,12 @@ use crate::utils::bitflags::Bitflag;
 /// +----------------------------------------------------------------------------+
 #[derive(Default, Clone, Copy)]
 pub struct Psr(u32);
+
+impl From<u32> for Psr {
+    fn from(value: u32) -> Self {
+        Self(value)
+    }
+}
 
 impl Psr {
     /// N - Sign flag (0: Not Signed, 1:Signed)
@@ -50,7 +58,7 @@ impl Psr {
 
         flags.set(Self::I);
         flags.set(Self::F);
-        flags.set_bits(0, 4, OperatingMode::Svc as u32);
+        flags.set_bits(0, 4, OperatingMode::SVC as u32);
 
         Self(flags)
     }
@@ -80,15 +88,23 @@ impl Psr {
         self.0.set_bits(0, 4, mode as u32);
     }
 
+    pub fn set_arm_mode(&mut self) {
+        self.0.clear(Self::T);
+    }
+
+    pub fn set_thumb_mode(&mut self) {
+        self.0.set(Self::T);
+    }
+
     pub fn operating_mode(self) -> OperatingMode {
         match self.0.get_bits(0, 4) {
-            0b10000 => OperatingMode::Usr,
-            0b10001 => OperatingMode::Fiq,
-            0b10010 => OperatingMode::Irq,
-            0b10011 => OperatingMode::Svc,
-            0b10111 => OperatingMode::Abt,
-            0b11011 => OperatingMode::Und,
-            0b11111 => OperatingMode::Sys,
+            0b10000 => OperatingMode::USR,
+            0b10001 => OperatingMode::FIQ,
+            0b10010 => OperatingMode::IRQ,
+            0b10011 => OperatingMode::SVC,
+            0b10111 => OperatingMode::ABT,
+            0b11011 => OperatingMode::UND,
+            0b11111 => OperatingMode::SYS,
             value => unreachable!("invalid operating mode: {value:b}"),
         }
     }
@@ -107,13 +123,47 @@ impl Psr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum OperatingMode {
-    Usr = 0b10000,
-    Fiq = 0b10001,
-    Irq = 0b10010,
-    Svc = 0b10011,
-    Abt = 0b10111,
-    Und = 0b11011,
-    Sys = 0b11111,
+    USR = 0b10000,
+    FIQ = 0b10001,
+    IRQ = 0b10010,
+    SVC = 0b10011,
+    ABT = 0b10111,
+    UND = 0b11011,
+    SYS = 0b11111,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Exception {
+    Reset,
+    UndefinedInstruction,
+    SoftwareInterrupt,
+    PrefetchAbort,
+    DataAbort,
+    NormalInterrupt,
+    FastInterrupt,
+}
+
+impl<B: Bus> Arm7tdmi<B> {
+    pub fn handle_exception(&mut self, exception: Exception) {
+        let (op_mode, irq, fiq, vector) = match exception {
+            Exception::Reset => (OperatingMode::SVC, true, true, 0x00),
+            Exception::UndefinedInstruction => todo!(),
+            Exception::SoftwareInterrupt => todo!(),
+            Exception::PrefetchAbort => todo!(),
+            Exception::DataAbort => todo!(),
+            Exception::NormalInterrupt => todo!(),
+            Exception::FastInterrupt => todo!(),
+        };
+
+        self.cpsr.update(Psr::I, irq);
+        self.cpsr.update(Psr::F, irq);
+        self.cpsr.set_arm_mode();
+        self.cpsr.set_operating_mode(op_mode);
+        self.bank.set_spsr(op_mode, self.cpsr);
+
+        self.set_pc(vector);
+        self.reload_pipeline();
+    }
 }

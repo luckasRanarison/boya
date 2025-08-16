@@ -30,12 +30,6 @@ pub enum OperandKind {
     Register,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum AddSubOp {
-    Add,
-    Sub,
-}
-
 pub trait ToOperand {
     fn register(self) -> Operand;
     fn immediate(self) -> Operand;

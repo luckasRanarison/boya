@@ -1,5 +1,7 @@
 mod formats;
 
+pub use formats::InstructionFormat;
+
 use formats::*;
 
 use crate::{bus::Bus, utils::bitflags::Bitflag};
@@ -7,20 +9,11 @@ use crate::{bus::Bus, utils::bitflags::Bitflag};
 use super::{Arm7tdmi, common::ToOperand};
 
 impl<B: Bus> Arm7tdmi<B> {
-    pub fn fetch_thumb(&mut self) -> u16 {
-        let word = self.bus.read_u32(self.pc());
+    pub fn decode_thumb(&self, word: u32) -> InstructionFormat {
+        let is_aligned = self.pc() % 2 == 0;
+        let (lsb, msb) = if !is_aligned { (16, 31) } else { (0, 15) };
+        let instruction = word.get_bits(lsb, msb) as u16;
 
-        let instruction = match self.pc() % 2 == 0 {
-            false => (word & 0xFFFF0000) >> 16,
-            true => word & 0xFFFF,
-        };
-
-        self.increment_pc(2);
-
-        instruction as u16
-    }
-
-    pub fn decode_thumb(&self, instruction: u16) -> InstructionFormat {
         if instruction.get_bits(11, 15) == 0b00011 {
             InstructionFormat::Format2(Format2::from(instruction))
         } else if instruction.get_bits(13, 15) == 0b000 {

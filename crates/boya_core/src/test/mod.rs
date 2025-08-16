@@ -78,8 +78,10 @@ impl AsmTestBuilder {
         println!("hex: {formated_bytes}");
         println!("bin: {formated_bits}");
 
-        let mut cpu = Arm7tdmi::new(self.bus);
-        cpu.update_flag(Psr::T, self.thumb);
+        let mut cpu = match self.thumb {
+            true => Arm7tdmi::new_thumb(self.bus),
+            false => Arm7tdmi::new(self.bus),
+        };
 
         if let Some(setup) = self.setup {
             setup(&mut cpu);

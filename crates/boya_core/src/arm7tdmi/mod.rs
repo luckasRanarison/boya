@@ -1,11 +1,15 @@
+mod bank;
 mod common;
+mod pipeline;
 mod psr;
 mod thumb;
 
 use std::ops::{BitAnd, BitOr, BitXor};
 
-use common::{AddSubOp, Operand, OperandKind, ToOperand};
-use psr::{OperatingMode, Psr};
+use bank::Bank;
+use common::{Operand, OperandKind, ToOperand};
+use pipeline::Pipeline;
+use psr::{Exception, OperatingMode, Psr};
 
 use crate::{
     bus::Bus,
@@ -14,44 +18,44 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Arm7tdmi<B: Bus> {
-    reg: [u32; 16],    //  R0-R15
-    reg_fiq: [u32; 7], //  R8-R14
-    reg_svc: [u32; 2], // R13-R14
-    reg_abt: [u32; 2], // R13-R14
-    reg_irq: [u32; 2], // R13-R14
-    reg_und: [u32; 2], // R13-R14
-
+    reg: [u32; 16], // R0-R15
+    bank: Bank,
     cpsr: Psr,
-    spsr: [Psr; 5],
-
+    pipeline: Pipeline,
     cycles: u64,
     bus: B,
 }
 
 impl<B: Bus> Arm7tdmi<B> {
     pub fn new(bus: B) -> Self {
-        Self {
+        let mut cpu = Self {
             reg: [0; 16],
-            reg_fiq: [0; 7],
-            reg_svc: [0; 2],
-            reg_abt: [0; 2],
-            reg_irq: [0; 2],
-            reg_und: [0; 2],
+            bank: Bank::default(),
             cpsr: Psr::new(),
-            spsr: [Psr::default(); 5],
+            pipeline: Pipeline::default(),
             cycles: 0,
             bus,
-        }
+        };
+
+        cpu.handle_exception(Exception::Reset);
+        cpu
     }
 
     pub fn step(&mut self) {
+        let instruction = self.fetch_pipeline();
+
         if self.cpsr.has(Psr::T) {
-            let raw = self.fetch_thumb();
-            let decoded = self.decode_thumb(raw);
-            self.exec_thumb(decoded);
+            let decoded = self.decode_thumb(instruction);
+            self.pre_fetch();
+            self.exec_thumb(decoded); // PC is PC + 4
         } else {
             todo!()
         }
+    }
+
+    #[inline(always)]
+    pub fn fetch(&mut self) -> u32 {
+        self.bus.read_u32(self.pc())
     }
 
     #[inline(always)]
@@ -65,36 +69,31 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    fn increment_pc(&mut self, value: u32) {
-        self.reg[15] = self.pc().wrapping_add(value);
+    fn increment_pc(&mut self) {
+        println!("thumb: {}", self.cpsr.has(Psr::T));
+        self.reg[15] += if self.cpsr.has(Psr::T) { 2 } else { 4 };
     }
 
-    fn get_reg<I: Into<usize>>(&self, index: I) -> u32 {
+    fn get_reg<I>(&self, index: I) -> u32
+    where
+        I: Into<usize> + Copy,
+    {
         let mode = self.cpsr.operating_mode();
-        let index = index.into();
 
-        match (mode, index) {
-            (OperatingMode::Fiq, 8..14) => self.reg_fiq[index - 8],
-            (OperatingMode::Svc, 13..14) => self.reg_svc[index - 13],
-            (OperatingMode::Abt, 13..14) => self.reg_abt[index - 13],
-            (OperatingMode::Irq, 13..14) => self.reg_irq[index - 13],
-            (OperatingMode::Und, 13..14) => self.reg_und[index - 13],
-            (_, _) => self.reg[index],
-        }
+        self.bank
+            .get_reg(mode, index.into())
+            .unwrap_or_else(|| self.reg[index.into()])
     }
 
-    fn get_reg_mut<I: Into<usize>>(&mut self, index: I) -> &mut u32 {
+    fn get_reg_mut<I>(&mut self, index: I) -> &mut u32
+    where
+        I: Into<usize> + Copy,
+    {
         let mode = self.cpsr.operating_mode();
-        let index = index.into();
 
-        match (mode, index) {
-            (OperatingMode::Fiq, 8..14) => &mut self.reg_fiq[index - 8],
-            (OperatingMode::Svc, 13..14) => &mut self.reg_svc[index - 13],
-            (OperatingMode::Abt, 13..14) => &mut self.reg_abt[index - 13],
-            (OperatingMode::Irq, 13..14) => &mut self.reg_irq[index - 13],
-            (OperatingMode::Und, 13..14) => &mut self.reg_und[index - 13],
-            (_, _) => &mut self.reg[index],
-        }
+        self.bank
+            .get_reg_mut(mode, index.into())
+            .unwrap_or_else(|| &mut self.reg[index.into()])
     }
 
     #[inline(always)]
@@ -212,7 +211,7 @@ impl<B: Bus> Arm7tdmi<B> {
         let mut value = self.get_reg(rs);
 
         if value.get(0) == 0 {
-            self.cpsr.update(Psr::T, false);
+            self.cpsr.set_arm_mode();
             value.clear(1); // 32 word alignement
         }
 
@@ -279,8 +278,14 @@ impl<B: Bus> Arm7tdmi<B> {
 
 #[cfg(test)]
 impl<B: Bus> Arm7tdmi<B> {
-    pub fn update_flag(&mut self, flag: u32, value: bool) {
-        self.cpsr.update(flag, value);
+    pub fn new_thumb(bus: B) -> Self {
+        let mut cpu = Self::new(bus);
+
+        cpu.cpsr.set_thumb_mode();
+        cpu.set_pc(0x00);
+        cpu.reload_pipeline();
+
+        cpu
     }
 
     pub fn assert_mem(&self, assertions: Vec<(u32, u32)>) {
