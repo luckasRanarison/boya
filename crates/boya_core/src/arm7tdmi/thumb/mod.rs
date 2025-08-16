@@ -1,12 +1,55 @@
-mod formats;
+mod format_1;
+mod format_2;
+mod format_3;
+mod format_4;
+mod format_5;
+mod format_6;
 
-pub use formats::InstructionFormat;
+mod prelude {
+    pub use std::fmt::Debug;
 
-use formats::*;
+    pub use crate::arm7tdmi::common::{Operand, ToOperand};
+    pub use crate::arm7tdmi::Arm7tdmi;
+    pub use crate::bus::Bus;
+    pub use crate::utils::bitflags::Bitflag;
+}
 
-use crate::{bus::Bus, utils::bitflags::Bitflag};
+use format_1::Format1;
+use format_2::Format2;
+use format_3::Format3;
+use format_4::Format4;
+use format_5::Format5;
+use format_6::Format6;
 
-use super::{Arm7tdmi, common::ToOperand};
+use prelude::*;
+
+pub enum InstructionFormat {
+    /// Move shifted register
+    Format1(Format1),
+    /// Add/Substract
+    Format2(Format2),
+    /// Move/Compare/Add/Substract immediate
+    Format3(Format3),
+    /// ALU operations
+    Format4(Format4),
+    /// Hi register operations/branch exchange
+    Format5(Format5),
+    /// Load PC-relative
+    Format6(Format6),
+}
+
+impl Debug for InstructionFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InstructionFormat::Format1(op) => write!(f, "{op:?} ; format 1"),
+            InstructionFormat::Format2(op) => write!(f, "{op:?} ; format 2"),
+            InstructionFormat::Format3(op) => write!(f, "{op:?} ; format 3"),
+            InstructionFormat::Format4(op) => write!(f, "{op:?} ; format 4"),
+            InstructionFormat::Format5(op) => write!(f, "{op:?} ; format 5"),
+            InstructionFormat::Format6(op) => write!(f, "{op:?} ; format 6"),
+        }
+    }
+}
 
 impl<B: Bus> Arm7tdmi<B> {
     pub fn decode_thumb(&self, word: u32) -> InstructionFormat {
@@ -40,71 +83,6 @@ impl<B: Bus> Arm7tdmi<B> {
             InstructionFormat::Format5(op) => self.exec_thumb_format5(op),
             InstructionFormat::Format6(op) => self.exec_thumb_format6(op),
         }
-    }
-
-    pub fn exec_thumb_format1(&mut self, op: Format1) {
-        let nn = op.offset.immediate();
-
-        match op.opcode {
-            Opcode1::LSL => self.lsl(op.rs, nn, op.rd),
-            Opcode1::LSR => self.lsr(op.rs, nn, op.rd),
-            Opcode1::ASR => self.asr(op.rs, nn, op.rd),
-        }
-    }
-
-    pub fn exec_thumb_format2(&mut self, op: Format2) {
-        match op.opcode {
-            Opcode2::ADD => self.add(op.rs, op.nn, op.rd, true),
-            Opcode2::SUB => self.sub(op.rs, op.nn, op.rd),
-        }
-    }
-
-    pub fn exec_thumb_format3(&mut self, op: Format3) {
-        let nn = op.nn.immediate();
-
-        match op.opcode {
-            Opcode3::MOV => self.mov(op.rd, nn, true),
-            Opcode3::CMP => self.cmp(op.rd, nn),
-            Opcode3::ADD => self.add(op.rd, nn, op.rd, true),
-            Opcode3::SUB => self.sub(op.rd, nn, op.rd),
-        }
-    }
-
-    pub fn exec_thumb_format4(&mut self, op: Format4) {
-        match op.opcode {
-            Opcode4::AND => self.and(op.rd, op.rs),
-            Opcode4::EOR => self.eor(op.rd, op.rs),
-            Opcode4::LSL => self.lsl(op.rd, op.rs.register(), op.rd),
-            Opcode4::LSR => self.lsr(op.rd, op.rs.register(), op.rd),
-            Opcode4::ASR => self.asr(op.rd, op.rs.register(), op.rd),
-            Opcode4::ADC => self.adc(op.rd, op.rs.register(), op.rd),
-            Opcode4::SBC => self.sbc(op.rd, op.rs.register(), op.rd),
-            Opcode4::ROR => self.ror(op.rd, op.rs.register(), op.rd),
-            Opcode4::TST => self.tst(op.rd, op.rs),
-            Opcode4::NEG => self.neg(op.rd, op.rs),
-            Opcode4::CMP => self.cmp(op.rd, op.rs.register()),
-            Opcode4::CMN => self.cmn(op.rd, op.rs.register()),
-            Opcode4::ORR => self.orr(op.rd, op.rs),
-            Opcode4::MUL => self.mul(op.rd, op.rs.register(), op.rd),
-            Opcode4::BIC => self.bic(op.rd, op.rs),
-            Opcode4::MVN => self.mvn(op.rd, op.rs),
-        }
-    }
-
-    pub fn exec_thumb_format5(&mut self, op: Format5) {
-        match op.opcode {
-            Opcode5::ADD => self.add(op.rd, op.rs.register(), op.rd, false),
-            Opcode5::CMP => self.cmp(op.rd, op.rs.register()),
-            Opcode5::MOV => self.mov(op.rd, op.rs.register(), false),
-            Opcode5::BX => self.bx(op.rs),
-        }
-    }
-
-    pub fn exec_thumb_format6(&mut self, op: Format6) {
-        let address = self.pc() + op.nn as u32;
-        let word = self.bus.read_u32(address);
-        println!("address: {address}, word: {word}");
-        self.set_reg(op.rd, word);
     }
 }
 
