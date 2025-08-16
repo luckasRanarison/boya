@@ -23,24 +23,11 @@ impl TestBus {
 }
 
 impl Bus for TestBus {
-    fn read_u32(&self, address: u32) -> u32 {
-        let address = address as usize;
-
-        let b1 = self.memory[address];
-        let b2 = self.memory[address.wrapping_add(1)];
-        let b3 = self.memory[address.wrapping_add(2)];
-        let b4 = self.memory[address.wrapping_add(3)];
-
-        u32::from_le_bytes([b1, b2, b3, b4])
+    fn read_u8(&self, address: u32) -> u8 {
+        self.memory[(address as usize) % TEST_MEMORY_SIZE]
     }
 
-    fn write_u32(&mut self, address: u32, value: u32) {
-        let address = address as usize;
-        let bytes = value.to_le_bytes();
-
-        self.memory[address] = bytes[0];
-        self.memory[address.wrapping_add(1)] = bytes[1];
-        self.memory[address.wrapping_add(2)] = bytes[2];
-        self.memory[address.wrapping_add(3)] = bytes[2];
+    fn write_u8(&mut self, address: u32, value: u8) {
+        self.memory[(address as usize) % TEST_MEMORY_SIZE] = value;
     }
 }

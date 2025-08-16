@@ -1,5 +1,12 @@
 use std::fmt::Debug;
 
+#[derive(Debug)]
+pub enum DataType {
+    Byte,
+    HalfWord,
+    Word,
+}
+
 pub struct Operand {
     pub kind: OperandKind,
     pub value: u32,

@@ -4,11 +4,12 @@ mod format_3;
 mod format_4;
 mod format_5;
 mod format_6;
+mod format_7;
 
 mod prelude {
     pub use std::fmt::Debug;
 
-    pub use crate::arm7tdmi::common::{Operand, ToOperand};
+    pub use crate::arm7tdmi::common::{DataType, Operand, ToOperand};
     pub use crate::arm7tdmi::Arm7tdmi;
     pub use crate::bus::Bus;
     pub use crate::utils::bitflags::Bitflag;

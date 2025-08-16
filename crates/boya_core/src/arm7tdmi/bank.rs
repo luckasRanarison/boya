@@ -10,28 +10,6 @@ pub struct Bank {
 }
 
 impl Bank {
-    pub fn get_bank(&self, op_mode: OperatingMode) -> Option<(&[u32], usize)> {
-        match op_mode {
-            OperatingMode::FIQ => Some((&self.fiq, 8)),
-            OperatingMode::SVC => Some((&self.svc, 13)),
-            OperatingMode::ABT => Some((&self.abt, 13)),
-            OperatingMode::IRQ => Some((&self.irq, 13)),
-            OperatingMode::UND => Some((&self.und, 13)),
-            _ => None,
-        }
-    }
-
-    pub fn get_bank_mut(&mut self, op_mode: OperatingMode) -> Option<(&mut [u32], usize)> {
-        match op_mode {
-            OperatingMode::FIQ => Some((&mut self.fiq, 8)),
-            OperatingMode::SVC => Some((&mut self.svc, 13)),
-            OperatingMode::ABT => Some((&mut self.abt, 13)),
-            OperatingMode::IRQ => Some((&mut self.irq, 13)),
-            OperatingMode::UND => Some((&mut self.und, 13)),
-            _ => None,
-        }
-    }
-
     pub fn get_reg(&self, op_mode: OperatingMode, index: usize) -> Option<u32> {
         self.get_bank(op_mode)
             .filter(|(_, offset)| index >= *offset && index <= 14)
@@ -54,6 +32,28 @@ impl Bank {
             slice[slice.len() - 1] = cpsr.value();
         } else {
             unreachable!("invalid operating mode: {op_mode:?}");
+        }
+    }
+
+    fn get_bank(&self, op_mode: OperatingMode) -> Option<(&[u32], usize)> {
+        match op_mode {
+            OperatingMode::FIQ => Some((&self.fiq, 8)),
+            OperatingMode::SVC => Some((&self.svc, 13)),
+            OperatingMode::ABT => Some((&self.abt, 13)),
+            OperatingMode::IRQ => Some((&self.irq, 13)),
+            OperatingMode::UND => Some((&self.und, 13)),
+            _ => None,
+        }
+    }
+
+    fn get_bank_mut(&mut self, op_mode: OperatingMode) -> Option<(&mut [u32], usize)> {
+        match op_mode {
+            OperatingMode::FIQ => Some((&mut self.fiq, 8)),
+            OperatingMode::SVC => Some((&mut self.svc, 13)),
+            OperatingMode::ABT => Some((&mut self.abt, 13)),
+            OperatingMode::IRQ => Some((&mut self.irq, 13)),
+            OperatingMode::UND => Some((&mut self.und, 13)),
+            _ => None,
         }
     }
 }

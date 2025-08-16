@@ -7,7 +7,7 @@ mod thumb;
 use std::ops::{BitAnd, BitOr, BitXor};
 
 use bank::Bank;
-use common::{Operand, OperandKind, ToOperand};
+use common::{DataType, Operand, OperandKind, ToOperand};
 use pipeline::Pipeline;
 use psr::{Exception, OperatingMode, Psr};
 
@@ -227,6 +227,26 @@ impl<B: Bus> Arm7tdmi<B> {
 
         self.set_pc(value);
         self.reload_pipeline();
+    }
+
+    pub fn ldr(&mut self, rd: u8, addr: u32, kind: DataType) {
+        let value = match kind {
+            DataType::Byte => self.bus.read_u8(addr).into(),
+            DataType::HalfWord => self.bus.read_u16(addr).into(),
+            DataType::Word => self.bus.read_u32(addr),
+        };
+
+        self.set_reg(rd, value)
+    }
+
+    pub fn str(&mut self, rs: u8, addr: u32, kind: DataType) {
+        let value = self.get_reg(rs);
+
+        match kind {
+            DataType::Byte => self.bus.write_u8(addr, (value & 0xFF) as u8),
+            DataType::HalfWord => self.bus.write_u16(addr, (value & 0xFFFF) as u16),
+            DataType::Word => self.bus.write_u32(addr, value),
+        }
     }
 
     #[inline(always)]

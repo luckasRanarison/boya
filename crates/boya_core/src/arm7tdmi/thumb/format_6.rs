@@ -28,8 +28,6 @@ impl From<u16> for Format6 {
 
 impl<B: Bus> Arm7tdmi<B> {
     pub fn exec_thumb_format6(&mut self, op: Format6) {
-        let address = self.pc() + op.nn as u32;
-        let word = self.bus.read_u32(address);
-        self.set_reg(op.rd, word);
+        self.ldr(op.rd, self.pc() + op.nn as u32, DataType::Word);
     }
 }
