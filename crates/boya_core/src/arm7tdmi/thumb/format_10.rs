@@ -1,19 +1,19 @@
 use super::prelude::*;
 
-/// Load/store with immediate offset
+/// Load/store halfword
 /// +-------------------------------------------------------------------------------+
 /// | 15 | 14 | 13 | 12 | 11 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
 /// |-------------------------------------------------------------------------------|
-/// |  0 |  1 |  1 |    Op   |           Offset5      |      Rb      |      Rd      |
+/// |  1 |  0 |  0 |  0 | Op |           Offset5      |      Rb      |      Rd      |
 /// +-------------------------------------------------------------------------------+
-pub struct Format9 {
-    opcode: Opcode9,
+pub struct Format10 {
+    opcode: Opcode10,
     nn: u16,
     rb: u8,
     rd: u8,
 }
 
-impl Debug for Format9 {
+impl Debug for Format10 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -23,12 +23,10 @@ impl Debug for Format9 {
     }
 }
 
-impl From<u16> for Format9 {
+impl From<u16> for Format10 {
     fn from(value: u16) -> Self {
-        let opcode = Opcode9::from(value.get_bits(11, 12));
-        let is_word = matches!(opcode, Opcode9::STR | Opcode9::LDR);
-        let nn = value.get_bits(6, 10);
-        let nn = if is_word { nn << 2 } else { nn };
+        let opcode = Opcode10::from(value.get(11));
+        let nn = value.get_bits(6, 10) << 1;
         let rb = value.get_bits_u8(3, 5);
         let rd = value.get_bits_u8(0, 2);
 
@@ -37,34 +35,28 @@ impl From<u16> for Format9 {
 }
 
 #[derive(Debug)]
-pub enum Opcode9 {
-    STR,
-    LDR,
-    STRB,
-    LDRB,
+pub enum Opcode10 {
+    STRH,
+    LDRH,
 }
 
-impl From<u16> for Opcode9 {
+impl From<u16> for Opcode10 {
     fn from(value: u16) -> Self {
         match value {
-            0 => Self::STR,
-            1 => Self::LDR,
-            2 => Self::STRB,
-            3 => Self::LDRB,
-            _ => unreachable!("invalid format 9 opcode: {value:b}"),
+            0 => Self::STRH,
+            1 => Self::LDRH,
+            _ => unreachable!("invalid format 10 opcode: {value:b}"),
         }
     }
 }
 
 impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format9(&mut self, op: Format9) {
+    pub fn exec_thumb_format10(&mut self, op: Format10) {
         let addr = self.get_reg(op.rb) + op.nn as u32;
 
         match op.opcode {
-            Opcode9::STR => self.str(op.rd, addr),
-            Opcode9::LDR => self.ldr(op.rd, addr),
-            Opcode9::STRB => self.strb(op.rd, addr),
-            Opcode9::LDRB => self.ldrb(op.rd, addr),
+            Opcode10::STRH => self.strh(op.rd, addr),
+            Opcode10::LDRH => self.ldrh(op.rd, addr),
         }
     }
 }

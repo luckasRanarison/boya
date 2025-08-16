@@ -24,6 +24,9 @@ pub struct Arm7tdmi<B: Bus> {
 }
 
 impl<B: Bus> Arm7tdmi<B> {
+    const PC: usize = 15;
+    const SP: usize = 13;
+
     pub fn new(bus: B) -> Self {
         Self {
             reg: [0; 16],
@@ -61,23 +64,29 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
+    fn sp(&self) -> u32 {
+        self.get_reg(Self::SP)
+    }
+
+    #[inline(always)]
     fn pc(&self) -> u32 {
-        self.reg[15]
+        self.reg[Self::PC]
     }
 
     #[inline(always)]
     fn set_pc(&mut self, value: u32) {
-        self.reg[15] = value;
+        self.reg[Self::PC] = value;
     }
 
     #[inline(always)]
     fn increment_pc(&mut self) {
-        self.reg[15] += if self.cpsr.has(Psr::T) { 2 } else { 4 };
+        self.reg[Self::PC] += if self.cpsr.has(Psr::T) { 2 } else { 4 };
     }
 
     fn align_pc(&mut self) {
         let mask = if self.cpsr.has(Psr::T) { !0b01 } else { !0b11 }; // half-word | word
         let value = self.pc() & mask;
+
         self.set_pc(value);
     }
 
@@ -117,7 +126,11 @@ impl<B: Bus> Arm7tdmi<B> {
             OperandKind::Register => self.get_reg(operand.value as usize),
         };
 
-        if operand.negate { !value } else { value }
+        if operand.negate {
+            !value
+        } else {
+            value
+        }
     }
 }
 
@@ -132,6 +145,7 @@ impl<B: Bus> Arm7tdmi<B> {
     pub fn assert_mem(&self, assertions: Vec<(u32, u32)>) {
         for (address, expected) in assertions {
             let value = self.bus.read_u32(address);
+
             assert_eq!(
                 value, expected,
                 "expected 0x{expected:x} at @{address:x}, got 0x{value:x}"
@@ -142,6 +156,7 @@ impl<B: Bus> Arm7tdmi<B> {
     pub fn assert_reg(&self, assertions: Vec<(usize, u32)>) {
         for (index, expected) in assertions {
             let value = self.get_reg(index);
+
             assert_eq!(
                 value, expected,
                 "expected 0x{expected:x} at R{index}, got 0x{value:x}"
@@ -154,6 +169,7 @@ impl<B: Bus> Arm7tdmi<B> {
             let value = self.cpsr.has(flag);
             let name = Psr::format_flag(flag);
             let status = if expected { "set" } else { "cleared" };
+
             assert_eq!(
                 value, expected,
                 "expected flag {name} to be {status}, flags: {:?}",
