@@ -80,15 +80,23 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn ldrb(&mut self, rd: u8, addr: u32) {
-        self.ldr_op(rd, addr, DataType::Byte);
+        self.ldr_op(rd, addr, DataType::Byte, false);
     }
 
     pub fn ldrh(&mut self, rd: u8, addr: u32) {
-        self.ldr_op(rd, addr, DataType::HalfWord);
+        self.ldr_op(rd, addr, DataType::HalfWord, false);
     }
 
     pub fn ldr(&mut self, rd: u8, addr: u32) {
-        self.ldr_op(rd, addr, DataType::Word);
+        self.ldr_op(rd, addr, DataType::Word, false);
+    }
+
+    pub fn ldsb(&mut self, rd: u8, addr: u32) {
+        self.ldr_op(rd, addr, DataType::Byte, true);
+    }
+
+    pub fn ldsh(&mut self, rd: u8, addr: u32) {
+        self.ldr_op(rd, addr, DataType::HalfWord, true);
     }
 
     pub fn strb(&mut self, rd: u8, addr: u32) {

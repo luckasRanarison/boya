@@ -8,28 +8,6 @@ use super::{
 
 impl<B: Bus> Arm7tdmi<B> {
     #[inline(always)]
-    pub fn ldr_op(&mut self, rd: u8, addr: u32, kind: DataType) {
-        let value = match kind {
-            DataType::Byte => self.bus.read_u8(addr).into(),
-            DataType::HalfWord => self.bus.read_u16(addr).into(),
-            DataType::Word => self.bus.read_u32(addr),
-        };
-
-        self.set_reg(rd, value)
-    }
-
-    #[inline(always)]
-    pub fn str_op(&mut self, rs: u8, addr: u32, kind: DataType) {
-        let value = self.get_reg(rs);
-
-        match kind {
-            DataType::Byte => self.bus.write_u8(addr, (value & 0xFF) as u8),
-            DataType::HalfWord => self.bus.write_u16(addr, (value & 0xFFFF) as u16),
-            DataType::Word => self.bus.write_u32(addr, value),
-        }
-    }
-
-    #[inline(always)]
     pub fn add_sub_op(
         &mut self,
         lhs: Operand,
@@ -83,6 +61,30 @@ impl<B: Bus> Arm7tdmi<B> {
 
         if let Some(rd) = dst {
             self.set_reg(rd, result);
+        }
+    }
+
+    #[inline(always)]
+    pub fn ldr_op(&mut self, rd: u8, addr: u32, kind: DataType, signed: bool) {
+        let value = match kind {
+            DataType::Byte if signed => self.bus.read_u8(addr) as i8 as i32 as u32,
+            DataType::HalfWord if signed => self.bus.read_u16(addr) as i8 as i32 as u32,
+            DataType::Byte => self.bus.read_u8(addr).into(),
+            DataType::HalfWord => self.bus.read_u16(addr).into(),
+            DataType::Word => self.bus.read_u32(addr),
+        };
+
+        self.set_reg(rd, value)
+    }
+
+    #[inline(always)]
+    pub fn str_op(&mut self, rs: u8, addr: u32, kind: DataType) {
+        let value = self.get_reg(rs);
+
+        match kind {
+            DataType::Byte => self.bus.write_u8(addr, (value & 0xFF) as u8),
+            DataType::HalfWord => self.bus.write_u16(addr, (value & 0xFFFF) as u16),
+            DataType::Word => self.bus.write_u32(addr, value),
         }
     }
 }

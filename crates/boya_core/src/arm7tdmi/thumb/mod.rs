@@ -5,6 +5,8 @@ mod format_4;
 mod format_5;
 mod format_6;
 mod format_7;
+mod format_8;
+mod format_9;
 
 mod prelude {
     pub use std::fmt::Debug;
@@ -21,8 +23,10 @@ use format_3::Format3;
 use format_4::Format4;
 use format_5::Format5;
 use format_6::Format6;
-
 use format_7::Format7;
+use format_8::Format8;
+use format_9::Format9;
+
 use prelude::*;
 
 pub enum InstructionFormat {
@@ -40,6 +44,10 @@ pub enum InstructionFormat {
     Format6(Format6),
     /// Load/Store with register offset
     Format7(Format7),
+    /// Load/store sign-extended byte/halfword
+    Format8(Format8),
+    /// Load/store with immediate offset
+    Format9(Format9),
 }
 
 impl Debug for InstructionFormat {
@@ -52,6 +60,8 @@ impl Debug for InstructionFormat {
             InstructionFormat::Format5(op) => write!(f, "{op:?} ; format 5"),
             InstructionFormat::Format6(op) => write!(f, "{op:?} ; format 6"),
             InstructionFormat::Format7(op) => write!(f, "{op:?} ; format 7"),
+            InstructionFormat::Format8(op) => write!(f, "{op:?} ; format 8"),
+            InstructionFormat::Format9(op) => write!(f, "{op:?} ; format 9"),
         }
     }
 }
@@ -60,22 +70,27 @@ impl<B: Bus> Arm7tdmi<B> {
     pub fn decode_thumb(&self, word: u32) -> InstructionFormat {
         let word_aligned = self.pc() & 0b1 == 0;
         let (lsb, msb) = if word_aligned { (0, 15) } else { (16, 31) };
-        let instruction = word.get_bits(lsb, msb) as u16;
+        let instr = word.get_bits(lsb, msb) as u16;
 
-        if instruction.get_bits(11, 15) == 0b00011 {
-            InstructionFormat::Format2(Format2::from(instruction))
-        } else if instruction.get_bits(13, 15) == 0b000 {
-            InstructionFormat::Format1(Format1::from(instruction))
-        } else if instruction.get_bits(13, 15) == 0b001 {
-            InstructionFormat::Format3(Format3::from(instruction))
-        } else if instruction.get_bits(10, 15) == 0b010000 {
-            InstructionFormat::Format4(Format4::from(instruction))
-        } else if instruction.get_bits(10, 15) == 0b010001 {
-            InstructionFormat::Format5(Format5::from(instruction))
-        } else if instruction.get_bits(11, 15) == 0b01001 {
-            InstructionFormat::Format6(Format6::from(instruction))
-        } else if instruction.get_bits(12, 15) == 0b0101 {
-            InstructionFormat::Format7(Format7::from(instruction))
+        // the order is important!
+        if instr.get_bits(11, 15) == 0b00011 {
+            InstructionFormat::Format2(Format2::from(instr))
+        } else if instr.get_bits(13, 15) == 0b000 {
+            InstructionFormat::Format1(Format1::from(instr))
+        } else if instr.get_bits(13, 15) == 0b001 {
+            InstructionFormat::Format3(Format3::from(instr))
+        } else if instr.get_bits(10, 15) == 0b010000 {
+            InstructionFormat::Format4(Format4::from(instr))
+        } else if instr.get_bits(10, 15) == 0b010001 {
+            InstructionFormat::Format5(Format5::from(instr))
+        } else if instr.get_bits(11, 15) == 0b01001 {
+            InstructionFormat::Format6(Format6::from(instr))
+        } else if instr.get_bits(12, 15) == 0b0101 && instr.has(9) {
+            InstructionFormat::Format8(Format8::from(instr))
+        } else if instr.get_bits(12, 15) == 0b0101 {
+            InstructionFormat::Format7(Format7::from(instr))
+        } else if instr.get_bits(13, 15) == 0b011 {
+            InstructionFormat::Format9(Format9::from(instr))
         } else {
             todo!()
         }
@@ -90,6 +105,8 @@ impl<B: Bus> Arm7tdmi<B> {
             InstructionFormat::Format5(op) => self.exec_thumb_format5(op),
             InstructionFormat::Format6(op) => self.exec_thumb_format6(op),
             InstructionFormat::Format7(op) => self.exec_thumb_format7(op),
+            InstructionFormat::Format8(op) => self.exec_thumb_format8(op),
+            InstructionFormat::Format9(op) => self.exec_thumb_format9(op),
         }
     }
 }
@@ -309,5 +326,41 @@ mod tests {
             .assert_mem(11, 3)
             .assert_reg(3, 3)
             .run(5);
+    }
+
+    #[test]
+    fn test_lds() {
+        let asm = r"
+            mov   r0, 10
+            mov   r1, 11
+            ldrsb r2, [r0, r0]
+            ldrsh r3, [r0, r1]
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .setup(|cpu| {
+                cpu.bus.write_u8(20, -1_i8 as u8);
+                cpu.bus.write_u16(21, -5_i16 as u16);
+            })
+            .asm(asm)
+            .assert_reg(2, -1_i32 as u32)
+            .assert_reg(3, -5_i32 as u32)
+            .run(4);
+    }
+
+    #[test]
+    fn test_ldr_immediate() {
+        let asm = r"
+            mov r0, 7
+            ldr r1, [r0, 116]
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .setup(|cpu| cpu.bus.write_u32(123, 5))
+            .assert_reg(1, 5)
+            .run(2);
     }
 }
