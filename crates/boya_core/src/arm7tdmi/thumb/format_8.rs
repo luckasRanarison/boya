@@ -7,7 +7,7 @@ use super::prelude::*;
 /// |  0 |  1 |  0 |  1 |    Op   |  1 |      Ro      |      Rb      |      Rd      |
 /// +-------------------------------------------------------------------------------+
 pub struct Format8 {
-    op: Opcode8,
+    op: Opcode,
     ro: u8,
     rb: u8,
     rd: u8,
@@ -28,7 +28,7 @@ impl Debug for Format8 {
 
 impl From<u16> for Format8 {
     fn from(value: u16) -> Self {
-        let op = Opcode8::from(value.get_bits(10, 11));
+        let op = Opcode::from(value.get_bits(10, 11));
         let ro = value.get_bits_u8(6, 8);
         let rb = value.get_bits_u8(3, 5);
         let rd = value.get_bits_u8(0, 2);
@@ -38,13 +38,13 @@ impl From<u16> for Format8 {
 }
 
 #[derive(Debug)]
-pub enum Opcode8 {
+enum Opcode {
     STRH,
     LDSB,
     LDSH,
 }
 
-impl From<u16> for Opcode8 {
+impl From<u16> for Opcode {
     fn from(value: u16) -> Self {
         match value {
             0 => Self::STRH,
@@ -60,9 +60,9 @@ impl<B: Bus> Arm7tdmi<B> {
         let addr = self.get_reg(instr.rb) + self.get_reg(instr.ro);
 
         match instr.op {
-            Opcode8::STRH => self.strh(instr.rd, addr),
-            Opcode8::LDSB => self.ldsb(instr.rd, addr),
-            Opcode8::LDSH => self.ldsh(instr.rd, addr),
+            Opcode::STRH => self.strh(instr.rd, addr),
+            Opcode::LDSB => self.ldsb(instr.rd, addr),
+            Opcode::LDSH => self.ldsh(instr.rd, addr),
         }
     }
 }

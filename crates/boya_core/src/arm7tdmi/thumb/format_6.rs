@@ -7,8 +7,8 @@ pub use super::prelude::*;
 /// |  0 |  1 |  0 |  0 |  1 |      Rd      |              Offset8                  |
 /// +-------------------------------------------------------------------------------+
 pub struct Format6 {
-    pub rd: u8,
-    pub nn: u16,
+    rd: u8,
+    nn: u16,
 }
 
 impl Debug for Format6 {

@@ -7,7 +7,7 @@ use super::prelude::*;
 /// |  0 |  1 |  1 |    Op   |           Offset5      |      Rb      |      Rd      |
 /// +-------------------------------------------------------------------------------+
 pub struct Format9 {
-    op: Opcode9,
+    op: Opcode,
     nn: u16,
     rb: u8,
     rd: u8,
@@ -28,8 +28,8 @@ impl Debug for Format9 {
 
 impl From<u16> for Format9 {
     fn from(value: u16) -> Self {
-        let op = Opcode9::from(value.get_bits(11, 12));
-        let is_word = matches!(op, Opcode9::STR | Opcode9::LDR);
+        let op = Opcode::from(value.get_bits(11, 12));
+        let is_word = matches!(op, Opcode::STR | Opcode::LDR);
         let nn = value.get_bits(6, 10);
         let nn = if is_word { nn << 2 } else { nn };
         let rb = value.get_bits_u8(3, 5);
@@ -40,14 +40,14 @@ impl From<u16> for Format9 {
 }
 
 #[derive(Debug)]
-pub enum Opcode9 {
+enum Opcode {
     STR,
     LDR,
     STRB,
     LDRB,
 }
 
-impl From<u16> for Opcode9 {
+impl From<u16> for Opcode {
     fn from(value: u16) -> Self {
         match value {
             0 => Self::STR,
@@ -64,10 +64,10 @@ impl<B: Bus> Arm7tdmi<B> {
         let addr = self.get_reg(instr.rb) + instr.nn as u32;
 
         match instr.op {
-            Opcode9::STR => self.str(instr.rd, addr),
-            Opcode9::LDR => self.ldr(instr.rd, addr),
-            Opcode9::STRB => self.strb(instr.rd, addr),
-            Opcode9::LDRB => self.ldrb(instr.rd, addr),
+            Opcode::STR => self.str(instr.rd, addr),
+            Opcode::LDR => self.ldr(instr.rd, addr),
+            Opcode::STRB => self.strb(instr.rd, addr),
+            Opcode::LDRB => self.ldrb(instr.rd, addr),
         }
     }
 }

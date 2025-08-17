@@ -7,10 +7,10 @@ use super::prelude::*;
 /// |  0 |  0 |  0 |  1 |  1 |  I | Op |  Rn/Offset3  |      Rs      |      Rd      |
 /// +-------------------------------------------------------------------------------+
 pub struct Format2 {
-    pub op: Opcode2,
-    pub nn: Operand,
-    pub rs: u8,
-    pub rd: u8,
+    op: Opcode,
+    nn: Operand,
+    rs: u8,
+    rd: u8,
 }
 
 impl Debug for Format2 {
@@ -28,7 +28,7 @@ impl Debug for Format2 {
 
 impl From<u16> for Format2 {
     fn from(value: u16) -> Self {
-        let op = Opcode2::from(value.get_bits(9, 10));
+        let op = Opcode::from(value.get_bits(9, 10));
         let operand = value.get_bits(6, 8);
         let rs = value.get_bits_u8(3, 5);
         let rd = value.get_bits_u8(0, 2);
@@ -43,12 +43,12 @@ impl From<u16> for Format2 {
 }
 
 #[derive(Debug)]
-pub enum Opcode2 {
+enum Opcode {
     ADD,
     SUB,
 }
 
-impl From<u16> for Opcode2 {
+impl From<u16> for Opcode {
     fn from(value: u16) -> Self {
         match value {
             0b00 | 0b10 => Self::ADD,
@@ -61,8 +61,8 @@ impl From<u16> for Opcode2 {
 impl<B: Bus> Arm7tdmi<B> {
     pub fn exec_thumb_format2(&mut self, instr: Format2) {
         match instr.op {
-            Opcode2::ADD => self.add(instr.rs, instr.nn, instr.rd, true),
-            Opcode2::SUB => self.sub(instr.rs, instr.nn, instr.rd),
+            Opcode::ADD => self.add(instr.rs, instr.nn, instr.rd, true),
+            Opcode::SUB => self.sub(instr.rs, instr.nn, instr.rd),
         }
     }
 }

@@ -7,9 +7,9 @@ use super::prelude::*;
 /// |  0 |  0 |  1 |    Op   |    Rd   |                   Offset8                  |
 /// +-------------------------------------------------------------------------------+
 pub struct Format3 {
-    pub op: Opcode3,
-    pub rd: u8,
-    pub nn: u8,
+    op: Opcode,
+    rd: u8,
+    nn: u8,
 }
 
 impl Debug for Format3 {
@@ -20,7 +20,7 @@ impl Debug for Format3 {
 
 impl From<u16> for Format3 {
     fn from(value: u16) -> Self {
-        let op = Opcode3::from(value.get_bits(11, 12));
+        let op = Opcode::from(value.get_bits(11, 12));
         let rd = value.get_bits_u8(8, 10);
         let nn = value.get_bits_u8(0, 7);
 
@@ -29,14 +29,14 @@ impl From<u16> for Format3 {
 }
 
 #[derive(Debug)]
-pub enum Opcode3 {
+enum Opcode {
     MOV,
     CMP,
     ADD,
     SUB,
 }
 
-impl From<u16> for Opcode3 {
+impl From<u16> for Opcode {
     fn from(value: u16) -> Self {
         match value {
             0b00 => Self::MOV,
@@ -53,10 +53,10 @@ impl<B: Bus> Arm7tdmi<B> {
         let nn = instr.nn.imm();
 
         match instr.op {
-            Opcode3::MOV => self.mov(instr.rd, nn, true),
-            Opcode3::CMP => self.cmp(instr.rd, nn),
-            Opcode3::ADD => self.add(instr.rd, nn, instr.rd, true),
-            Opcode3::SUB => self.sub(instr.rd, nn, instr.rd),
+            Opcode::MOV => self.mov(instr.rd, nn, true),
+            Opcode::CMP => self.cmp(instr.rd, nn),
+            Opcode::ADD => self.add(instr.rd, nn, instr.rd, true),
+            Opcode::SUB => self.sub(instr.rd, nn, instr.rd),
         }
     }
 }

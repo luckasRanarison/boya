@@ -7,7 +7,7 @@ use super::prelude::*;
 /// |  1 |  0 |  0 |  1 | Op |      Rd      |                Offset8                |
 /// +-------------------------------------------------------------------------------+
 pub struct Format11 {
-    op: Opcode11,
+    op: Opcode,
     nn: u16,
     rd: u8,
 }
@@ -26,7 +26,7 @@ impl Debug for Format11 {
 
 impl From<u16> for Format11 {
     fn from(value: u16) -> Self {
-        let op = Opcode11::from(value.get(11));
+        let op = Opcode::from(value.get(11));
         let rd = value.get_bits_u8(8, 10);
         let nn = value.get_bits(0, 7) << 2;
 
@@ -35,12 +35,12 @@ impl From<u16> for Format11 {
 }
 
 #[derive(Debug)]
-pub enum Opcode11 {
+enum Opcode {
     STR,
     LDR,
 }
 
-impl From<u16> for Opcode11 {
+impl From<u16> for Opcode {
     fn from(value: u16) -> Self {
         match value {
             0 => Self::STR,
@@ -55,8 +55,8 @@ impl<B: Bus> Arm7tdmi<B> {
         let instr = self.sp() + op.nn as u32;
 
         match op.op {
-            Opcode11::STR => self.str(op.rd, instr),
-            Opcode11::LDR => self.ldr(op.rd, instr),
+            Opcode::STR => self.str(op.rd, instr),
+            Opcode::LDR => self.ldr(op.rd, instr),
         }
     }
 }

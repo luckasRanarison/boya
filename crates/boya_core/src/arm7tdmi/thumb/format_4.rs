@@ -7,9 +7,9 @@ use super::prelude::*;
 /// |  0 |  1 |  0 |  0 |  0 |  0 |         Op        |      Rs      |      Rd      |
 /// +-------------------------------------------------------------------------------+
 pub struct Format4 {
-    pub op: Opcode4,
-    pub rs: u8,
-    pub rd: u8,
+    op: Opcode,
+    rs: u8,
+    rd: u8,
 }
 
 impl Debug for Format4 {
@@ -20,7 +20,7 @@ impl Debug for Format4 {
 
 impl From<u16> for Format4 {
     fn from(value: u16) -> Self {
-        let op = Opcode4::from(value.get_bits(6, 9));
+        let op = Opcode::from(value.get_bits(6, 9));
         let rs = value.get_bits_u8(3, 5);
         let rd = value.get_bits_u8(0, 2);
 
@@ -29,7 +29,7 @@ impl From<u16> for Format4 {
 }
 
 #[derive(Debug)]
-pub enum Opcode4 {
+enum Opcode {
     AND,
     EOR,
     LSL,
@@ -48,7 +48,7 @@ pub enum Opcode4 {
     MVN,
 }
 
-impl From<u16> for Opcode4 {
+impl From<u16> for Opcode {
     fn from(value: u16) -> Self {
         match value {
             0x0 => Self::AND,
@@ -75,22 +75,22 @@ impl From<u16> for Opcode4 {
 impl<B: Bus> Arm7tdmi<B> {
     pub fn exec_thumb_format4(&mut self, instr: Format4) {
         match instr.op {
-            Opcode4::AND => self.and(instr.rd, instr.rs),
-            Opcode4::EOR => self.eor(instr.rd, instr.rs),
-            Opcode4::LSL => self.lsl(instr.rd, instr.rs.reg(), instr.rd),
-            Opcode4::LSR => self.lsr(instr.rd, instr.rs.reg(), instr.rd),
-            Opcode4::ASR => self.asr(instr.rd, instr.rs.reg(), instr.rd),
-            Opcode4::ADC => self.adc(instr.rd, instr.rs.reg(), instr.rd),
-            Opcode4::SBC => self.sbc(instr.rd, instr.rs.reg(), instr.rd),
-            Opcode4::ROR => self.ror(instr.rd, instr.rs.reg(), instr.rd),
-            Opcode4::TST => self.tst(instr.rd, instr.rs),
-            Opcode4::NEG => self.neg(instr.rd, instr.rs),
-            Opcode4::CMP => self.cmp(instr.rd, instr.rs.reg()),
-            Opcode4::CMN => self.cmn(instr.rd, instr.rs.reg()),
-            Opcode4::ORR => self.orr(instr.rd, instr.rs),
-            Opcode4::MUL => self.mul(instr.rd, instr.rs.reg(), instr.rd),
-            Opcode4::BIC => self.bic(instr.rd, instr.rs),
-            Opcode4::MVN => self.mvn(instr.rd, instr.rs),
+            Opcode::AND => self.and(instr.rd, instr.rs),
+            Opcode::EOR => self.eor(instr.rd, instr.rs),
+            Opcode::LSL => self.lsl(instr.rd, instr.rs.reg(), instr.rd),
+            Opcode::LSR => self.lsr(instr.rd, instr.rs.reg(), instr.rd),
+            Opcode::ASR => self.asr(instr.rd, instr.rs.reg(), instr.rd),
+            Opcode::ADC => self.adc(instr.rd, instr.rs.reg(), instr.rd),
+            Opcode::SBC => self.sbc(instr.rd, instr.rs.reg(), instr.rd),
+            Opcode::ROR => self.ror(instr.rd, instr.rs.reg(), instr.rd),
+            Opcode::TST => self.tst(instr.rd, instr.rs),
+            Opcode::NEG => self.neg(instr.rd, instr.rs),
+            Opcode::CMP => self.cmp(instr.rd, instr.rs.reg()),
+            Opcode::CMN => self.cmn(instr.rd, instr.rs.reg()),
+            Opcode::ORR => self.orr(instr.rd, instr.rs),
+            Opcode::MUL => self.mul(instr.rd, instr.rs.reg(), instr.rd),
+            Opcode::BIC => self.bic(instr.rd, instr.rs),
+            Opcode::MVN => self.mvn(instr.rd, instr.rs),
         }
     }
 }
