@@ -23,11 +23,11 @@ impl TestBus {
 }
 
 impl Bus for TestBus {
-    fn read_u8(&self, address: u32) -> u8 {
+    fn read_byte(&self, address: u32) -> u8 {
         self.memory[(address as usize) % TEST_MEMORY_SIZE]
     }
 
-    fn write_u8(&mut self, address: u32, value: u8) {
+    fn write_byte(&mut self, address: u32, value: u8) {
         self.memory[(address as usize) % TEST_MEMORY_SIZE] = value;
     }
 }

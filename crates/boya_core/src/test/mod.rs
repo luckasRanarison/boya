@@ -1,10 +1,10 @@
-pub mod asm;
-pub mod bus;
+mod asm;
+mod bus;
 
 use asm::{compile_asm, format_bin_bytes, format_hex_bytes};
 use bus::TestBus;
 
-use crate::arm7tdmi::Arm7tdmi;
+use crate::arm7tdmi::{Arm7tdmi, test::DataType};
 
 type CpuInitFn = Box<dyn Fn(&mut Arm7tdmi<TestBus>)>;
 
@@ -15,10 +15,11 @@ pub struct AsmTestBuilder {
     code: String,
     bytes: Vec<u8>,
     setup: Option<CpuInitFn>,
+    sp: Option<u32>,
 
-    mem_assertions: Vec<(u32, u32)>,
     flag_assertions: Vec<(u32, bool)>,
     reg_assertions: Vec<(usize, u32)>,
+    mem_assertions: Vec<(u32, u32, DataType)>,
 }
 
 impl AsmTestBuilder {
@@ -49,8 +50,18 @@ impl AsmTestBuilder {
         self
     }
 
-    pub fn assert_mem(mut self, address: u32, expected: u32) -> Self {
-        self.mem_assertions.push((address, expected));
+    pub fn assert_byte(mut self, addr: u32, expected: u32) -> Self {
+        self.mem_assertions.push((addr, expected, DataType::Byte));
+        self
+    }
+
+    pub fn assert_hword(mut self, addr: u32, expected: u32) -> Self {
+        self.mem_assertions.push((addr, expected, DataType::HWord));
+        self
+    }
+
+    pub fn assert_word(mut self, addr: u32, expected: u32) -> Self {
+        self.mem_assertions.push((addr, expected, DataType::Word));
         self
     }
 
@@ -72,6 +83,11 @@ impl AsmTestBuilder {
         self
     }
 
+    pub fn with_sp(mut self, value: u32) -> Self {
+        self.sp = Some(value);
+        self
+    }
+
     pub fn run(self, steps: usize) {
         let formated_bits = format_bin_bytes(&self.bytes);
         let formated_bytes = format_hex_bytes(&self.bytes);
@@ -86,6 +102,10 @@ impl AsmTestBuilder {
 
         if self.thumb {
             cpu.force_thumb_mode();
+        }
+
+        if let Some(sp) = self.sp {
+            cpu.set_sp(sp);
         }
 
         if let Some(setup) = self.setup {

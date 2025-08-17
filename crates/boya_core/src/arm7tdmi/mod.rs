@@ -11,6 +11,9 @@ use common::{Operand, OperandKind};
 use pipeline::Pipeline;
 use psr::{Exception, Psr};
 
+#[cfg(test)]
+use common::DataType;
+
 use crate::bus::Bus;
 
 #[derive(Debug)]
@@ -61,7 +64,7 @@ impl<B: Bus> Arm7tdmi<B> {
 
     #[inline(always)]
     pub fn fetch(&mut self) -> u32 {
-        self.bus.read_u32(self.pc())
+        self.bus.read_word(self.pc())
     }
 
     #[inline(always)]
@@ -92,6 +95,11 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
+    pub fn set_sp(&mut self, value: u32) {
+        *self.get_reg_mut(Self::SP) = value;
+    }
+
+    #[inline(always)]
     fn increment_sp(&mut self) {
         *self.get_reg_mut(Self::SP) += 4;
     }
@@ -106,12 +114,12 @@ impl<B: Bus> Arm7tdmi<B> {
         let value = self.get_reg(rs);
 
         self.decrement_sp();
-        self.bus.write_u32(self.sp(), value);
+        self.bus.write_word(self.sp(), value);
     }
 
     #[inline(always)]
     fn pop_sp(&mut self, rd: usize) {
-        let value = self.bus.read_u32(self.sp());
+        let value = self.bus.read_word(self.sp());
 
         self.increment_sp();
         self.set_reg(rd, value);
@@ -153,11 +161,7 @@ impl<B: Bus> Arm7tdmi<B> {
             _ => self.get_reg(operand.value as usize),
         };
 
-        if operand.negate {
-            !value
-        } else {
-            value
-        }
+        if operand.negate { !value } else { value }
     }
 }
 
@@ -169,9 +173,13 @@ impl<B: Bus> Arm7tdmi<B> {
         self.reload_pipeline();
     }
 
-    pub fn assert_mem(&self, assertions: Vec<(u32, u32)>) {
-        for (address, expected) in assertions {
-            let value = self.bus.read_u32(address);
+    pub fn assert_mem(&self, assertions: Vec<(u32, u32, DataType)>) {
+        for (address, expected, data_type) in assertions {
+            let value = match data_type {
+                DataType::Byte => self.bus.read_byte(address).into(),
+                DataType::HWord => self.bus.read_hword(address).into(),
+                DataType::Word => self.bus.read_word(address),
+            };
 
             assert_eq!(
                 value, expected,
@@ -207,6 +215,9 @@ impl<B: Bus> Arm7tdmi<B> {
 }
 
 #[cfg(test)]
-pub mod utils {
-    pub use super::psr::Psr;
+pub mod test {
+    use super::*;
+
+    pub use common::DataType;
+    pub use psr::Psr;
 }

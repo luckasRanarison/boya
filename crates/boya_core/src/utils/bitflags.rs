@@ -1,52 +1,4 @@
-use std::ops::{BitAnd, ShrAssign};
-
-pub trait BitIter: Sized {
-    fn iter_bit(self) -> impl Iterator<Item = u8>;
-}
-
-impl<T> BitIter for T
-where
-    T: BitAnd<Output = Self> + ShrAssign + From<u8> + PartialEq + Copy,
-{
-    fn iter_bit(self) -> impl Iterator<Item = u8> {
-        let mut shifted = self;
-        let mut index = 0;
-
-        std::iter::from_fn(move || {
-            if index == size_of::<Self>() * 8 {
-                return None;
-            }
-
-            let one = T::from(1);
-            let bit = (shifted & one) == one;
-
-            shifted >>= one;
-            index += 1;
-
-            Some(bit as u8)
-        })
-    }
-}
-
-pub trait BitArray {
-    fn to_bit_array<const N: usize>(self, start: usize, end: usize) -> [u8; N];
-}
-
-impl BitArray for u16 {
-    fn to_bit_array<const N: usize>(self, start: usize, end: usize) -> [u8; N] {
-        assert_eq!(N, end - start + 1);
-
-        let mut buffer = [0; N];
-        let mut shifted = self >> start;
-
-        for i in 0..N {
-            buffer[N - 1 - i] = (shifted & 1) as u8;
-            shifted >>= 1;
-        }
-
-        buffer
-    }
-}
+use std::ops::{BitAnd, Shr, ShrAssign};
 
 pub trait Bitflag: Sized {
     fn get(self, bit: Self) -> Self;
@@ -61,11 +13,7 @@ pub trait Bitflag: Sized {
     fn get_bits_u8(self, start: Self, end: Self) -> u8;
 
     fn update(&mut self, bit: Self, cond: bool) {
-        if cond {
-            self.set(bit)
-        } else {
-            self.clear(bit)
-        }
+        if cond { self.set(bit) } else { self.clear(bit) }
     }
 }
 
@@ -155,16 +103,38 @@ impl Bitflag for u16 {
     }
 }
 
+pub trait BitArray {
+    fn to_bit_array<const N: usize>(self, start: u8) -> [u8; N];
+}
+
+impl<T> BitArray for T
+where
+    T: BitAnd<Output = T> + Shr<Output = T> + ShrAssign + PartialEq + From<u8> + Copy,
+{
+    fn to_bit_array<const N: usize>(self, start: u8) -> [u8; N] {
+        let one = T::from(1);
+        let mut buffer = [0; N];
+        let mut shifted = self >> T::from(start);
+
+        for i in 0..N {
+            buffer[N - 1 - i] = ((shifted & one) == one) as u8;
+            shifted >>= one;
+        }
+
+        buffer
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::Bitflag;
+    use super::*;
 
     #[test]
     fn test_get_range() {
         let value = 0b101101_u32;
         let range = value.get_bits(2, 5);
 
-        assert_eq!(range, 0b1011)
+        assert_eq!(range, 0b1011);
     }
 
     #[test]
@@ -172,6 +142,14 @@ mod tests {
         let mut value = 0b101101_u16;
         value.set_bits(2, 5, 0b0100);
 
-        assert_eq!(value, 0b010001)
+        assert_eq!(value, 0b010001);
+    }
+
+    #[test]
+    fn test_bit_array() {
+        let value = 0b1010;
+        let arr = value.to_bit_array::<3>(1);
+
+        assert_eq!(arr, [1, 0, 1]);
     }
 }

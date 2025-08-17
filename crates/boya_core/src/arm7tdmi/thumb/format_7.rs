@@ -69,3 +69,26 @@ impl<B: Bus> Arm7tdmi<B> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ldr_str_reg_offset() {
+        let asm = r"
+            mov r0, 3
+            mov r1, 5
+            mov r2, 6
+            str r0, [r1, r2]
+            ldr r3, [r1, r2]
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_word(11, 3)
+            .assert_reg(3, 3)
+            .run(5);
+    }
+}

@@ -1,10 +1,13 @@
 use std::ops::{BitAnd, BitOr, BitXor};
 
-use crate::{bus::Bus, utils::ops::ExtendedOps};
+use crate::{
+    bus::Bus,
+    utils::{bitflags::BitArray, ops::ExtendedOps},
+};
 
 use super::{
-    common::{Carry, DataType, Operand, ToOperand},
     Arm7tdmi,
+    common::{Carry, DataType, Operand, ToOperand},
 };
 
 impl<B: Bus> Arm7tdmi<B> {
@@ -77,7 +80,7 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn ldrh(&mut self, rd: u8, addr: u32) {
-        self.ldr_op(rd, addr, DataType::HalfWord, false);
+        self.ldr_op(rd, addr, DataType::HWord, false);
     }
 
     pub fn ldr(&mut self, rd: u8, addr: u32) {
@@ -89,7 +92,7 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn ldsh(&mut self, rd: u8, addr: u32) {
-        self.ldr_op(rd, addr, DataType::HalfWord, true);
+        self.ldr_op(rd, addr, DataType::HWord, true);
     }
 
     pub fn strb(&mut self, rd: u8, addr: u32) {
@@ -97,7 +100,7 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn strh(&mut self, rd: u8, addr: u32) {
-        self.str_op(rd, addr, DataType::HalfWord);
+        self.str_op(rd, addr, DataType::HWord);
     }
 
     pub fn str(&mut self, rd: u8, addr: u32) {
@@ -121,10 +124,10 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn push(&mut self, rlist: u8, lr: bool) {
-        self.push_op(rlist, lr);
+        self.push_op(&rlist.to_bit_array::<8>(0), lr);
     }
 
     pub fn pop(&mut self, rlist: u8, pc: bool) {
-        self.pop_op(rlist, pc);
+        self.pop_op(&rlist.to_bit_array::<8>(0), pc);
     }
 }

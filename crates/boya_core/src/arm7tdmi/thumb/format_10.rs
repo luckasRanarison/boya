@@ -63,3 +63,25 @@ impl<B: Bus> Arm7tdmi<B> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ldr_word() {
+        let asm = r"
+            mov   r0, 72
+            ldrh  r1, [r0, 8]
+            strh  r0, [r1, 4]
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .setup(|cpu| cpu.bus.write_hword(80, 420))
+            .assert_reg(1, 420)
+            .assert_hword(424, 72)
+            .run(3);
+    }
+}

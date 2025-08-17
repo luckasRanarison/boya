@@ -17,10 +17,13 @@ mod format_14;
 mod prelude {
     pub use std::fmt::Debug;
 
-    pub use crate::arm7tdmi::common::{Operand, ToOperand};
     pub use crate::arm7tdmi::Arm7tdmi;
+    pub use crate::arm7tdmi::common::{Operand, ToOperand};
     pub use crate::bus::Bus;
     pub use crate::utils::bitflags::Bitflag;
+
+    #[cfg(test)]
+    pub use crate::{arm7tdmi::test::Psr, test::AsmTestBuilder};
 }
 
 use format_1::Format1;
@@ -101,7 +104,7 @@ impl<B: Bus> Arm7tdmi<B> {
         let word_aligned = self.pc() & 0b1 == 0;
         let (lsb, msb) = if word_aligned { (0, 15) } else { (16, 31) };
         let instr = word.get_bits(lsb, msb) as u16;
-        let bit_array = instr.to_bit_array(8, 15);
+        let bit_array = instr.to_bit_array(8);
 
         match bit_array {
             [0, 0, 0, 1, 1, _, _, _] => ThumbInstr::Format2(Format2::from(instr)),
@@ -117,7 +120,7 @@ impl<B: Bus> Arm7tdmi<B> {
             [1, 0, 0, 1, _, _, _, _] => ThumbInstr::Format11(Format11::from(instr)),
             [1, 0, 1, 0, _, _, _, _] => ThumbInstr::Format12(Format12::from(instr)),
             [1, 0, 1, 1, 0, 0, 0, 0] => ThumbInstr::Format13(Format13::from(instr)),
-            [1, 0, 1, 1, _, 1, 0, _] => ThumbInstr::Format13(Format13::from(instr)),
+            [1, 0, 1, 1, _, 1, 0, _] => ThumbInstr::Format14(Format14::from(instr)),
             _ => todo!(),
         }
     }
@@ -140,259 +143,5 @@ impl<B: Bus> Arm7tdmi<B> {
             ThumbInstr::Format13(op) => self.exec_thumb_format13(op),
             ThumbInstr::Format14(op) => self.exec_thumb_format14(op),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::{arm7tdmi::psr::Psr, bus::Bus, test::AsmTestBuilder};
-
-    #[test]
-    fn test_move() {
-        let asm = r"
-            mov r1, 5
-            mvn r2, r1
-            mov r3, 0
-        ";
-
-        AsmTestBuilder::new()
-            .thumb()
-            .asm(asm)
-            .assert_reg(1, 5)
-            .assert_reg(2, !5)
-            .assert_flag(Psr::Z, true)
-            .assert_flag(Psr::N, false)
-            .run(3);
-    }
-
-    #[test]
-    fn test_logic_shift() {
-        let asm = r"
-            mov r1, 2
-            lsl r2, r1, 2
-        ";
-
-        AsmTestBuilder::new()
-            .thumb()
-            .asm(asm)
-            .assert_reg(2, 8)
-            .assert_flag(Psr::C, true)
-            .assert_flag(Psr::Z, false)
-            .assert_flag(Psr::N, false)
-            .run(2);
-    }
-
-    #[test]
-    fn test_arithmetic_shift() {
-        let asm = r"
-            mov r0, 0
-            mvn r1, r0
-            asr r2, r1, 1
-        ";
-
-        AsmTestBuilder::new()
-            .thumb()
-            .asm(asm)
-            .assert_reg(2, !0)
-            .assert_flag(Psr::C, true)
-            .assert_flag(Psr::Z, false)
-            .assert_flag(Psr::N, true)
-            .run(3);
-    }
-
-    #[test]
-    fn test_add_sub_basic() {
-        let asm = r"
-            mov r0, 2
-            mov r1, 3
-            add r2, r1, r0
-            add r3, r2, 3 
-            sub r4, r3, r0
-            cmp r4, 6
-        ";
-
-        AsmTestBuilder::new()
-            .thumb()
-            .asm(asm)
-            .assert_reg(2, 5)
-            .assert_reg(3, 8)
-            .assert_reg(4, 6)
-            .assert_flag(Psr::C, true) // no borrow
-            .assert_flag(Psr::Z, true)
-            .assert_flag(Psr::N, false)
-            .assert_flag(Psr::V, false)
-            .run(6);
-    }
-
-    #[test]
-    fn test_add_carry() {
-        let asm = r"
-            mov r0, 5
-            sub r1, r0, 2
-            adc r0, r1
-        ";
-
-        AsmTestBuilder::new()
-            .thumb()
-            .asm(asm)
-            .assert_reg(0, 9)
-            .assert_flag(Psr::C, false)
-            .assert_flag(Psr::Z, false)
-            .assert_flag(Psr::N, false)
-            .assert_flag(Psr::V, false)
-            .run(4);
-    }
-
-    #[test]
-    fn test_sub_carry() {
-        let asm = r"
-            mov r0, 5
-            mov r1, 1
-            sbc r0, r1
-        ";
-
-        AsmTestBuilder::new()
-            .thumb()
-            .asm(asm)
-            .assert_reg(0, 3)
-            .assert_flag(Psr::C, false)
-            .assert_flag(Psr::Z, false)
-            .assert_flag(Psr::N, false)
-            .assert_flag(Psr::V, false)
-            .run(4);
-    }
-
-    #[test]
-    fn test_negation() {
-        let asm = r"
-            mov r0, 2
-            neg r1, r0
-        ";
-
-        AsmTestBuilder::new()
-            .thumb()
-            .asm(asm)
-            .assert_reg(1, -2i32 as u32)
-            .assert_flag(Psr::C, false)
-            .assert_flag(Psr::Z, false)
-            .assert_flag(Psr::N, true)
-            .assert_flag(Psr::V, false)
-            .run(2);
-    }
-
-    #[test]
-    fn test_logical_op() {
-        let asm = r"
-            mov r0, 2
-            mov r1, 1
-            mov r2, 2
-            mov r3, 3
-            orr r1, r0
-            bic r3, r2
-        ";
-
-        AsmTestBuilder::new()
-            .thumb()
-            .asm(asm)
-            .assert_reg(1, 3)
-            .assert_reg(3, 1)
-            .assert_flag(Psr::Z, false)
-            .assert_flag(Psr::N, false)
-            .run(6);
-    }
-
-    #[test]
-    fn test_mul_basic() {
-        let asm = r"
-            mov r0, 2
-            mov r1, 3
-            sub r2, r1, r0 ; sets carry
-            mul r0, r1
-        ";
-
-        AsmTestBuilder::new()
-            .thumb()
-            .asm(asm)
-            .assert_reg(0, 6)
-            .assert_flag(Psr::C, false)
-            .run(4);
-    }
-
-    #[test]
-    fn test_hi_reg_ops() {
-        let asm = r"
-            mov r0, 5
-            mov pc, r0
-        ";
-
-        AsmTestBuilder::new()
-            .thumb()
-            .asm(asm)
-            .assert_reg(15, 6) // half-word alignement
-            .run(2);
-    }
-
-    #[test]
-    fn test_ldr_pc_offset() {
-        AsmTestBuilder::new()
-            .thumb()
-            .setup(|cpu| cpu.bus.write_u32(20, 5))
-            .asm("ldr r1, [PC, #16]")
-            .assert_reg(1, 5)
-            .run(1);
-    }
-
-    #[test]
-    fn test_ldr_str_reg_offset() {
-        let asm = r"
-            mov r0, 3
-            mov r1, 5
-            mov r2, 6
-            str r0, [r1, r2]
-            ldr r3, [r1, r2]
-        ";
-
-        AsmTestBuilder::new()
-            .thumb()
-            .asm(asm)
-            .assert_mem(11, 3)
-            .assert_reg(3, 3)
-            .run(5);
-    }
-
-    #[test]
-    fn test_lds() {
-        let asm = r"
-            mov   r0, 10
-            mov   r1, 11
-            ldrsb r2, [r0, r0]
-            ldrsh r3, [r0, r1]
-        ";
-
-        AsmTestBuilder::new()
-            .thumb()
-            .setup(|cpu| {
-                cpu.bus.write_u8(20, -1_i8 as u8);
-                cpu.bus.write_u16(21, -5_i16 as u16);
-            })
-            .asm(asm)
-            .assert_reg(2, -1_i32 as u32)
-            .assert_reg(3, -5_i32 as u32)
-            .run(4);
-    }
-
-    #[test]
-    fn test_ldr_immediate() {
-        let asm = r"
-            mov r0, 7
-            ldr r1, [r0, 116]
-        ";
-
-        AsmTestBuilder::new()
-            .thumb()
-            .asm(asm)
-            .setup(|cpu| cpu.bus.write_u32(123, 5))
-            .assert_reg(1, 5)
-            .run(2);
     }
 }

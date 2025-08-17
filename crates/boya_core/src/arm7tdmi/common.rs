@@ -3,7 +3,7 @@ use std::fmt::Debug;
 #[derive(Debug)]
 pub enum DataType {
     Byte,
-    HalfWord,
+    HWord,
     Word,
 }
 

@@ -43,3 +43,24 @@ impl<B: Bus> Arm7tdmi<B> {
         self.add(instr.rs.value as u8, instr.nn.imm(), instr.rd, false);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_relative_addr() {
+        let asm = r"
+            add r2, PC, 12
+            add r3, SP, 8
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .with_sp(24)
+            .assert_reg(2, 16)
+            .assert_reg(3, 32)
+            .run(2);
+    }
+}

@@ -31,3 +31,18 @@ impl<B: Bus> Arm7tdmi<B> {
         self.ldr(instr.rd, self.pc() + instr.nn as u32);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ldr_pc_offset() {
+        AsmTestBuilder::new()
+            .thumb()
+            .setup(|cpu| cpu.bus.write_word(20, 5))
+            .asm("ldr r1, [PC, #16]")
+            .assert_reg(1, 5)
+            .run(1);
+    }
+}

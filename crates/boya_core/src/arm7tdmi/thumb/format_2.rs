@@ -66,3 +66,32 @@ impl<B: Bus> Arm7tdmi<B> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add_sub_basic() {
+        let asm = r"
+            mov r0, 2
+            mov r1, 3
+            add r2, r1, r0
+            add r3, r2, 3 
+            sub r4, r3, r0
+            cmp r4, 6
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(2, 5)
+            .assert_reg(3, 8)
+            .assert_reg(4, 6)
+            .assert_flag(Psr::C, true) // no borrow
+            .assert_flag(Psr::Z, true)
+            .assert_flag(Psr::N, false)
+            .assert_flag(Psr::V, false)
+            .run(6);
+    }
+}

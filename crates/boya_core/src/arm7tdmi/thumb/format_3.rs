@@ -60,3 +60,26 @@ impl<B: Bus> Arm7tdmi<B> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_move() {
+        let asm = r"
+            mov r1, 5
+            mvn r2, r1
+            mov r3, 0
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(1, 5)
+            .assert_reg(2, !5)
+            .assert_flag(Psr::Z, true)
+            .assert_flag(Psr::N, false)
+            .run(3);
+    }
+}

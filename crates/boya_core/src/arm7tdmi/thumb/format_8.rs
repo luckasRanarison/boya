@@ -66,3 +66,29 @@ impl<B: Bus> Arm7tdmi<B> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_lds() {
+        let asm = r"
+            mov   r0, 10
+            mov   r1, 11
+            ldrsb r2, [r0, r0]
+            ldrsh r3, [r0, r1]
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .setup(|cpu| {
+                cpu.bus.write_byte(20, -1_i8 as u8);
+                cpu.bus.write_hword(21, -5_i16 as u16);
+            })
+            .asm(asm)
+            .assert_reg(2, -1_i32 as u32)
+            .assert_reg(3, -5_i32 as u32)
+            .run(4);
+    }
+}

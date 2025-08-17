@@ -1,4 +1,4 @@
-use crate::utils::bitflags::BitIter;
+use crate::utils::bitflags::BitArray;
 
 use super::prelude::*;
 
@@ -18,7 +18,8 @@ impl Debug for Format14 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let active = self
             .rlist
-            .iter_bit()
+            .to_bit_array::<8>(0)
+            .into_iter()
             .enumerate()
             .filter(|(_, bit)| *bit == 1)
             .map(|(i, _)| format!("R{}", 7 - i))
@@ -69,5 +70,34 @@ impl<B: Bus> Arm7tdmi<B> {
             Opcode::PUSH => self.push(instr.rlist, instr.lrpc),
             Opcode::POP => self.pop(instr.rlist, instr.lrpc),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_push_reg() {
+        let asm = r"
+            mov  r0, 64
+            mov  r1, 13
+            mov  r2, 25
+            push {r0,r1,r2}
+            pop  {r3,r4,r5}
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .with_sp(200)
+            .assert_word(196, 64)
+            .assert_word(192, 13)
+            .assert_word(188, 25)
+            .assert_reg(5, 25)
+            .assert_reg(4, 13)
+            .assert_reg(3, 64)
+            .assert_reg(13, 200)
+            .run(5)
     }
 }

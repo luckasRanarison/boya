@@ -40,3 +40,23 @@ impl<B: Bus> Arm7tdmi<B> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add_offset_sp() {
+        let asm = r"
+            add SP, 8
+            add SP, -4
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .with_sp(32)
+            .assert_reg(13, 64 - 16)
+            .run(2);
+    }
+}

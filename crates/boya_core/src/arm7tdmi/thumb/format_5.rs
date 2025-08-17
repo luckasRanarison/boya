@@ -67,3 +67,22 @@ impl<B: Bus> Arm7tdmi<B> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hi_reg_ops() {
+        let asm = r"
+            mov r0, 5
+            mov pc, r0
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(15, 6) // half-word alignement
+            .run(2);
+    }
+}

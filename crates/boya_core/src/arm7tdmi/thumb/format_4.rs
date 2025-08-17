@@ -94,3 +94,102 @@ impl<B: Bus> Arm7tdmi<B> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add_carry() {
+        let asm = r"
+            mov r0, 5
+            sub r1, r0, 2
+            adc r0, r1
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(0, 9)
+            .assert_flag(Psr::C, false)
+            .assert_flag(Psr::Z, false)
+            .assert_flag(Psr::N, false)
+            .assert_flag(Psr::V, false)
+            .run(4);
+    }
+
+    #[test]
+    fn test_sub_carry() {
+        let asm = r"
+            mov r0, 5
+            mov r1, 1
+            sbc r0, r1
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(0, 3)
+            .assert_flag(Psr::C, false)
+            .assert_flag(Psr::Z, false)
+            .assert_flag(Psr::N, false)
+            .assert_flag(Psr::V, false)
+            .run(4);
+    }
+
+    #[test]
+    fn test_negation() {
+        let asm = r"
+            mov r0, 2
+            neg r1, r0
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(1, -2i32 as u32)
+            .assert_flag(Psr::C, false)
+            .assert_flag(Psr::Z, false)
+            .assert_flag(Psr::N, true)
+            .assert_flag(Psr::V, false)
+            .run(2);
+    }
+
+    #[test]
+    fn test_logical_op() {
+        let asm = r"
+            mov r0, 2
+            mov r1, 1
+            mov r2, 2
+            mov r3, 3
+            orr r1, r0
+            bic r3, r2
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(1, 3)
+            .assert_reg(3, 1)
+            .assert_flag(Psr::Z, false)
+            .assert_flag(Psr::N, false)
+            .run(6);
+    }
+
+    #[test]
+    fn test_mul_basic() {
+        let asm = r"
+            mov r0, 2
+            mov r1, 3
+            sub r2, r1, r0 ; sets carry
+            mul r0, r1
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(0, 6)
+            .assert_flag(Psr::C, false)
+            .run(4);
+    }
+}

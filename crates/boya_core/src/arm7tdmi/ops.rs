@@ -1,12 +1,12 @@
 use crate::{
     bus::Bus,
-    utils::bitflags::{BitIter, Bitflag},
+    utils::bitflags::{BitArray, Bitflag},
 };
 
 use super::{
+    Arm7tdmi,
     common::{Carry, DataType, Operand},
     psr::Psr,
-    Arm7tdmi,
 };
 
 impl<B: Bus> Arm7tdmi<B> {
@@ -111,11 +111,11 @@ impl<B: Bus> Arm7tdmi<B> {
     #[inline(always)]
     pub fn ldr_op(&mut self, rd: u8, addr: u32, kind: DataType, signed: bool) {
         let value = match kind {
-            DataType::Byte if signed => self.bus.read_u8(addr) as i8 as i32 as u32,
-            DataType::HalfWord if signed => self.bus.read_u16(addr) as i8 as i32 as u32,
-            DataType::Byte => self.bus.read_u8(addr).into(),
-            DataType::HalfWord => self.bus.read_u16(addr).into(),
-            DataType::Word => self.bus.read_u32(addr),
+            DataType::Byte if signed => self.bus.read_byte(addr) as i8 as i32 as u32,
+            DataType::HWord if signed => self.bus.read_hword(addr) as i8 as i32 as u32,
+            DataType::Byte => self.bus.read_byte(addr).into(),
+            DataType::HWord => self.bus.read_hword(addr).into(),
+            DataType::Word => self.bus.read_word(addr),
         };
 
         self.set_reg(rd, value)
@@ -126,15 +126,15 @@ impl<B: Bus> Arm7tdmi<B> {
         let value = self.get_reg(rs);
 
         match kind {
-            DataType::Byte => self.bus.write_u8(addr, (value & 0xFF) as u8),
-            DataType::HalfWord => self.bus.write_u16(addr, (value & 0xFFFF) as u16),
-            DataType::Word => self.bus.write_u32(addr, value),
+            DataType::Byte => self.bus.write_byte(addr, (value & 0xFF) as u8),
+            DataType::HWord => self.bus.write_hword(addr, (value & 0xFFFF) as u16),
+            DataType::Word => self.bus.write_word(addr, value),
         }
     }
 
     #[inline(always)]
-    pub fn push_op<I: BitIter>(&mut self, rlist: I, lr: bool) {
-        for (i, bit) in rlist.iter_bit().enumerate() {
+    pub fn push_op(&mut self, rlist: &[u8], lr: bool) {
+        for (i, &bit) in rlist.iter().rev().enumerate() {
             if bit == 1 {
                 self.push_sp(i);
             }
@@ -146,10 +146,10 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    pub fn pop_op<I: BitIter>(&mut self, rlist: I, pc: bool) {
-        for (i, bit) in rlist.iter_bit().enumerate() {
+    pub fn pop_op(&mut self, rlist: &[u8], pc: bool) {
+        for (i, &bit) in rlist.iter().enumerate() {
             if bit == 1 {
-                self.pop_sp(i);
+                self.pop_sp(rlist.len() - 1 - i);
             }
         }
 
