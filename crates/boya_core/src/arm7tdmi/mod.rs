@@ -25,6 +25,7 @@ pub struct Arm7tdmi<B: Bus> {
 
 impl<B: Bus> Arm7tdmi<B> {
     const PC: usize = 15;
+    const LR: usize = 14;
     const SP: usize = 13;
 
     pub fn new(bus: B) -> Self {
@@ -64,11 +65,6 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    fn sp(&self) -> u32 {
-        self.get_reg(Self::SP)
-    }
-
-    #[inline(always)]
     fn pc(&self) -> u32 {
         self.reg[Self::PC]
     }
@@ -88,6 +84,37 @@ impl<B: Bus> Arm7tdmi<B> {
         let value = self.pc() & mask;
 
         self.set_pc(value);
+    }
+
+    #[inline(always)]
+    fn sp(&self) -> u32 {
+        self.get_reg(Self::SP)
+    }
+
+    #[inline(always)]
+    fn increment_sp(&mut self) {
+        *self.get_reg_mut(Self::SP) += 4;
+    }
+
+    #[inline(always)]
+    fn decrement_sp(&mut self) {
+        *self.get_reg_mut(Self::SP) -= 4;
+    }
+
+    #[inline(always)]
+    fn push_sp(&mut self, rs: usize) {
+        let value = self.get_reg(rs);
+
+        self.decrement_sp();
+        self.bus.write_u32(self.sp(), value);
+    }
+
+    #[inline(always)]
+    fn pop_sp(&mut self, rd: usize) {
+        let value = self.bus.read_u32(self.sp());
+
+        self.increment_sp();
+        self.set_reg(rd, value);
     }
 
     fn get_reg<I>(&self, index: I) -> u32

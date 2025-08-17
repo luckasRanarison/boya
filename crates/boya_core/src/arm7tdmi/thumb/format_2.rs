@@ -62,7 +62,7 @@ impl<B: Bus> Arm7tdmi<B> {
     pub fn exec_thumb_format2(&mut self, instr: Format2) {
         match instr.op {
             Opcode::ADD => self.add(instr.rs, instr.nn, instr.rd, true),
-            Opcode::SUB => self.sub(instr.rs, instr.nn, instr.rd),
+            Opcode::SUB => self.sub(instr.rs, instr.nn, instr.rd, true),
         }
     }
 }

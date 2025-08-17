@@ -11,6 +11,8 @@ mod format_9;
 mod format_10;
 mod format_11;
 mod format_12;
+mod format_13;
+mod format_14;
 
 mod prelude {
     pub use std::fmt::Debug;
@@ -34,6 +36,8 @@ use format_9::Format9;
 use format_10::Format10;
 use format_11::Format11;
 use format_12::Format12;
+use format_13::Format13;
+use format_14::Format14;
 
 use prelude::*;
 
@@ -64,6 +68,10 @@ pub enum ThumbInstr {
     Format11(Format11),
     /// Get relative address
     Format12(Format12),
+    /// Add offset to stack pointer
+    Format13(Format13),
+    /// Push/Pop registers
+    Format14(Format14),
 }
 
 impl Debug for ThumbInstr {
@@ -82,6 +90,8 @@ impl Debug for ThumbInstr {
             ThumbInstr::Format10(op) => write!(f, "{op:?} ; format 10 (thumb)"),
             ThumbInstr::Format11(op) => write!(f, "{op:?} ; format 11 (thumb)"),
             ThumbInstr::Format12(op) => write!(f, "{op:?} ; format 12 (thumb)"),
+            ThumbInstr::Format13(op) => write!(f, "{op:?} ; format 13 (thumb)"),
+            ThumbInstr::Format14(op) => write!(f, "{op:?} ; format 14 (thumb)"),
         }
     }
 }
@@ -91,21 +101,23 @@ impl<B: Bus> Arm7tdmi<B> {
         let word_aligned = self.pc() & 0b1 == 0;
         let (lsb, msb) = if word_aligned { (0, 15) } else { (16, 31) };
         let instr = word.get_bits(lsb, msb) as u16;
-        let bit_array = instr.to_bit_array(9, 15);
+        let bit_array = instr.to_bit_array(8, 15);
 
         match bit_array {
-            [0, 0, 0, 1, 1, _, _] => ThumbInstr::Format2(Format2::from(instr)),
-            [0, 0, 0, _, _, _, _] => ThumbInstr::Format1(Format1::from(instr)),
-            [0, 0, 1, _, _, _, _] => ThumbInstr::Format3(Format3::from(instr)),
-            [0, 1, 0, 0, 0, 0, _] => ThumbInstr::Format4(Format4::from(instr)),
-            [0, 1, 0, 0, 0, 1, _] => ThumbInstr::Format5(Format5::from(instr)),
-            [0, 1, 0, 0, 1, _, _] => ThumbInstr::Format6(Format6::from(instr)),
-            [0, 1, 0, 1, _, _, 1] => ThumbInstr::Format8(Format8::from(instr)),
-            [0, 1, 0, 1, _, _, _] => ThumbInstr::Format7(Format7::from(instr)),
-            [0, 1, 1, _, _, _, _] => ThumbInstr::Format9(Format9::from(instr)),
-            [1, 0, 0, 0, _, _, _] => ThumbInstr::Format10(Format10::from(instr)),
-            [1, 0, 0, 1, _, _, _] => ThumbInstr::Format11(Format11::from(instr)),
-            [1, 0, 1, 0, _, _, _] => ThumbInstr::Format12(Format12::from(instr)),
+            [0, 0, 0, 1, 1, _, _, _] => ThumbInstr::Format2(Format2::from(instr)),
+            [0, 0, 0, _, _, _, _, _] => ThumbInstr::Format1(Format1::from(instr)),
+            [0, 0, 1, _, _, _, _, _] => ThumbInstr::Format3(Format3::from(instr)),
+            [0, 1, 0, 0, 0, 0, _, _] => ThumbInstr::Format4(Format4::from(instr)),
+            [0, 1, 0, 0, 0, 1, _, _] => ThumbInstr::Format5(Format5::from(instr)),
+            [0, 1, 0, 0, 1, _, _, _] => ThumbInstr::Format6(Format6::from(instr)),
+            [0, 1, 0, 1, _, _, 1, _] => ThumbInstr::Format8(Format8::from(instr)),
+            [0, 1, 0, 1, _, _, _, _] => ThumbInstr::Format7(Format7::from(instr)),
+            [0, 1, 1, _, _, _, _, _] => ThumbInstr::Format9(Format9::from(instr)),
+            [1, 0, 0, 0, _, _, _, _] => ThumbInstr::Format10(Format10::from(instr)),
+            [1, 0, 0, 1, _, _, _, _] => ThumbInstr::Format11(Format11::from(instr)),
+            [1, 0, 1, 0, _, _, _, _] => ThumbInstr::Format12(Format12::from(instr)),
+            [1, 0, 1, 1, 0, 0, 0, 0] => ThumbInstr::Format13(Format13::from(instr)),
+            [1, 0, 1, 1, _, 1, 0, _] => ThumbInstr::Format13(Format13::from(instr)),
             _ => todo!(),
         }
     }
@@ -125,6 +137,8 @@ impl<B: Bus> Arm7tdmi<B> {
             ThumbInstr::Format10(op) => self.exec_thumb_format10(op),
             ThumbInstr::Format11(op) => self.exec_thumb_format11(op),
             ThumbInstr::Format12(op) => self.exec_thumb_format12(op),
+            ThumbInstr::Format13(op) => self.exec_thumb_format13(op),
+            ThumbInstr::Format14(op) => self.exec_thumb_format14(op),
         }
     }
 }

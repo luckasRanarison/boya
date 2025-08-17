@@ -1,3 +1,33 @@
+use std::ops::{BitAnd, ShrAssign};
+
+pub trait BitIter: Sized {
+    fn iter_bit(self) -> impl Iterator<Item = u8>;
+}
+
+impl<T> BitIter for T
+where
+    T: BitAnd<Output = Self> + ShrAssign + From<u8> + PartialEq + Copy,
+{
+    fn iter_bit(self) -> impl Iterator<Item = u8> {
+        let mut shifted = self;
+        let mut index = 0;
+
+        std::iter::from_fn(move || {
+            if index == size_of::<Self>() * 8 {
+                return None;
+            }
+
+            let one = T::from(1);
+            let bit = (shifted & one) == one;
+
+            shifted >>= one;
+            index += 1;
+
+            Some(bit as u8)
+        })
+    }
+}
+
 pub trait BitArray {
     fn to_bit_array<const N: usize>(self, start: usize, end: usize) -> [u8; N];
 }

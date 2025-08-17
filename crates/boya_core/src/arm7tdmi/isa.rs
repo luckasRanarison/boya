@@ -32,8 +32,8 @@ impl<B: Bus> Arm7tdmi<B> {
         self.add_sub_op(lhs.reg(), rhs, dst.into(), Carry::Flag, true);
     }
 
-    pub fn sub(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        self.add_sub_op(lhs.reg(), rhs.not(), dst.into(), Carry::One, true);
+    pub fn sub(&mut self, lhs: u8, rhs: Operand, dst: u8, update: bool) {
+        self.add_sub_op(lhs.reg(), rhs.not(), dst.into(), Carry::One, update);
     }
 
     pub fn sbc(&mut self, lhs: u8, rhs: Operand, dst: u8) {
@@ -118,5 +118,13 @@ impl<B: Bus> Arm7tdmi<B> {
 
     pub fn bx(&mut self, rs: u8) {
         self.bx_op(rs);
+    }
+
+    pub fn push(&mut self, rlist: u8, lr: bool) {
+        self.push_op(rlist, lr);
+    }
+
+    pub fn pop(&mut self, rlist: u8, pc: bool) {
+        self.pop_op(rlist, pc);
     }
 }

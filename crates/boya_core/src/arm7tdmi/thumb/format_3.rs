@@ -56,7 +56,7 @@ impl<B: Bus> Arm7tdmi<B> {
             Opcode::MOV => self.mov(instr.rd, nn, true),
             Opcode::CMP => self.cmp(instr.rd, nn),
             Opcode::ADD => self.add(instr.rd, nn, instr.rd, true),
-            Opcode::SUB => self.sub(instr.rd, nn, instr.rd),
+            Opcode::SUB => self.sub(instr.rd, nn, instr.rd, true),
         }
     }
 }

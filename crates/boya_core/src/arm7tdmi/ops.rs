@@ -1,4 +1,7 @@
-use crate::{bus::Bus, utils::bitflags::Bitflag};
+use crate::{
+    bus::Bus,
+    utils::bitflags::{BitIter, Bitflag},
+};
 
 use super::{
     common::{Carry, DataType, Operand},
@@ -126,6 +129,32 @@ impl<B: Bus> Arm7tdmi<B> {
             DataType::Byte => self.bus.write_u8(addr, (value & 0xFF) as u8),
             DataType::HalfWord => self.bus.write_u16(addr, (value & 0xFFFF) as u16),
             DataType::Word => self.bus.write_u32(addr, value),
+        }
+    }
+
+    #[inline(always)]
+    pub fn push_op<I: BitIter>(&mut self, rlist: I, lr: bool) {
+        for (i, bit) in rlist.iter_bit().enumerate() {
+            if bit == 1 {
+                self.push_sp(i);
+            }
+        }
+
+        if lr {
+            self.push_sp(Self::LR);
+        }
+    }
+
+    #[inline(always)]
+    pub fn pop_op<I: BitIter>(&mut self, rlist: I, pc: bool) {
+        for (i, bit) in rlist.iter_bit().enumerate() {
+            if bit == 1 {
+                self.pop_sp(i);
+            }
+        }
+
+        if pc {
+            self.pop_sp(Self::PC);
         }
     }
 }

@@ -1,0 +1,42 @@
+use super::prelude::*;
+
+/// Add offset to stack pointer
+/// +-------------------------------------------------------------------------------+
+/// | 15 | 14 | 13 | 12 | 11 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
+/// |-------------------------------------------------------------------------------|
+/// |  1 |  0 |  1 |  1 |  0 |  0 |  0 |  0 | Op |            SWord7                |
+/// +-------------------------------------------------------------------------------+
+pub struct Format13 {
+    nn: Operand,
+}
+
+impl Debug for Format13 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ADD SP, {:?}", self.nn)
+    }
+}
+
+impl From<u16> for Format13 {
+    fn from(value: u16) -> Self {
+        let nn = value.get_bits(0, 6) << 4;
+
+        let nn = match value.get(7) {
+            0 => nn.imm(),
+            _ => nn.imm().not(),
+        };
+
+        Self { nn }
+    }
+}
+
+impl<B: Bus> Arm7tdmi<B> {
+    pub fn exec_thumb_format13(&mut self, instr: Format13) {
+        let sp = Self::SP as u8;
+        let nn = instr.nn.value.imm();
+
+        match instr.nn.negate {
+            true => self.sub(sp, nn, sp, false),
+            false => self.add(sp, nn, sp, false),
+        }
+    }
+}

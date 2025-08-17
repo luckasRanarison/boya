@@ -16,10 +16,11 @@ pub struct Operand {
 impl Debug for Operand {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.kind {
-            OperandKind::Imm => write!(f, "#{}", self.value),
-            OperandKind::Reg => write!(f, "R{}", self.value),
             OperandKind::SP => write!(f, "SP"),
             OperandKind::PC => write!(f, "PC"),
+            OperandKind::Imm if self.negate => write!(f, "#-{}", self.value),
+            OperandKind::Imm => write!(f, "#{}", self.value),
+            OperandKind::Reg => write!(f, "R{}", self.value),
         }
     }
 }
@@ -49,10 +50,10 @@ impl Operand {
 
 #[derive(Debug, Clone, Copy)]
 pub enum OperandKind {
-    Imm,
-    Reg,
     SP,
     PC,
+    Imm,
+    Reg,
 }
 
 pub trait ToOperand {
