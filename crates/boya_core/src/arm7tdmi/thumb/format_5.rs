@@ -7,30 +7,30 @@ pub use super::prelude::*;
 /// |  0 |  1 |  0 |  0 |  0 |  1 |    Op   | Hd | Hs |     Rs/Hs    |     Rd/Hd    |
 /// +-------------------------------------------------------------------------------+
 pub struct Format5 {
-    pub opcode: Opcode5,
+    pub op: Opcode5,
     pub rs: u8,
     pub rd: u8,
 }
 
 impl Debug for Format5 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.opcode {
-            Opcode5::BX => write!(f, "BX R{}", self.rs),
-            opcode => write!(f, "{opcode:?} R{}, R{}", self.rd, self.rs),
+        match &self.op {
+            Opcode5::BX => write!(f, "BX {:?}", self.rs.reg()),
+            opcode => write!(f, "{opcode:?} {:?}, {:?}", self.rd.reg(), self.rs.reg()),
         }
     }
 }
 
 impl From<u16> for Format5 {
     fn from(value: u16) -> Self {
-        let opcode = Opcode5::from(value.get_bits(8, 9));
+        let op = Opcode5::from(value.get_bits(8, 9));
         let msbd = value.get_u8(7);
         let msbs = value.get_u8(6);
         let rs = value.get_bits_u8(3, 5);
         let rd = value.get_bits_u8(0, 2);
 
         Self {
-            opcode,
+            op,
             rs: rs | (msbs << 3),
             rd: rd | (msbd << 3),
         }
@@ -58,12 +58,12 @@ impl From<u16> for Opcode5 {
 }
 
 impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format5(&mut self, op: Format5) {
-        match op.opcode {
-            Opcode5::ADD => self.add(op.rd, op.rs.register(), op.rd, false),
-            Opcode5::CMP => self.cmp(op.rd, op.rs.register()),
-            Opcode5::MOV => self.mov(op.rd, op.rs.register(), false),
-            Opcode5::BX => self.bx(op.rs),
+    pub fn exec_thumb_format5(&mut self, instr: Format5) {
+        match instr.op {
+            Opcode5::ADD => self.add(instr.rd, instr.rs.reg(), instr.rd, false),
+            Opcode5::CMP => self.cmp(instr.rd, instr.rs.reg()),
+            Opcode5::MOV => self.mov(instr.rd, instr.rs.reg(), false),
+            Opcode5::BX => self.bx(instr.rs),
         }
     }
 }

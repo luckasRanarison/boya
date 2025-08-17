@@ -7,7 +7,7 @@ use super::prelude::*;
 /// |  0 |  1 |  1 |    Op   |           Offset5      |      Rb      |      Rd      |
 /// +-------------------------------------------------------------------------------+
 pub struct Format9 {
-    opcode: Opcode9,
+    op: Opcode9,
     nn: u16,
     rb: u8,
     rd: u8,
@@ -17,22 +17,25 @@ impl Debug for Format9 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{:?} R{}, [R{}, #{}]",
-            self.opcode, self.rd, self.rb, self.nn
+            "{:?} {:?}, [{:?}, {:?}]",
+            self.op,
+            self.rd.reg(),
+            self.rb.reg(),
+            self.nn.imm()
         )
     }
 }
 
 impl From<u16> for Format9 {
     fn from(value: u16) -> Self {
-        let opcode = Opcode9::from(value.get_bits(11, 12));
-        let is_word = matches!(opcode, Opcode9::STR | Opcode9::LDR);
+        let op = Opcode9::from(value.get_bits(11, 12));
+        let is_word = matches!(op, Opcode9::STR | Opcode9::LDR);
         let nn = value.get_bits(6, 10);
         let nn = if is_word { nn << 2 } else { nn };
         let rb = value.get_bits_u8(3, 5);
         let rd = value.get_bits_u8(0, 2);
 
-        Self { opcode, nn, rb, rd }
+        Self { op, nn, rb, rd }
     }
 }
 
@@ -57,14 +60,14 @@ impl From<u16> for Opcode9 {
 }
 
 impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format9(&mut self, op: Format9) {
-        let addr = self.get_reg(op.rb) + op.nn as u32;
+    pub fn exec_thumb_format9(&mut self, instr: Format9) {
+        let addr = self.get_reg(instr.rb) + instr.nn as u32;
 
-        match op.opcode {
-            Opcode9::STR => self.str(op.rd, addr),
-            Opcode9::LDR => self.ldr(op.rd, addr),
-            Opcode9::STRB => self.strb(op.rd, addr),
-            Opcode9::LDRB => self.ldrb(op.rd, addr),
+        match instr.op {
+            Opcode9::STR => self.str(instr.rd, addr),
+            Opcode9::LDR => self.ldr(instr.rd, addr),
+            Opcode9::STRB => self.strb(instr.rd, addr),
+            Opcode9::LDRB => self.ldrb(instr.rd, addr),
         }
     }
 }

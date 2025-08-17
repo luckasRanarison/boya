@@ -7,24 +7,24 @@ use super::prelude::*;
 /// |  0 |  0 |  1 |    Op   |    Rd   |                   Offset8                  |
 /// +-------------------------------------------------------------------------------+
 pub struct Format3 {
-    pub opcode: Opcode3,
+    pub op: Opcode3,
     pub rd: u8,
     pub nn: u8,
 }
 
 impl Debug for Format3 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?} R{}, #{}", self.opcode, self.rd, self.nn)
+        write!(f, "{:?} {:?}, {:?}", self.op, self.rd.reg(), self.nn.imm())
     }
 }
 
 impl From<u16> for Format3 {
     fn from(value: u16) -> Self {
-        let opcode = Opcode3::from(value.get_bits(11, 12));
+        let op = Opcode3::from(value.get_bits(11, 12));
         let rd = value.get_bits_u8(8, 10);
         let nn = value.get_bits_u8(0, 7);
 
-        Self { opcode, rd, nn }
+        Self { op, rd, nn }
     }
 }
 
@@ -49,14 +49,14 @@ impl From<u16> for Opcode3 {
 }
 
 impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format3(&mut self, op: Format3) {
-        let nn = op.nn.immediate();
+    pub fn exec_thumb_format3(&mut self, instr: Format3) {
+        let nn = instr.nn.imm();
 
-        match op.opcode {
-            Opcode3::MOV => self.mov(op.rd, nn, true),
-            Opcode3::CMP => self.cmp(op.rd, nn),
-            Opcode3::ADD => self.add(op.rd, nn, op.rd, true),
-            Opcode3::SUB => self.sub(op.rd, nn, op.rd),
+        match instr.op {
+            Opcode3::MOV => self.mov(instr.rd, nn, true),
+            Opcode3::CMP => self.cmp(instr.rd, nn),
+            Opcode3::ADD => self.add(instr.rd, nn, instr.rd, true),
+            Opcode3::SUB => self.sub(instr.rd, nn, instr.rd),
         }
     }
 }

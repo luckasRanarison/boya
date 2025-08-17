@@ -7,24 +7,30 @@ use super::prelude::*;
 /// |  1 |  0 |  0 |  1 | Op |      Rd      |                Offset8                |
 /// +-------------------------------------------------------------------------------+
 pub struct Format11 {
-    opcode: Opcode11,
+    op: Opcode11,
     nn: u16,
     rd: u8,
 }
 
 impl Debug for Format11 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?} R{}, [SP, #{}]", self.opcode, self.rd, self.nn)
+        write!(
+            f,
+            "{:?} R{:?}, [SP, {:?}]",
+            self.op,
+            self.rd.reg(),
+            self.nn.imm()
+        )
     }
 }
 
 impl From<u16> for Format11 {
     fn from(value: u16) -> Self {
-        let opcode = Opcode11::from(value.get(11));
+        let op = Opcode11::from(value.get(11));
         let rd = value.get_bits_u8(8, 10);
         let nn = value.get_bits(0, 7) << 2;
 
-        Self { opcode, nn, rd }
+        Self { op, nn, rd }
     }
 }
 
@@ -46,11 +52,11 @@ impl From<u16> for Opcode11 {
 
 impl<B: Bus> Arm7tdmi<B> {
     pub fn exec_thumb_format11(&mut self, op: Format11) {
-        let addr = self.sp() + op.nn as u32;
+        let instr = self.sp() + op.nn as u32;
 
-        match op.opcode {
-            Opcode11::STR => self.str(op.rd, addr),
-            Opcode11::LDR => self.ldr(op.rd, addr),
+        match op.op {
+            Opcode11::STR => self.str(op.rd, instr),
+            Opcode11::LDR => self.ldr(op.rd, instr),
         }
     }
 }

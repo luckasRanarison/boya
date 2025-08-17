@@ -15,12 +15,12 @@ pub struct Operand {
 
 impl Debug for Operand {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let prefix = match self.kind {
-            OperandKind::Immediate => "#",
-            OperandKind::Register => "R",
-        };
-
-        write!(f, "{prefix}{}", self.value)
+        match self.kind {
+            OperandKind::Imm => write!(f, "#{}", self.value),
+            OperandKind::Reg => write!(f, "R{}", self.value),
+            OperandKind::SP => write!(f, "SP"),
+            OperandKind::PC => write!(f, "PC"),
+        }
     }
 }
 
@@ -29,36 +29,61 @@ impl Operand {
         self.negate = true;
         self
     }
+
+    pub fn pc() -> Self {
+        Operand {
+            kind: OperandKind::PC,
+            value: 15,
+            negate: false,
+        }
+    }
+
+    pub fn sp() -> Self {
+        Operand {
+            kind: OperandKind::SP,
+            value: 13,
+            negate: false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum OperandKind {
-    Immediate,
-    Register,
+    Imm,
+    Reg,
+    SP,
+    PC,
 }
 
 pub trait ToOperand {
-    fn register(self) -> Operand;
-    fn immediate(self) -> Operand;
+    fn reg(self) -> Operand;
+    fn imm(self) -> Operand;
 }
 
 impl<T> ToOperand for T
 where
     T: Into<u32>,
 {
-    fn register(self) -> Operand {
+    fn reg(self) -> Operand {
         Operand {
-            kind: OperandKind::Register,
+            kind: OperandKind::Reg,
             value: self.into(),
             negate: false,
         }
     }
 
-    fn immediate(self) -> Operand {
+    fn imm(self) -> Operand {
         Operand {
-            kind: OperandKind::Immediate,
+            kind: OperandKind::Imm,
             value: self.into(),
             negate: false,
         }
     }
+}
+
+#[derive(Debug)]
+pub enum Carry {
+    One,
+    None,
+    Flag,
 }

@@ -13,7 +13,7 @@ pub struct Format6 {
 
 impl Debug for Format6 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "LDR, R{}, [PC,#{}]", self.rd, self.nn)
+        write!(f, "LDR, {:?}, [PC, {:?}]", self.rd.reg(), self.nn.imm())
     }
 }
 
@@ -27,7 +27,7 @@ impl From<u16> for Format6 {
 }
 
 impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format6(&mut self, op: Format6) {
-        self.ldr(op.rd, self.pc() + op.nn as u32);
+    pub fn exec_thumb_format6(&mut self, instr: Format6) {
+        self.ldr(instr.rd, self.pc() + instr.nn as u32);
     }
 }

@@ -1,9 +1,9 @@
 use crate::{bus::Bus, utils::bitflags::Bitflag};
 
 use super::{
-    Arm7tdmi,
-    common::{DataType, Operand},
+    common::{Carry, DataType, Operand},
     psr::Psr,
+    Arm7tdmi,
 };
 
 impl<B: Bus> Arm7tdmi<B> {
@@ -13,11 +13,18 @@ impl<B: Bus> Arm7tdmi<B> {
         lhs: Operand,
         rhs: Operand,
         dst: Option<u8>,
-        carry: u32,
+        carry: Carry,
         update: bool,
     ) {
         let lhs = self.get_operand(lhs);
         let rhs = self.get_operand(rhs);
+
+        let carry = match carry {
+            Carry::One => 1,
+            Carry::None => 0,
+            Carry::Flag => self.cpsr.get(Psr::C),
+        };
+
         let (res1, ov1) = lhs.overflowing_add(rhs);
         let (res2, ov2) = res1.overflowing_add(carry);
         let overflow = ((res2 ^ lhs) & (res2 ^ rhs)).has(31);

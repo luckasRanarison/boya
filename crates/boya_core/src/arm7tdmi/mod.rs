@@ -122,8 +122,8 @@ impl<B: Bus> Arm7tdmi<B> {
 
     fn get_operand(&self, operand: Operand) -> u32 {
         let value = match operand.kind {
-            OperandKind::Immediate => operand.value,
-            OperandKind::Register => self.get_reg(operand.value as usize),
+            OperandKind::Imm => operand.value,
+            _ => self.get_reg(operand.value as usize),
         };
 
         if operand.negate {

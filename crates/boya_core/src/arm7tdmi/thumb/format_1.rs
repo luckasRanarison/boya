@@ -7,8 +7,8 @@ use super::prelude::*;
 /// |  0 |  0 |  0 |    Op   |         Offset5        |      Rs      |      Rd      |
 /// +-------------------------------------------------------------------------------+
 pub struct Format1 {
-    pub opcode: Opcode1,
-    pub offset: u8,
+    pub op: Opcode1,
+    pub of: u8,
     pub rs: u8,
     pub rd: u8,
 }
@@ -17,25 +17,23 @@ impl Debug for Format1 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{:?} R{}, R{}, #{}",
-            self.opcode, self.rd, self.rs, self.offset
+            "{:?} {:?}, {:?}, {:?}",
+            self.op,
+            self.rd.reg(),
+            self.rs.reg(),
+            self.of.imm()
         )
     }
 }
 
 impl From<u16> for Format1 {
     fn from(value: u16) -> Self {
-        let opcode = value.get_bits(11, 12).into();
-        let offset = value.get_bits_u8(6, 10);
+        let op = value.get_bits(11, 12).into();
+        let of = value.get_bits_u8(6, 10);
         let rs = value.get_bits_u8(3, 5);
         let rd = value.get_bits_u8(0, 2);
 
-        Self {
-            opcode,
-            offset,
-            rs,
-            rd,
-        }
+        Self { op, of, rs, rd }
     }
 }
 
@@ -58,13 +56,13 @@ impl From<u16> for Opcode1 {
 }
 
 impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format1(&mut self, op: Format1) {
-        let nn = op.offset.immediate();
+    pub fn exec_thumb_format1(&mut self, instr: Format1) {
+        let nn = instr.of.imm();
 
-        match op.opcode {
-            Opcode1::LSL => self.lsl(op.rs, nn, op.rd),
-            Opcode1::LSR => self.lsr(op.rs, nn, op.rd),
-            Opcode1::ASR => self.asr(op.rs, nn, op.rd),
+        match instr.op {
+            Opcode1::LSL => self.lsl(instr.rs, nn, instr.rd),
+            Opcode1::LSR => self.lsr(instr.rs, nn, instr.rd),
+            Opcode1::ASR => self.asr(instr.rs, nn, instr.rd),
         }
     }
 }

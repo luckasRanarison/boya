@@ -31,7 +31,11 @@ pub trait Bitflag: Sized {
     fn get_bits_u8(self, start: Self, end: Self) -> u8;
 
     fn update(&mut self, bit: Self, cond: bool) {
-        if cond { self.set(bit) } else { self.clear(bit) }
+        if cond {
+            self.set(bit)
+        } else {
+            self.clear(bit)
+        }
     }
 }
 

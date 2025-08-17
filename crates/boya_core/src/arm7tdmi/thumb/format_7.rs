@@ -7,7 +7,7 @@ use super::prelude::*;
 /// |  0 |  1 |  0 |  1 |    Op   |  0 |      Ro      |      Rb      |      Rd      |
 /// +-------------------------------------------------------------------------------+
 pub struct Format7 {
-    opcode: Opcode7,
+    op: Opcode7,
     ro: u8,
     rb: u8,
     rd: u8,
@@ -17,20 +17,23 @@ impl Debug for Format7 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{:?} R{}, [R{}, R{}]",
-            self.opcode, self.rd, self.rb, self.ro
+            "{:?} {:?}, [{:?}, {:?}]",
+            self.op,
+            self.rd.reg(),
+            self.rb.reg(),
+            self.ro.reg()
         )
     }
 }
 
 impl From<u16> for Format7 {
     fn from(value: u16) -> Self {
-        let opcode = Opcode7::from(value.get_bits(10, 11));
+        let op = Opcode7::from(value.get_bits(10, 11));
         let ro = value.get_bits_u8(6, 8);
         let rb = value.get_bits_u8(3, 5);
         let rd = value.get_bits_u8(0, 2);
 
-        Self { opcode, ro, rb, rd }
+        Self { op, ro, rb, rd }
     }
 }
 
@@ -55,14 +58,14 @@ impl From<u16> for Opcode7 {
 }
 
 impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format7(&mut self, op: Format7) {
-        let addr = self.get_reg(op.rb) + self.get_reg(op.ro);
+    pub fn exec_thumb_format7(&mut self, instr: Format7) {
+        let addr = self.get_reg(instr.rb) + self.get_reg(instr.ro);
 
-        match op.opcode {
-            Opcode7::STR => self.str(op.rd, addr),
-            Opcode7::STRB => self.strb(op.rd, addr),
-            Opcode7::LDR => self.ldr(op.rd, addr),
-            Opcode7::LDRB => self.ldrb(op.rd, addr),
+        match instr.op {
+            Opcode7::STR => self.str(instr.rd, addr),
+            Opcode7::STRB => self.strb(instr.rd, addr),
+            Opcode7::LDR => self.ldr(instr.rd, addr),
+            Opcode7::LDRB => self.ldrb(instr.rd, addr),
         }
     }
 }

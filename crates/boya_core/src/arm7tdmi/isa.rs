@@ -6,9 +6,9 @@ use crate::{
 };
 
 use super::{
-    Arm7tdmi,
-    common::{DataType, Operand, ToOperand},
+    common::{Carry, DataType, Operand, ToOperand},
     psr::Psr,
+    Arm7tdmi,
 };
 
 impl<B: Bus> Arm7tdmi<B> {
@@ -29,54 +29,51 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn add(&mut self, lhs: u8, rhs: Operand, dst: u8, update: bool) {
-        self.add_sub_op(lhs.register(), rhs, dst.into(), 0, update);
+        self.add_sub_op(lhs.reg(), rhs, dst.into(), Carry::None, update);
     }
 
     pub fn adc(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        let carry = self.cpsr.get(Psr::C);
-        self.add_sub_op(lhs.register(), rhs, dst.into(), carry, true);
+        self.add_sub_op(lhs.reg(), rhs, dst.into(), Carry::Flag, true);
     }
 
     pub fn sub(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        self.add_sub_op(lhs.register(), rhs.not(), dst.into(), 1, true);
+        self.add_sub_op(lhs.reg(), rhs.not(), dst.into(), Carry::One, true);
     }
 
     pub fn sbc(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        let carry = self.cpsr.get(Psr::C);
-        self.add_sub_op(lhs.register(), rhs.not(), dst.into(), carry, true);
+        self.add_sub_op(lhs.reg(), rhs.not(), dst.into(), Carry::Flag, true);
     }
 
     pub fn cmp(&mut self, lhs: u8, rhs: Operand) {
-        self.add_sub_op(lhs.register(), rhs.not(), None, 1, true);
+        self.add_sub_op(lhs.reg(), rhs.not(), None, Carry::One, true);
     }
 
     pub fn cmn(&mut self, lhs: u8, rhs: Operand) {
-        self.add_sub_op(lhs.register(), rhs, None, 0, true);
+        self.add_sub_op(lhs.reg(), rhs, None, Carry::None, true);
     }
 
     pub fn neg(&mut self, rd: u8, rs: u8) {
-        let lhs = 0_u32.immediate();
-        self.add_sub_op(lhs, rs.register().not(), rd.into(), 1, true);
+        self.add_sub_op(0_u32.imm(), rs.reg().not(), rd.into(), Carry::One, true);
     }
 
     pub fn and(&mut self, rd: u8, rs: u8) {
-        self.logical_op(u32::bitand, rs, rd.register(), rd.into());
+        self.logical_op(u32::bitand, rs, rd.reg(), rd.into());
     }
 
     pub fn eor(&mut self, rd: u8, rs: u8) {
-        self.logical_op(u32::bitxor, rs, rd.register(), rd.into());
+        self.logical_op(u32::bitxor, rs, rd.reg(), rd.into());
     }
 
     pub fn orr(&mut self, rd: u8, rs: u8) {
-        self.logical_op(u32::bitor, rs, rd.register(), rd.into());
+        self.logical_op(u32::bitor, rs, rd.reg(), rd.into());
     }
 
     pub fn tst(&mut self, rd: u8, rs: u8) {
-        self.logical_op(u32::bitand, rd, rs.register(), None);
+        self.logical_op(u32::bitand, rd, rs.reg(), None);
     }
 
     pub fn bic(&mut self, rd: u8, rs: u8) {
-        self.logical_op(u32::bitand, rd, rs.register().not(), rd.into());
+        self.logical_op(u32::bitand, rd, rs.reg().not(), rd.into());
     }
 
     pub fn ldrb(&mut self, rd: u8, addr: u32) {
@@ -112,7 +109,7 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn mvn(&mut self, rd: u8, rs: u8) {
-        self.mov(rd, rs.register().not(), true);
+        self.mov(rd, rs.reg().not(), true);
     }
 
     pub fn mov(&mut self, rd: u8, operand: Operand, update: bool) {
