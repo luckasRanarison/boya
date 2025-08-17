@@ -72,6 +72,40 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
+    pub fn mov_op(&mut self, rd: u8, operand: Operand, update: bool) {
+        let value = self.get_operand(operand);
+
+        if update {
+            self.cpsr.update_zn(value);
+        }
+
+        self.set_reg(rd, value);
+    }
+
+    #[inline(always)]
+    pub fn bx_op(&mut self, rs: u8) {
+        let value = self.get_reg(rs);
+
+        if value.get(0) == 0 {
+            self.cpsr.set_arm_mode();
+        }
+
+        self.set_pc(value);
+    }
+
+    #[inline(always)]
+    pub fn mul_op(&mut self, lhs: u8, rhs: Operand, dst: u8) {
+        let lhs = self.get_reg(lhs);
+        let rhs = self.get_operand(rhs);
+        let result = lhs.wrapping_mul(rhs);
+
+        self.cpsr.update_zn(result);
+        self.cpsr.update(Psr::C, false);
+
+        self.set_reg(dst, result);
+    }
+
+    #[inline(always)]
     pub fn ldr_op(&mut self, rd: u8, addr: u32, kind: DataType, signed: bool) {
         let value = match kind {
             DataType::Byte if signed => self.bus.read_u8(addr) as i8 as i32 as u32,

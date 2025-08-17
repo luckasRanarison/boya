@@ -1,13 +1,9 @@
 use std::ops::{BitAnd, BitOr, BitXor};
 
-use crate::{
-    bus::Bus,
-    utils::{bitflags::Bitflag, ops::ExtendedOps},
-};
+use crate::{bus::Bus, utils::ops::ExtendedOps};
 
 use super::{
     common::{Carry, DataType, Operand, ToOperand},
-    psr::Psr,
     Arm7tdmi,
 };
 
@@ -109,37 +105,18 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn mvn(&mut self, rd: u8, rs: u8) {
-        self.mov(rd, rs.reg().not(), true);
+        self.mov_op(rd, rs.reg().not(), true);
     }
 
     pub fn mov(&mut self, rd: u8, operand: Operand, update: bool) {
-        let value = self.get_operand(operand);
-
-        if update {
-            self.cpsr.update_zn(value);
-        }
-
-        self.set_reg(rd, value);
+        self.mov_op(rd, operand, update);
     }
 
     pub fn mul(&mut self, lhs: u8, rhs: Operand, dst: u8) {
-        let lhs = self.get_reg(lhs);
-        let rhs = self.get_operand(rhs);
-        let result = lhs.wrapping_mul(rhs);
-
-        self.cpsr.update_zn(result);
-        self.cpsr.update(Psr::C, false);
-
-        self.set_reg(dst, result);
+        self.mul_op(lhs, rhs, dst);
     }
 
     pub fn bx(&mut self, rs: u8) {
-        let value = self.get_reg(rs);
-
-        if value.get(0) == 0 {
-            self.cpsr.set_arm_mode();
-        }
-
-        self.set_pc(value);
+        self.bx_op(rs);
     }
 }
