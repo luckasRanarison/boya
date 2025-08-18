@@ -1,13 +1,10 @@
 use std::ops::{BitAnd, BitOr, BitXor};
 
-use crate::{
-    bus::Bus,
-    utils::{bitflags::BitArray, ops::ExtendedOps},
-};
+use crate::{bus::Bus, utils::ops::ExtendedOps};
 
 use super::{
-    Arm7tdmi,
     common::{Carry, DataType, Operand, ToOperand},
+    Arm7tdmi,
 };
 
 impl<B: Bus> Arm7tdmi<B> {
@@ -124,10 +121,10 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn push(&mut self, rlist: u8, lr: bool) {
-        self.push_op(&rlist.to_bit_array::<8>(0), lr);
+        self.push_op(rlist, lr);
     }
 
     pub fn pop(&mut self, rlist: u8, pc: bool) {
-        self.pop_op(&rlist.to_bit_array::<8>(0), pc);
+        self.pop_op(rlist, pc);
     }
 }

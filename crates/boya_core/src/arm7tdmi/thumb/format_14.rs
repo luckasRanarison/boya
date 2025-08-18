@@ -1,4 +1,4 @@
-use crate::utils::bitflags::BitArray;
+use crate::utils::bitflags::BitIter;
 
 use super::prelude::*;
 
@@ -18,9 +18,7 @@ impl Debug for Format14 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let active = self
             .rlist
-            .to_bit_array::<8>(0)
-            .into_iter()
-            .enumerate()
+            .iter_lsb()
             .filter(|(_, bit)| *bit == 1)
             .map(|(i, _)| format!("R{}", 7 - i))
             .collect::<Vec<_>>()

@@ -1,4 +1,4 @@
-use std::ops::{BitAnd, Shr, ShrAssign};
+use std::ops::*;
 
 pub trait Bitflag: Sized {
     fn get(self, bit: Self) -> Self;
@@ -13,115 +13,126 @@ pub trait Bitflag: Sized {
     fn get_bits_u8(self, start: Self, end: Self) -> u8;
 
     fn update(&mut self, bit: Self, cond: bool) {
-        if cond { self.set(bit) } else { self.clear(bit) }
+        if cond {
+            self.set(bit)
+        } else {
+            self.clear(bit)
+        }
     }
 }
 
-impl Bitflag for u32 {
+impl<T> Bitflag for T
+where
+    T: From<u8>
+        + TryInto<u8>
+        + BitAnd<Output = T>
+        + BitOr<Output = T>
+        + Shl<Output = T>
+        + Shr<Output = T>
+        + Sub<Output = T>
+        + Add<Output = T>
+        + Not<Output = T>
+        + BitAndAssign
+        + BitOrAssign
+        + PartialEq
+        + Copy,
+    <T as TryInto<u8>>::Error: std::fmt::Debug,
+{
     #[inline(always)]
-    fn get(self, bit: u32) -> u32 {
-        (self >> bit) & 1
+    fn get(self, bit: T) -> T {
+        (self >> bit) & T::from(1)
     }
 
     #[inline(always)]
-    fn get_u8(self, bit: u32) -> u8 {
-        self.get(bit) as u8
+    fn get_u8(self, bit: T) -> u8 {
+        self.get(bit).try_into().unwrap()
     }
 
     #[inline(always)]
-    fn set(&mut self, bit: u32) {
-        *self |= 1 << bit;
+    fn set(&mut self, bit: T) {
+        *self |= T::from(1) << bit;
     }
 
     #[inline(always)]
-    fn clear(&mut self, bit: u32) {
-        *self &= !(1 << bit);
+    fn clear(&mut self, bit: T) {
+        *self &= !(T::from(1) << bit);
     }
 
     #[inline(always)]
-    fn set_bits(&mut self, start: u32, end: u32, value: u32) {
-        let mask = ((1 << (end - start + 1)) - 1) << start;
+    fn set_bits(&mut self, start: T, end: T, value: T) {
+        let one = T::from(1);
+        let mask = ((one << (end - start + one)) - one) << start;
         *self = (*self & !mask) | ((value << start) & mask);
     }
 
     #[inline(always)]
-    fn get_bits(self, start: u32, end: u32) -> u32 {
-        (self >> start) & ((1 << (end - start + 1)) - 1)
+    fn get_bits(self, start: T, end: T) -> T {
+        let one = T::from(1);
+        let mask = (one << (end - start + one)) - one;
+        (self >> start) & mask
     }
 
     #[inline(always)]
-    fn get_bits_u8(self, start: u32, end: u32) -> u8 {
-        self.get_bits(start, end) as u8
+    fn get_bits_u8(self, start: T, end: T) -> u8 {
+        self.get_bits(start, end).try_into().unwrap()
     }
 
     #[inline(always)]
-    fn has(self, bit: u32) -> bool {
-        self.get(bit) == 1
-    }
-}
-
-impl Bitflag for u16 {
-    #[inline(always)]
-    fn get(self, bit: u16) -> u16 {
-        (self >> bit) & 1
-    }
-
-    #[inline(always)]
-    fn get_u8(self, bit: u16) -> u8 {
-        self.get(bit) as u8
-    }
-
-    #[inline(always)]
-    fn set(&mut self, bit: u16) {
-        *self |= 1 << bit;
-    }
-
-    #[inline(always)]
-    fn clear(&mut self, bit: u16) {
-        *self &= !(1 << bit);
-    }
-
-    #[inline(always)]
-    fn set_bits(&mut self, start: u16, end: u16, value: u16) {
-        let mask = ((1 << (end - start + 1)) - 1) << start;
-        *self = (*self & !mask) | ((value << start) & mask);
-    }
-
-    #[inline(always)]
-    fn get_bits(self, start: u16, end: u16) -> u16 {
-        (self >> start) & ((1 << (end - start + 1)) - 1)
-    }
-
-    #[inline(always)]
-    fn get_bits_u8(self, start: u16, end: u16) -> u8 {
-        self.get_bits(start, end) as u8
-    }
-
-    #[inline(always)]
-    fn has(self, bit: u16) -> bool {
-        self.get(bit) == 1
+    fn has(self, bit: T) -> bool {
+        self.get(bit) == T::from(1)
     }
 }
 
 pub trait BitArray {
-    fn to_bit_array<const N: usize>(self, start: u8) -> [u8; N];
+    fn to_bit_array<const N: usize>(self, start: usize) -> [u8; N];
 }
 
 impl<T> BitArray for T
 where
     T: BitAnd<Output = T> + Shr<Output = T> + ShrAssign + PartialEq + From<u8> + Copy,
 {
-    fn to_bit_array<const N: usize>(self, start: u8) -> [u8; N] {
-        let one = T::from(1);
+    fn to_bit_array<const N: usize>(self, start: usize) -> [u8; N] {
         let mut buffer = [0; N];
-        let mut shifted = self >> T::from(start);
+        let bits = self.iter_lsb().skip(start).take(N);
 
-        for i in 0..N {
-            buffer[N - 1 - i] = ((shifted & one) == one) as u8;
-            shifted >>= one;
+        for (idx, bit) in bits {
+            buffer[N - idx] = bit;
         }
 
         buffer
+    }
+}
+
+pub trait BitIter {
+    fn iter_lsb(self) -> impl Iterator<Item = (usize, u8)>;
+    fn iter_msb(self) -> impl Iterator<Item = (usize, u8)>;
+}
+
+impl<T> BitIter for T
+where
+    T: BitAnd<Output = T> + Shr<Output = T> + ShrAssign + PartialEq + From<u8> + Copy,
+{
+    fn iter_lsb(self) -> impl Iterator<Item = (usize, u8)> {
+        let one = T::from(1);
+        let range = 0..size_of::<T>() * 8;
+        let mut shifted = self;
+
+        range.map(move |index| {
+            let bit = (shifted & one) == one;
+            shifted >>= one;
+            (index, bit as u8)
+        })
+    }
+
+    fn iter_msb(self) -> impl Iterator<Item = (usize, u8)> {
+        let one = T::from(1);
+        let range = 0..size_of::<T>() * 8;
+
+        range.rev().map(move |index| {
+            let offset = T::from((index) as u8);
+            let bit = ((self >> offset) & one) == one;
+            (index, bit as u8)
+        })
     }
 }
 
@@ -147,9 +158,28 @@ mod tests {
 
     #[test]
     fn test_bit_array() {
-        let value = 0b1010;
+        let value = 0b1010_u8;
         let arr = value.to_bit_array::<3>(1);
 
         assert_eq!(arr, [1, 0, 1]);
+    }
+
+    #[test]
+    fn test_bit_iter() {
+        let value = 0b00111010_u8;
+        let bits_msb = value.iter_msb().collect::<Vec<_>>();
+        let bits_lsb = value.iter_lsb().collect::<Vec<_>>();
+
+        #[rustfmt::skip]
+        assert_eq!(
+            &bits_msb,
+            &[(7, 0), (6, 0), (5, 1), (4, 1), (3, 1), (2, 0), (1, 1), (0, 0)]
+        );
+
+        #[rustfmt::skip]
+        assert_eq!(
+            &bits_lsb,
+            &[(0, 0), (1, 1), (2, 0), (3, 1), (4, 1), (5, 1), (6, 0), (7, 0)]
+        );
     }
 }

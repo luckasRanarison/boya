@@ -1,12 +1,12 @@
 use crate::{
     bus::Bus,
-    utils::bitflags::{BitArray, Bitflag},
+    utils::bitflags::{BitIter, Bitflag},
 };
 
 use super::{
-    Arm7tdmi,
     common::{Carry, DataType, Operand},
     psr::Psr,
+    Arm7tdmi,
 };
 
 impl<B: Bus> Arm7tdmi<B> {
@@ -133,10 +133,10 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    pub fn push_op(&mut self, rlist: &[u8], lr: bool) {
-        for (i, &bit) in rlist.iter().rev().enumerate() {
+    pub fn push_op<I: BitIter>(&mut self, rlist: I, lr: bool) {
+        for (idx, bit) in rlist.iter_lsb() {
             if bit == 1 {
-                self.push_sp(i);
+                self.push_sp(idx);
             }
         }
 
@@ -146,10 +146,10 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    pub fn pop_op(&mut self, rlist: &[u8], pc: bool) {
-        for (i, &bit) in rlist.iter().enumerate() {
+    pub fn pop_op<I: BitIter>(&mut self, rlist: I, pc: bool) {
+        for (idx, bit) in rlist.iter_msb() {
             if bit == 1 {
-                self.pop_sp(rlist.len() - 1 - i);
+                self.pop_sp(idx);
             }
         }
 
