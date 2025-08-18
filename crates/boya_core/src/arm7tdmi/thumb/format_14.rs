@@ -20,7 +20,7 @@ impl Debug for Format14 {
             .rlist
             .iter_lsb()
             .filter(|(_, bit)| *bit == 1)
-            .map(|(i, _)| format!("R{}", 7 - i))
+            .map(|(i, _)| format!("R{i}"))
             .collect::<Vec<_>>()
             .join(",");
 
@@ -35,14 +35,10 @@ impl Debug for Format14 {
 impl From<u16> for Format14 {
     fn from(value: u16) -> Self {
         let op = Opcode::from(value.get(11));
-        let lr_pc = value.has(8);
+        let lrpc = value.has(8);
         let rlist = value.get_bits_u8(0, 7);
 
-        Self {
-            op,
-            lrpc: lr_pc,
-            rlist,
-        }
+        Self { op, lrpc, rlist }
     }
 }
 
