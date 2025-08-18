@@ -93,10 +93,10 @@ where
 
 #[derive(Debug, Clone, Copy)]
 pub enum RegisterFx {
-    IB,
-    IA,
-    DB,
-    DA,
+    IncB,
+    IncA,
+    DecB,
+    DecA,
 }
 
 #[derive(Debug)]

@@ -1,12 +1,12 @@
-mod format_1;
-mod format_2;
-mod format_3;
-mod format_4;
-mod format_5;
-mod format_6;
-mod format_7;
-mod format_8;
-mod format_9;
+mod format_01;
+mod format_02;
+mod format_03;
+mod format_04;
+mod format_05;
+mod format_06;
+mod format_07;
+mod format_08;
+mod format_09;
 
 mod format_10;
 mod format_11;
@@ -19,8 +19,8 @@ mod format_16;
 mod prelude {
     pub use std::fmt::Debug;
 
-    pub use crate::arm7tdmi::Arm7tdmi;
     pub use crate::arm7tdmi::common::{Operand, ToOperand};
+    pub use crate::arm7tdmi::Arm7tdmi;
     pub use crate::bus::Bus;
     pub use crate::utils::bitflags::Bitflag;
 
@@ -28,15 +28,15 @@ mod prelude {
     pub use crate::{arm7tdmi::test::Psr, test::AsmTestBuilder};
 }
 
-use format_1::Format1;
-use format_2::Format2;
-use format_3::Format3;
-use format_4::Format4;
-use format_5::Format5;
-use format_6::Format6;
-use format_7::Format7;
-use format_8::Format8;
-use format_9::Format9;
+use format_01::Format1;
+use format_02::Format2;
+use format_03::Format3;
+use format_04::Format4;
+use format_05::Format5;
+use format_06::Format6;
+use format_07::Format7;
+use format_08::Format8;
+use format_09::Format9;
 
 use format_10::Format10;
 use format_11::Format11;

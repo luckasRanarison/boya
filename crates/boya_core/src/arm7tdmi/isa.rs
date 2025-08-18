@@ -3,9 +3,8 @@ use std::ops::{BitAnd, BitOr, BitXor};
 use crate::{bus::Bus, utils::ops::ExtendedOps};
 
 use super::{
-    Arm7tdmi,
     common::{Carry, DataType, Operand, RegisterFx, ToOperand},
-    psr::Psr,
+    Arm7tdmi,
 };
 
 impl<B: Bus> Arm7tdmi<B> {
@@ -122,19 +121,19 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn push(&mut self, rlist: u8, lr: bool) {
-        self.store_op(Self::SP, rlist, lr.then_some(Self::LR), RegisterFx::DB);
+        self.store_op(Self::SP, rlist, lr.then_some(Self::LR), RegisterFx::DecB);
     }
 
     pub fn pop(&mut self, rlist: u8, pc: bool) {
-        self.load_op(Self::SP, rlist, pc.then_some(Self::PC), RegisterFx::IA);
+        self.load_op(Self::SP, rlist, pc.then_some(Self::PC), RegisterFx::IncA);
     }
 
     pub fn stmia(&mut self, rlist: u8, rb: u8) {
-        self.store_op(rb.into(), rlist, None, RegisterFx::IA);
+        self.store_op(rb.into(), rlist, None, RegisterFx::IncA);
     }
 
     pub fn ldmia(&mut self, rlist: u8, rb: u8) {
-        self.load_op(rb.into(), rlist, None, RegisterFx::IA);
+        self.load_op(rb.into(), rlist, None, RegisterFx::IncA);
     }
 
     pub fn beq(&mut self, offset: i16) {

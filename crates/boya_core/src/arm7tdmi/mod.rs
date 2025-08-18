@@ -103,7 +103,7 @@ impl<B: Bus> Arm7tdmi<B> {
     fn store_reg(&mut self, rs: usize, rb: usize, effect: RegisterFx) {
         let value = self.get_reg(rs);
 
-        if matches!(effect, RegisterFx::IB | RegisterFx::DB) {
+        if matches!(effect, RegisterFx::IncB | RegisterFx::DecB) {
             self.update_register(rb, effect);
             self.bus.write_word(self.get_reg(rb), value);
         } else {
@@ -114,14 +114,14 @@ impl<B: Bus> Arm7tdmi<B> {
 
     #[inline(always)]
     fn load_reg(&mut self, rd: usize, rb: usize, effect: RegisterFx) {
-        if matches!(effect, RegisterFx::IB | RegisterFx::DB) {
+        if matches!(effect, RegisterFx::IncB | RegisterFx::DecB) {
             self.update_register(rb, effect);
         }
 
         let addr = self.get_reg(rb);
         let value = self.bus.read_word(addr);
 
-        if matches!(effect, RegisterFx::IA | RegisterFx::DA) {
+        if matches!(effect, RegisterFx::IncA | RegisterFx::DecA) {
             self.update_register(rb, effect);
         }
 
@@ -163,8 +163,8 @@ impl<B: Bus> Arm7tdmi<B> {
 
     fn update_register(&mut self, rn: usize, effect: RegisterFx) {
         match effect {
-            RegisterFx::IB | RegisterFx::IA => self.increment_reg(rn),
-            RegisterFx::DB | RegisterFx::DA => self.decrement_reg(rn),
+            RegisterFx::IncB | RegisterFx::IncA => self.increment_reg(rn),
+            RegisterFx::DecB | RegisterFx::DecA => self.decrement_reg(rn),
         }
     }
 
@@ -174,7 +174,11 @@ impl<B: Bus> Arm7tdmi<B> {
             _ => self.get_reg(operand.value as usize),
         };
 
-        if operand.negate { !value } else { value }
+        if operand.negate {
+            !value
+        } else {
+            value
+        }
     }
 }
 

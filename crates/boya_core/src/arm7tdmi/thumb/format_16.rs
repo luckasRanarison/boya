@@ -61,7 +61,7 @@ impl From<u16> for Opcode {
             0xB => Self::BLT,
             0xC => Self::BGT,
             0xD => Self::BLE,
-            _ => unreachable!("invalid format 15 opcode: {value:b}"),
+            _ => unreachable!("invalid format 16 opcode: {value:b}"),
         }
     }
 }
