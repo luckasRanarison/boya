@@ -1,10 +1,13 @@
 use std::ops::{BitAnd, BitOr, BitXor};
 
-use crate::{bus::Bus, utils::ops::ExtendedOps};
+use crate::{
+    bus::Bus,
+    utils::{bitflags::BitIter, ops::ExtendedOps},
+};
 
 use super::{
-    common::{Carry, DataType, Operand, ToOperand},
     Arm7tdmi,
+    common::{AddressMove, Carry, DataType, Operand, ToOperand},
 };
 
 impl<B: Bus> Arm7tdmi<B> {
@@ -121,10 +124,18 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn push(&mut self, rlist: u8, lr: bool) {
-        self.push_op(rlist, lr);
+        self.store_op(Self::SP, rlist, lr.then_some(Self::LR), AddressMove::Down);
     }
 
     pub fn pop(&mut self, rlist: u8, pc: bool) {
-        self.pop_op(rlist, pc);
+        self.load_op(Self::SP, rlist.iter_msb(), pc.then_some(Self::PC));
+    }
+
+    pub fn stmia(&mut self, rlist: u8, rb: u8) {
+        self.store_op(rb.into(), rlist, None, AddressMove::Up);
+    }
+
+    pub fn ldmia(&mut self, rlist: u8, rb: u8) {
+        self.load_op(rb.into(), rlist.iter_lsb(), None);
     }
 }

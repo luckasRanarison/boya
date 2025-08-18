@@ -13,11 +13,7 @@ pub trait Bitflag: Sized {
     fn get_bits_u8(self, start: Self, end: Self) -> u8;
 
     fn update(&mut self, bit: Self, cond: bool) {
-        if cond {
-            self.set(bit)
-        } else {
-            self.clear(bit)
-        }
+        if cond { self.set(bit) } else { self.clear(bit) }
     }
 }
 
@@ -91,12 +87,14 @@ impl<T> BitArray for T
 where
     T: BitAnd<Output = T> + Shr<Output = T> + ShrAssign + PartialEq + From<u8> + Copy,
 {
-    fn to_bit_array<const N: usize>(self, start: usize) -> [u8; N] {
+    fn to_bit_array<const N: usize>(self, offset: usize) -> [u8; N] {
         let mut buffer = [0; N];
-        let bits = self.iter_lsb().skip(start).take(N);
+
+        let shiftd = self >> T::from(offset as u8);
+        let bits = shiftd.iter_lsb().take(N);
 
         for (idx, bit) in bits {
-            buffer[N - idx] = bit;
+            buffer[N - 1 - idx] = bit;
         }
 
         buffer
@@ -125,13 +123,14 @@ where
     }
 
     fn iter_msb(self) -> impl Iterator<Item = (usize, u8)> {
+        let bits = size_of::<T>() * 8;
         let one = T::from(1);
-        let range = 0..size_of::<T>() * 8;
+        let mut mask = T::from(1 << (bits - 1));
 
-        range.rev().map(move |index| {
-            let offset = T::from((index) as u8);
-            let bit = ((self >> offset) & one) == one;
-            (index, bit as u8)
+        (0..bits).rev().map(move |index| {
+            let bit = ((self & mask) == mask) as u8;
+            mask >>= one;
+            (index, bit)
         })
     }
 }

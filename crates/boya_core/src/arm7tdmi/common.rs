@@ -1,10 +1,19 @@
 use std::fmt::Debug;
 
+use crate::utils::bitflags::BitIter;
+
 #[derive(Debug)]
 pub enum DataType {
     Byte,
     HWord,
     Word,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum NamedRegister {
+    SP = 13,
+    LR = 14,
+    PC = 15,
 }
 
 pub struct Operand {
@@ -82,9 +91,27 @@ where
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum AddressMove {
+    Down,
+    Up,
+}
+
 #[derive(Debug)]
 pub enum Carry {
     One,
     None,
     Flag,
+}
+
+pub fn format_rlist<I: BitIter>(registers: I, named: Option<NamedRegister>) -> String {
+    let inner = registers
+        .iter_lsb()
+        .filter(|(_, bit)| *bit == 1)
+        .map(|(i, _)| format!("R{i}"))
+        .chain([named.map(|s| format!("{s:?}"))].into_iter().flatten())
+        .collect::<Vec<_>>()
+        .join(",");
+
+    format!("{{{inner}}}")
 }

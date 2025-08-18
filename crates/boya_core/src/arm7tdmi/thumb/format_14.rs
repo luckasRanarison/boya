@@ -1,4 +1,7 @@
-use crate::utils::bitflags::BitIter;
+use crate::{
+    arm7tdmi::common::{NamedRegister, format_rlist},
+    utils::bitflags::BitIter,
+};
 
 use super::prelude::*;
 
@@ -16,19 +19,12 @@ pub struct Format14 {
 
 impl Debug for Format14 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let active = self
-            .rlist
-            .iter_lsb()
-            .filter(|(_, bit)| *bit == 1)
-            .map(|(i, _)| format!("R{i}"))
-            .collect::<Vec<_>>()
-            .join(",");
+        let rlist = match self.op {
+            Opcode::PUSH => format_rlist(self.rlist, self.lrpc.then_some(NamedRegister::LR)),
+            Opcode::POP => format_rlist(self.rlist, self.lrpc.then_some(NamedRegister::PC)),
+        };
 
-        match (self.lrpc, &self.op) {
-            (true, Opcode::PUSH) => write!(f, "PUSH {{{active},LR}}"),
-            (true, Opcode::POP) => write!(f, "POP {{{active},PC}}"),
-            (false, _) => write!(f, "{:?} {{{active}}}", self.op),
-        }
+        write!(f, "{:?} {{{rlist}}}", self.op)
     }
 }
 

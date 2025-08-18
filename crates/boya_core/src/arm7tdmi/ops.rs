@@ -4,9 +4,9 @@ use crate::{
 };
 
 use super::{
-    common::{Carry, DataType, Operand},
-    psr::Psr,
     Arm7tdmi,
+    common::{AddressMove, Carry, DataType, Operand},
+    psr::Psr,
 };
 
 impl<B: Bus> Arm7tdmi<B> {
@@ -133,28 +133,37 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    pub fn push_op<I: BitIter>(&mut self, rlist: I, lr: bool) {
+    pub fn store_op<I: BitIter>(
+        &mut self,
+        rb: usize,
+        rlist: I,
+        rn: Option<usize>,
+        direction: AddressMove,
+    ) {
         for (idx, bit) in rlist.iter_lsb() {
             if bit == 1 {
-                self.push_sp(idx);
+                self.store_reg(idx, rb, direction);
             }
         }
 
-        if lr {
-            self.push_sp(Self::LR);
+        if let Some(rn) = rn {
+            self.store_reg(rn, rb, direction);
         }
     }
 
     #[inline(always)]
-    pub fn pop_op<I: BitIter>(&mut self, rlist: I, pc: bool) {
-        for (idx, bit) in rlist.iter_msb() {
+    pub fn load_op<I>(&mut self, rb: usize, rlist: I, rn: Option<usize>)
+    where
+        I: IntoIterator<Item = (usize, u8)>,
+    {
+        for (idx, bit) in rlist {
             if bit == 1 {
-                self.pop_sp(idx);
+                self.load_reg(idx, rb);
             }
         }
 
-        if pc {
-            self.pop_sp(Self::PC);
+        if let Some(rn) = rn {
+            self.load_reg(rn, rb);
         }
     }
 }

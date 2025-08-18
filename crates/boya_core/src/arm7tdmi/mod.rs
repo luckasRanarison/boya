@@ -7,7 +7,7 @@ mod psr;
 mod thumb;
 
 use bank::Bank;
-use common::{Operand, OperandKind};
+use common::{AddressMove, Operand, OperandKind};
 use pipeline::Pipeline;
 use psr::{Exception, Psr};
 
@@ -100,59 +100,61 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    fn increment_sp(&mut self) {
-        *self.get_reg_mut(Self::SP) += 4;
-    }
-
-    #[inline(always)]
-    fn decrement_sp(&mut self) {
-        *self.get_reg_mut(Self::SP) -= 4;
-    }
-
-    #[inline(always)]
-    fn push_sp(&mut self, rs: usize) {
+    fn store_reg(&mut self, rs: usize, rb: usize, direction: AddressMove) {
         let value = self.get_reg(rs);
 
-        self.decrement_sp();
-        self.bus.write_word(self.sp(), value);
+        match direction {
+            AddressMove::Up => {
+                self.bus.write_word(self.get_reg(rb), value);
+                self.increment_reg(rb);
+            }
+            AddressMove::Down => {
+                self.decrement_reg(rb);
+                self.bus.write_word(self.get_reg(rb), value);
+            }
+        }
     }
 
     #[inline(always)]
-    fn pop_sp(&mut self, rd: usize) {
-        let value = self.bus.read_word(self.sp());
+    fn load_reg(&mut self, rd: usize, rb: usize) {
+        let addr = self.get_reg(rb);
+        let value = self.bus.read_word(addr);
 
-        self.increment_sp();
+        self.increment_reg(rb);
         self.set_reg(rd, value);
     }
 
-    fn get_reg<I>(&self, index: I) -> u32
-    where
-        I: Into<usize> + Copy,
-    {
+    fn get_reg<I: Into<usize>>(&self, index: I) -> u32 {
+        let index = index.into();
         let mode = self.cpsr.operating_mode();
 
         self.bank
-            .get_reg(mode, index.into())
-            .unwrap_or_else(|| self.reg[index.into()])
+            .get_reg(mode, index)
+            .unwrap_or_else(|| self.reg[index])
     }
 
-    fn get_reg_mut<I>(&mut self, index: I) -> &mut u32
-    where
-        I: Into<usize> + Copy,
-    {
+    fn get_reg_mut<I: Into<usize>>(&mut self, index: I) -> &mut u32 {
+        let index = index.into();
         let mode = self.cpsr.operating_mode();
 
         self.bank
-            .get_reg_mut(mode, index.into())
-            .unwrap_or_else(|| &mut self.reg[index.into()])
+            .get_reg_mut(mode, index)
+            .unwrap_or_else(|| &mut self.reg[index])
     }
 
     #[inline(always)]
-    fn set_reg<I>(&mut self, index: I, value: u32)
-    where
-        I: Into<usize> + Copy,
-    {
+    fn set_reg<I: Into<usize>>(&mut self, index: I, value: u32) {
         *self.get_reg_mut(index) = value;
+    }
+
+    #[inline(always)]
+    fn increment_reg<I: Into<usize>>(&mut self, register: I) {
+        *self.get_reg_mut(register) += 4;
+    }
+
+    #[inline(always)]
+    fn decrement_reg<I: Into<usize>>(&mut self, register: I) {
+        *self.get_reg_mut(register) -= 4;
     }
 
     fn get_operand(&self, operand: Operand) -> u32 {
