@@ -7,7 +7,7 @@ use super::prelude::*;
 /// |  1 |  0 |  1 |  1 |  0 |  0 |  0 |  0 | Op |            SWord7                |
 /// +-------------------------------------------------------------------------------+
 pub struct Format13 {
-    nn: Operand,
+    nn: Operand, // 0-1020, step 4
 }
 
 impl Debug for Format13 {
@@ -18,7 +18,7 @@ impl Debug for Format13 {
 
 impl From<u16> for Format13 {
     fn from(value: u16) -> Self {
-        let nn = value.get_bits(0, 6) << 4;
+        let nn = value.get_bits(0, 6) << 2;
 
         let nn = match value.get(7) {
             0 => nn.imm(),
@@ -55,8 +55,7 @@ mod tests {
         AsmTestBuilder::new()
             .thumb()
             .asm(asm)
-            .with_sp(32)
-            .assert_reg(13, 64 - 16)
+            .assert_reg(13, 208 - 4)
             .run(2);
     }
 }

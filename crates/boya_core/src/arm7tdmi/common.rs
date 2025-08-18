@@ -92,9 +92,11 @@ where
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum AddressMove {
-    Down,
-    Up,
+pub enum RegisterFx {
+    IB,
+    IA,
+    DB,
+    DA,
 }
 
 #[derive(Debug)]

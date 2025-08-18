@@ -8,6 +8,8 @@ use crate::arm7tdmi::{Arm7tdmi, test::DataType};
 
 type CpuInitFn = Box<dyn Fn(&mut Arm7tdmi<TestBus>)>;
 
+const DEFAULT_SP: u32 = 200;
+
 #[derive(Default)]
 pub struct AsmTestBuilder {
     bus: TestBus,
@@ -15,7 +17,6 @@ pub struct AsmTestBuilder {
     code: String,
     bytes: Vec<u8>,
     setup: Option<CpuInitFn>,
-    sp: Option<u32>,
 
     flag_assertions: Vec<(u32, bool)>,
     reg_assertions: Vec<(usize, u32)>,
@@ -83,11 +84,6 @@ impl AsmTestBuilder {
         self
     }
 
-    pub fn with_sp(mut self, value: u32) -> Self {
-        self.sp = Some(value);
-        self
-    }
-
     pub fn run(self, steps: usize) {
         let formated_bits = format_bin_bytes(&self.bytes);
         let formated_bytes = format_hex_bytes(&self.bytes);
@@ -99,13 +95,10 @@ impl AsmTestBuilder {
         let mut cpu = Arm7tdmi::new(self.bus);
 
         cpu.reset();
+        cpu.set_sp(DEFAULT_SP);
 
         if self.thumb {
             cpu.force_thumb_mode();
-        }
-
-        if let Some(sp) = self.sp {
-            cpu.set_sp(sp);
         }
 
         if let Some(setup) = self.setup {

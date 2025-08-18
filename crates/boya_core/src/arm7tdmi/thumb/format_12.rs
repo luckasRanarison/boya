@@ -8,7 +8,7 @@ use super::prelude::*;
 /// +-------------------------------------------------------------------------------+
 pub struct Format12 {
     rs: Operand,
-    nn: u16,
+    nn: u16, // 0-1020, steps 4
     rd: u8,
 }
 
@@ -58,9 +58,8 @@ mod tests {
         AsmTestBuilder::new()
             .thumb()
             .asm(asm)
-            .with_sp(24)
             .assert_reg(2, 16)
-            .assert_reg(3, 32)
+            .assert_reg(3, 208)
             .run(2);
     }
 }

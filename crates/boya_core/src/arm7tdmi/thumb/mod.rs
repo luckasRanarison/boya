@@ -14,6 +14,7 @@ mod format_12;
 mod format_13;
 mod format_14;
 mod format_15;
+mod format_16;
 
 mod prelude {
     pub use std::fmt::Debug;
@@ -36,13 +37,14 @@ use format_6::Format6;
 use format_7::Format7;
 use format_8::Format8;
 use format_9::Format9;
-use format_15::Format15;
 
 use format_10::Format10;
 use format_11::Format11;
 use format_12::Format12;
 use format_13::Format13;
 use format_14::Format14;
+use format_15::Format15;
+use format_16::Format16;
 
 use prelude::*;
 
@@ -79,6 +81,8 @@ pub enum ThumbInstr {
     Format14(Format14),
     /// Multiple load/store
     Format15(Format15),
+    /// Conditional branch
+    Format16(Format16),
 }
 
 impl Debug for ThumbInstr {
@@ -100,6 +104,7 @@ impl Debug for ThumbInstr {
             ThumbInstr::Format13(op) => write!(f, "{op:?} ; format 13 (thumb)"),
             ThumbInstr::Format14(op) => write!(f, "{op:?} ; format 14 (thumb)"),
             ThumbInstr::Format15(op) => write!(f, "{op:?} ; format 15 (thumb)"),
+            ThumbInstr::Format16(op) => write!(f, "{op:?} ; format 16 (thumb)"),
         }
     }
 }
@@ -127,6 +132,7 @@ impl<B: Bus> Arm7tdmi<B> {
             [1, 0, 1, 1, 0, 0, 0, 0] => ThumbInstr::Format13(Format13::from(instr)),
             [1, 0, 1, 1, _, 1, 0, _] => ThumbInstr::Format14(Format14::from(instr)),
             [1, 1, 0, 0, _, _, _, _] => ThumbInstr::Format15(Format15::from(instr)),
+            [1, 1, 0, 1, _, _, _, _] => ThumbInstr::Format16(Format16::from(instr)),
             _ => todo!(),
         }
     }
@@ -149,6 +155,7 @@ impl<B: Bus> Arm7tdmi<B> {
             ThumbInstr::Format13(op) => self.exec_thumb_format13(op),
             ThumbInstr::Format14(op) => self.exec_thumb_format14(op),
             ThumbInstr::Format15(op) => self.exec_thumb_format15(op),
+            ThumbInstr::Format16(op) => self.exec_thumb_format16(op),
         }
     }
 }

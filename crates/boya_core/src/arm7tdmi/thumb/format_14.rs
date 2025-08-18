@@ -1,7 +1,4 @@
-use crate::{
-    arm7tdmi::common::{NamedRegister, format_rlist},
-    utils::bitflags::BitIter,
-};
+use crate::arm7tdmi::common::{NamedRegister, format_rlist};
 
 use super::prelude::*;
 
@@ -80,13 +77,12 @@ mod tests {
         AsmTestBuilder::new()
             .thumb()
             .asm(asm)
-            .with_sp(200)
             .assert_word(196, 64)
             .assert_word(192, 13)
             .assert_word(188, 25)
-            .assert_reg(5, 25)
+            .assert_reg(3, 25)
             .assert_reg(4, 13)
-            .assert_reg(3, 64)
+            .assert_reg(5, 64)
             .assert_reg(13, 200)
             .run(5)
     }

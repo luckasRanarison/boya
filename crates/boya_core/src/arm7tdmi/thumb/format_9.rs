@@ -8,7 +8,7 @@ use super::prelude::*;
 /// +-------------------------------------------------------------------------------+
 pub struct Format9 {
     op: Opcode,
-    nn: u16,
+    nn: u16, // 0-31 for BYTE, 0-124 for WORD
     rb: u8,
     rd: u8,
 }

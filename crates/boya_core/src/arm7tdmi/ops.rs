@@ -5,7 +5,7 @@ use crate::{
 
 use super::{
     Arm7tdmi,
-    common::{AddressMove, Carry, DataType, Operand},
+    common::{Carry, DataType, Operand, RegisterFx},
     psr::Psr,
 };
 
@@ -138,32 +138,43 @@ impl<B: Bus> Arm7tdmi<B> {
         rb: usize,
         rlist: I,
         rn: Option<usize>,
-        direction: AddressMove,
+        effect: RegisterFx,
     ) {
         for (idx, bit) in rlist.iter_lsb() {
             if bit == 1 {
-                self.store_reg(idx, rb, direction);
+                self.store_reg(idx, rb, effect);
             }
         }
 
         if let Some(rn) = rn {
-            self.store_reg(rn, rb, direction);
+            self.store_reg(rn, rb, effect);
         }
     }
 
     #[inline(always)]
-    pub fn load_op<I>(&mut self, rb: usize, rlist: I, rn: Option<usize>)
-    where
-        I: IntoIterator<Item = (usize, u8)>,
-    {
-        for (idx, bit) in rlist {
+    pub fn load_op<I: BitIter>(
+        &mut self,
+        rb: usize,
+        rlist: I,
+        rn: Option<usize>,
+        effect: RegisterFx,
+    ) {
+        for (idx, bit) in rlist.iter_lsb() {
             if bit == 1 {
-                self.load_reg(idx, rb);
+                self.load_reg(idx, rb, effect);
             }
         }
 
         if let Some(rn) = rn {
-            self.load_reg(rn, rb);
+            self.load_reg(rn, rb, effect);
+        }
+    }
+
+    #[inline(always)]
+    pub fn branch_op(&mut self, condition: bool, offset: i16) {
+        if condition {
+            self.set_pc(self.pc().wrapping_add_signed(offset.into()));
+            self.reload_pipeline();
         }
     }
 }

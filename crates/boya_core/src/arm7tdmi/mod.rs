@@ -7,7 +7,7 @@ mod psr;
 mod thumb;
 
 use bank::Bank;
-use common::{AddressMove, Operand, OperandKind};
+use common::{Operand, OperandKind, RegisterFx};
 use pipeline::Pipeline;
 use psr::{Exception, Psr};
 
@@ -49,7 +49,7 @@ impl<B: Bus> Arm7tdmi<B> {
     pub fn step(&mut self) {
         let instruction = self.pipeline.next();
 
-        if self.cpsr.has(Psr::T) {
+        if self.cpsr.thumb() {
             let decoded = self.decode_thumb(instruction);
             self.pre_fetch();
             self.exec_thumb(decoded); // PC is PC + 4
@@ -79,11 +79,11 @@ impl<B: Bus> Arm7tdmi<B> {
 
     #[inline(always)]
     fn increment_pc(&mut self) {
-        self.reg[Self::PC] += if self.cpsr.has(Psr::T) { 2 } else { 4 };
+        self.reg[Self::PC] += if self.cpsr.thumb() { 2 } else { 4 };
     }
 
     fn align_pc(&mut self) {
-        let mask = if self.cpsr.has(Psr::T) { !0b01 } else { !0b11 }; // half-word | word
+        let mask = if self.cpsr.thumb() { !0b01 } else { !0b11 }; // half-word | word
         let value = self.pc() & mask;
 
         self.set_pc(value);
@@ -100,27 +100,31 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    fn store_reg(&mut self, rs: usize, rb: usize, direction: AddressMove) {
+    fn store_reg(&mut self, rs: usize, rb: usize, effect: RegisterFx) {
         let value = self.get_reg(rs);
 
-        match direction {
-            AddressMove::Up => {
-                self.bus.write_word(self.get_reg(rb), value);
-                self.increment_reg(rb);
-            }
-            AddressMove::Down => {
-                self.decrement_reg(rb);
-                self.bus.write_word(self.get_reg(rb), value);
-            }
+        if matches!(effect, RegisterFx::IB | RegisterFx::DB) {
+            self.update_register(rb, effect);
+            self.bus.write_word(self.get_reg(rb), value);
+        } else {
+            self.bus.write_word(self.get_reg(rb), value);
+            self.update_register(rb, effect);
         }
     }
 
     #[inline(always)]
-    fn load_reg(&mut self, rd: usize, rb: usize) {
+    fn load_reg(&mut self, rd: usize, rb: usize, effect: RegisterFx) {
+        if matches!(effect, RegisterFx::IB | RegisterFx::DB) {
+            self.update_register(rb, effect);
+        }
+
         let addr = self.get_reg(rb);
         let value = self.bus.read_word(addr);
 
-        self.increment_reg(rb);
+        if matches!(effect, RegisterFx::IA | RegisterFx::DA) {
+            self.update_register(rb, effect);
+        }
+
         self.set_reg(rd, value);
     }
 
@@ -155,6 +159,13 @@ impl<B: Bus> Arm7tdmi<B> {
     #[inline(always)]
     fn decrement_reg<I: Into<usize>>(&mut self, register: I) {
         *self.get_reg_mut(register) -= 4;
+    }
+
+    fn update_register(&mut self, rn: usize, effect: RegisterFx) {
+        match effect {
+            RegisterFx::IB | RegisterFx::IA => self.increment_reg(rn),
+            RegisterFx::DB | RegisterFx::DA => self.decrement_reg(rn),
+        }
     }
 
     fn get_operand(&self, operand: Operand) -> u32 {

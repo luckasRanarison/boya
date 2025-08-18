@@ -53,35 +53,68 @@ impl Debug for Psr {
 }
 
 impl Psr {
+    #[inline(always)]
     pub fn value(self) -> u32 {
         self.0
     }
 
+    #[inline(always)]
     pub fn get(self, bit: u32) -> u32 {
         self.0.get(bit)
     }
 
+    #[inline(always)]
     pub fn has(self, bit: u32) -> bool {
         self.0.has(bit)
     }
 
+    #[inline(always)]
+    pub fn z(self) -> bool {
+        self.has(Self::Z)
+    }
+
+    #[inline(always)]
+    pub fn c(self) -> bool {
+        self.has(Self::C)
+    }
+
+    #[inline(always)]
+    pub fn s(self) -> bool {
+        self.has(Self::N)
+    }
+
+    #[inline(always)]
+    pub fn v(self) -> bool {
+        self.has(Self::V)
+    }
+
+    #[inline(always)]
+    pub fn thumb(self) -> bool {
+        self.has(Self::T)
+    }
+
+    #[inline(always)]
     pub fn update(&mut self, bit: u32, value: bool) {
         self.0.update(bit, value);
     }
 
+    #[inline(always)]
     pub fn update_zn(&mut self, value: u32) {
         self.0.update(Self::Z, value == 0);
         self.0.update(Self::N, value.has(31));
     }
 
+    #[inline(always)]
     pub fn set_operating_mode(&mut self, mode: OperatingMode) {
         self.0.set_bits(0, 4, mode as u32);
     }
 
+    #[inline(always)]
     pub fn set_arm_mode(&mut self) {
         self.0.clear(Self::T);
     }
 
+    #[inline(always)]
     pub fn set_thumb_mode(&mut self) {
         self.0.set(Self::T);
     }

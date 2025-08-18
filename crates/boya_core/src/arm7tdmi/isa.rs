@@ -1,13 +1,11 @@
 use std::ops::{BitAnd, BitOr, BitXor};
 
-use crate::{
-    bus::Bus,
-    utils::{bitflags::BitIter, ops::ExtendedOps},
-};
+use crate::{bus::Bus, utils::ops::ExtendedOps};
 
 use super::{
     Arm7tdmi,
-    common::{AddressMove, Carry, DataType, Operand, ToOperand},
+    common::{Carry, DataType, Operand, RegisterFx, ToOperand},
+    psr::Psr,
 };
 
 impl<B: Bus> Arm7tdmi<B> {
@@ -124,18 +122,74 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn push(&mut self, rlist: u8, lr: bool) {
-        self.store_op(Self::SP, rlist, lr.then_some(Self::LR), AddressMove::Down);
+        self.store_op(Self::SP, rlist, lr.then_some(Self::LR), RegisterFx::DB);
     }
 
     pub fn pop(&mut self, rlist: u8, pc: bool) {
-        self.load_op(Self::SP, rlist.iter_msb(), pc.then_some(Self::PC));
+        self.load_op(Self::SP, rlist, pc.then_some(Self::PC), RegisterFx::IA);
     }
 
     pub fn stmia(&mut self, rlist: u8, rb: u8) {
-        self.store_op(rb.into(), rlist, None, AddressMove::Up);
+        self.store_op(rb.into(), rlist, None, RegisterFx::IA);
     }
 
     pub fn ldmia(&mut self, rlist: u8, rb: u8) {
-        self.load_op(rb.into(), rlist.iter_lsb(), None);
+        self.load_op(rb.into(), rlist, None, RegisterFx::IA);
+    }
+
+    pub fn beq(&mut self, offset: i16) {
+        self.branch_op(self.cpsr.z(), offset);
+    }
+
+    pub fn bne(&mut self, offset: i16) {
+        self.branch_op(!self.cpsr.z(), offset);
+    }
+
+    pub fn bcs(&mut self, offset: i16) {
+        self.branch_op(self.cpsr.c(), offset);
+    }
+
+    pub fn bcc(&mut self, offset: i16) {
+        self.branch_op(!self.cpsr.c(), offset);
+    }
+
+    pub fn bmi(&mut self, offset: i16) {
+        self.branch_op(self.cpsr.s(), offset);
+    }
+
+    pub fn bpl(&mut self, offset: i16) {
+        self.branch_op(!self.cpsr.s(), offset);
+    }
+
+    pub fn bvs(&mut self, offset: i16) {
+        self.branch_op(self.cpsr.v(), offset);
+    }
+
+    pub fn bvc(&mut self, offset: i16) {
+        self.branch_op(!self.cpsr.v(), offset);
+    }
+
+    pub fn bhi(&mut self, offset: i16) {
+        self.branch_op(self.cpsr.c() && !self.cpsr.z(), offset);
+    }
+
+    pub fn bls(&mut self, offset: i16) {
+        self.branch_op(!self.cpsr.c() && self.cpsr.z(), offset);
+    }
+
+    pub fn bge(&mut self, offset: i16) {
+        self.branch_op(self.cpsr.s() == self.cpsr.v(), offset);
+    }
+
+    pub fn blt(&mut self, offset: i16) {
+        self.branch_op(self.cpsr.s() != self.cpsr.v(), offset);
+    }
+
+    pub fn bgt(&mut self, offset: i16) {
+        self.branch_op(!self.cpsr.z() && self.cpsr.s() == self.cpsr.v(), offset);
+    }
+
+    pub fn ble(&mut self, offset: i16) {
+        self.branch_op(self.cpsr.z() && self.cpsr.s() != self.cpsr.v(), offset);
     }
 }

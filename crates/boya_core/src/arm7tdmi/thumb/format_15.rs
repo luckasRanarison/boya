@@ -1,4 +1,4 @@
-use crate::{arm7tdmi::common::format_rlist, utils::bitflags::BitIter};
+use crate::arm7tdmi::common::format_rlist;
 
 use super::prelude::*;
 
