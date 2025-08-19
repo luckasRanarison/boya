@@ -176,7 +176,7 @@ impl<B: Bus> Arm7tdmi<B> {
             return;
         }
 
-        if offset > 0 {
+        if offset != 0 {
             self.shift_pc(offset.into());
         } else {
             self.pipeline.flush();

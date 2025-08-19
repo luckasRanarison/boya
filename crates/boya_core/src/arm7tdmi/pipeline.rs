@@ -27,6 +27,13 @@ impl Pipeline {
 }
 
 impl<B: Bus> Arm7tdmi<B> {
+    pub fn next_instr_addr(&self) -> Option<u32> {
+        let last_pc = self.pipeline.last_pc();
+        let instr_size = self.instr_size().into();
+
+        last_pc.checked_sub(instr_size)
+    }
+
     pub fn load_pipeline(&mut self) {
         let current = self.pipeline.next.unwrap_or_else(|| self.fetch());
 

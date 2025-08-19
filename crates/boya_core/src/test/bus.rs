@@ -16,8 +16,8 @@ impl Default for TestBus {
 }
 
 impl TestBus {
-    pub fn load_program(&mut self, bytes: &[u8]) {
-        let slice = &mut self.memory[..bytes.len()];
+    pub fn load_program(&mut self, bytes: &[u8], offset: usize) {
+        let slice = &mut self.memory[offset..bytes.len() + offset];
         slice.copy_from_slice(bytes);
     }
 }

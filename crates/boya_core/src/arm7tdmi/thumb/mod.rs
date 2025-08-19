@@ -15,6 +15,9 @@ mod format_13;
 mod format_14;
 mod format_15;
 mod format_16;
+mod format_17;
+mod format_18;
+mod format_19;
 
 mod prelude {
     pub use std::fmt::Debug;
@@ -45,10 +48,12 @@ use format_13::Format13;
 use format_14::Format14;
 use format_15::Format15;
 use format_16::Format16;
+use format_17::Format17;
+use format_18::Format18;
 
 use prelude::*;
 
-use crate::utils::bitflags::BitArray;
+use crate::{arm7tdmi::thumb::format_19::Format19, utils::bitflags::BitArray};
 
 pub enum ThumbInstr {
     /// Move shifted register
@@ -83,6 +88,12 @@ pub enum ThumbInstr {
     Format15(Format15),
     /// Conditional branch
     Format16(Format16),
+    /// Software interrupt
+    Format17(Format17),
+    /// Unconditional branch
+    Format18(Format18),
+    /// Long branch with link
+    Format19(Format19),
 }
 
 impl Debug for ThumbInstr {
@@ -105,6 +116,9 @@ impl Debug for ThumbInstr {
             ThumbInstr::Format14(op) => write!(f, "{op:?} ; thumb 14"),
             ThumbInstr::Format15(op) => write!(f, "{op:?} ; thumb 15"),
             ThumbInstr::Format16(op) => write!(f, "{op:?} ; thumb 16"),
+            ThumbInstr::Format17(op) => write!(f, "{op:?} ; thumb 17"),
+            ThumbInstr::Format18(op) => write!(f, "{op:?} ; thumb 18"),
+            ThumbInstr::Format19(op) => write!(f, "{op:?} ; thumb 19"),
         }
     }
 }
@@ -132,7 +146,10 @@ impl<B: Bus> Arm7tdmi<B> {
             [1, 0, 1, 1, 0, 0, 0, 0] => ThumbInstr::Format13(Format13::from(instr)),
             [1, 0, 1, 1, _, 1, 0, _] => ThumbInstr::Format14(Format14::from(instr)),
             [1, 1, 0, 0, _, _, _, _] => ThumbInstr::Format15(Format15::from(instr)),
+            [1, 1, 0, 1, 1, 1, 1, 1] => ThumbInstr::Format17(Format17::from(instr)),
             [1, 1, 0, 1, _, _, _, _] => ThumbInstr::Format16(Format16::from(instr)),
+            [1, 1, 1, 0, 0, _, _, _] => ThumbInstr::Format18(Format18::from(instr)),
+            [1, 1, 1, 1, _, _, _, _] => ThumbInstr::Format19(Format19::from(instr)),
             _ => todo!(),
         }
     }
@@ -156,6 +173,9 @@ impl<B: Bus> Arm7tdmi<B> {
             ThumbInstr::Format14(op) => self.exec_thumb_format14(op),
             ThumbInstr::Format15(op) => self.exec_thumb_format15(op),
             ThumbInstr::Format16(op) => self.exec_thumb_format16(op),
+            ThumbInstr::Format17(op) => self.exec_thumb_format17(op),
+            ThumbInstr::Format18(op) => self.exec_thumb_format18(op),
+            ThumbInstr::Format19(op) => self.exec_thumb_format19(op),
         }
     }
 }

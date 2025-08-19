@@ -17,6 +17,7 @@ pub struct AsmTestBuilder {
     code: String,
     bytes: Vec<u8>,
     setup: Option<CpuInitFn>,
+    offset: usize,
 
     flag_assertions: Vec<(u32, bool)>,
     reg_assertions: Vec<(usize, u32)>,
@@ -33,6 +34,11 @@ impl AsmTestBuilder {
         self
     }
 
+    pub fn prg_offsett(mut self, offset: usize) -> Self {
+        self.offset = offset;
+        self
+    }
+
     pub fn asm(mut self, code: &str) -> Self {
         let source = match self.thumb {
             true => format!("code16\n{code}"),
@@ -43,7 +49,6 @@ impl AsmTestBuilder {
             Ok(bytes) => {
                 self.bytes = bytes.clone();
                 self.code = code.to_string();
-                self.bus.load_program(&bytes)
             }
             Err(err) => panic!("{err}\n\nfailed to compile:\n{code}"),
         }
@@ -84,13 +89,15 @@ impl AsmTestBuilder {
         self
     }
 
-    pub fn run(self, steps: usize) {
+    pub fn run(mut self, steps: usize) {
         let formated_bits = format_bin_bytes(&self.bytes);
         let formated_bytes = format_hex_bytes(&self.bytes);
 
         println!("code: {}", self.code);
         println!("hex: {formated_bytes}");
         println!("bin: {formated_bits}");
+
+        self.bus.load_program(&self.bytes, self.offset);
 
         let mut cpu = Arm7tdmi::new(self.bus);
 

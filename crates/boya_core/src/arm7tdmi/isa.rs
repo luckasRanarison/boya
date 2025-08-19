@@ -1,6 +1,6 @@
 use std::ops::{BitAnd, BitOr, BitXor};
 
-use crate::{bus::Bus, utils::ops::ExtendedOps};
+use crate::{arm7tdmi::psr::Exception, bus::Bus, utils::ops::ExtendedOps};
 
 use super::{
     Arm7tdmi,
@@ -190,5 +190,13 @@ impl<B: Bus> Arm7tdmi<B> {
 
     pub fn ble(&mut self, offset: i16) {
         self.branch_op(self.cpsr.z() && self.cpsr.s() != self.cpsr.v(), offset);
+    }
+
+    pub fn swi(&mut self) {
+        self.handle_exception(Exception::SoftwareInterrupt);
+    }
+
+    pub fn b(&mut self, offset: i16) {
+        self.branch_op(true, offset);
     }
 }

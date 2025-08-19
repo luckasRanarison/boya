@@ -30,8 +30,6 @@ impl Bank {
     pub fn set_spsr(&mut self, op_mode: OperatingMode, cpsr: Psr) {
         if let Some((slice, _)) = self.get_bank_mut(op_mode) {
             slice[slice.len() - 1] = cpsr.value();
-        } else {
-            unreachable!("invalid operating mode: {op_mode:?}");
         }
     }
 

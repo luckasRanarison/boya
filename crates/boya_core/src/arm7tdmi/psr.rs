@@ -174,18 +174,22 @@ impl<B: Bus> Arm7tdmi<B> {
         let (op_mode, irq, fiq, vector) = match exception {
             Exception::Reset => (OperatingMode::SVC, true, true, 0x00),
             Exception::UndefinedInstruction => todo!(),
-            Exception::SoftwareInterrupt => todo!(),
+            Exception::SoftwareInterrupt => (OperatingMode::SVC, true, self.cpsr.has(Psr::F), 0x08),
             Exception::PrefetchAbort => todo!(),
             Exception::DataAbort => todo!(),
             Exception::NormalInterrupt => todo!(),
             Exception::FastInterrupt => todo!(),
         };
 
+        if let Some(next_addr) = self.next_instr_addr() {
+            self.set_reg(Self::LR, next_addr);
+        }
+
+        self.bank.set_spsr(op_mode, self.cpsr);
+        self.cpsr.set_operating_mode(op_mode);
+        self.cpsr.set_arm_mode();
         self.cpsr.update(Psr::I, irq);
         self.cpsr.update(Psr::F, fiq);
-        self.cpsr.set_arm_mode();
-        self.cpsr.set_operating_mode(op_mode);
-        self.bank.set_spsr(op_mode, self.cpsr);
 
         self.set_pc(vector);
         self.load_pipeline();

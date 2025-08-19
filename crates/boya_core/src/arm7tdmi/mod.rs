@@ -79,7 +79,7 @@ impl<B: Bus> Arm7tdmi<B> {
 
     #[inline(always)]
     pub fn fetch(&mut self) -> u32 {
-        let offset = self.instruction_size();
+        let offset = self.instr_size();
         let word = self.bus.read_word(self.pc());
 
         self.shift_pc(offset.into());
@@ -126,7 +126,7 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    fn instruction_size(&self) -> u8 {
+    fn instr_size(&self) -> u8 {
         if self.cpsr.thumb() { 2 } else { 4 }
     }
 

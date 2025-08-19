@@ -75,7 +75,7 @@ mod tests {
     #[test]
     fn test_hi_reg_ops() {
         let asm = r"
-            mov r0, 24
+            mov r0, #24
             mov pc, r0
         ";
 
@@ -83,6 +83,21 @@ mod tests {
             .thumb()
             .asm(asm)
             .assert_reg(15, 28) // pre-fetch + 4
+            .run(2);
+    }
+
+    #[test]
+    fn test_bx() {
+        let asm = r"
+            mov r0, #24
+            bx  r0
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_flag(Psr::T, false)
+            .assert_reg(15, 32) // pre-fetch + 8
             .run(2);
     }
 }
