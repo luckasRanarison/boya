@@ -188,6 +188,6 @@ impl<B: Bus> Arm7tdmi<B> {
         self.bank.set_spsr(op_mode, self.cpsr);
 
         self.set_pc(vector);
-        self.reload_pipeline();
+        self.load_pipeline();
     }
 }

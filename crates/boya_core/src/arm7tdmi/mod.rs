@@ -7,6 +7,8 @@ mod pipeline;
 mod psr;
 mod thumb;
 
+use std::fmt::Debug;
+
 use bank::Bank;
 use common::{Operand, OperandKind, RegisterFx};
 use pipeline::Pipeline;
@@ -18,10 +20,18 @@ use common::DataType;
 
 use crate::{arm7tdmi::arm::ArmInstr, bus::Bus};
 
-#[derive(Debug)]
 pub enum Instruction {
     Arm(ArmInstr),
     Thumb(ThumbInstr),
+}
+
+impl Debug for Instruction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Instruction::Arm(op) => write!(f, "{op:?}"),
+            Instruction::Thumb(op) => write!(f, "{op:?}"),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -59,26 +69,30 @@ impl<B: Bus> Arm7tdmi<B> {
             self.exec(instruction);
         }
 
-        self.pre_fetch();
-
         if self.pipeline.last_pc() != self.pc() {
             self.align_pc();
-            self.reload_pipeline();
+            self.pipeline.flush();
         }
+
+        self.load_pipeline();
     }
 
     #[inline(always)]
     pub fn fetch(&mut self) -> u32 {
-        self.bus.read_word(self.pc())
+        let offset = self.instruction_size();
+        let word = self.bus.read_word(self.pc());
+
+        self.shift_pc(offset.into());
+        word
     }
 
     #[inline(always)]
     pub fn decode(&self, word: u32) -> Instruction {
-        if self.cpsr.thumb() {
-            Instruction::Thumb(self.decode_thumb(word))
-        } else {
-            Instruction::Arm(self.decode_arm(word))
-        }
+        // if self.cpsr.thumb() {
+        Instruction::Thumb(self.decode_thumb(word))
+        // } else {
+        //     Instruction::Arm(self.decode_arm(word))
+        // }
     }
 
     #[inline(always)]
@@ -210,7 +224,8 @@ impl<B: Bus> Arm7tdmi<B> {
     pub fn force_thumb_mode(&mut self) {
         self.cpsr.set_thumb_mode();
         self.set_pc(0x00);
-        self.reload_pipeline();
+        self.pipeline.flush();
+        self.load_pipeline();
     }
 
     pub fn assert_mem(&self, assertions: Vec<(u32, u32, DataType)>) {

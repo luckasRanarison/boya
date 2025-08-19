@@ -101,7 +101,7 @@ mod tests {
                 mov r2, #1 ; 6
 
             branch:
-                mov r2, #2 ; 12
+                mov r2, #2 ; 8
         ";
 
         AsmTestBuilder::new()

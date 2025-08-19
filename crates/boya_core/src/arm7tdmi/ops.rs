@@ -172,12 +172,14 @@ impl<B: Bus> Arm7tdmi<B> {
 
     #[inline(always)]
     pub fn branch_op(&mut self, condition: bool, offset: i16) {
-        if condition {
-            if offset == 0 {
-                self.reload_pipeline();
-            } else {
-                self.shift_pc(offset.into());
-            }
+        if !condition {
+            return;
+        }
+
+        if offset > 0 {
+            self.shift_pc(offset.into());
+        } else {
+            self.pipeline.flush();
         }
     }
 }

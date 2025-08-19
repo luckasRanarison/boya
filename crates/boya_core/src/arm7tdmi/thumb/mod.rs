@@ -88,23 +88,23 @@ pub enum ThumbInstr {
 impl Debug for ThumbInstr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ThumbInstr::Format1(op) => write!(f, "{op:?} ; format 1 (thumb)"),
-            ThumbInstr::Format2(op) => write!(f, "{op:?} ; format 2 (thumb)"),
-            ThumbInstr::Format3(op) => write!(f, "{op:?} ; format 3 (thumb)"),
-            ThumbInstr::Format4(op) => write!(f, "{op:?} ; format 4 (thumb)"),
-            ThumbInstr::Format5(op) => write!(f, "{op:?} ; format 5 (thumb)"),
-            ThumbInstr::Format6(op) => write!(f, "{op:?} ; format 6 (thumb)"),
-            ThumbInstr::Format7(op) => write!(f, "{op:?} ; format 7 (thumb)"),
-            ThumbInstr::Format8(op) => write!(f, "{op:?} ; format 8 (thumb)"),
-            ThumbInstr::Format9(op) => write!(f, "{op:?} ; format 9 (thumb)"),
+            ThumbInstr::Format1(op) => write!(f, "{op:?} ; thumb 1"),
+            ThumbInstr::Format2(op) => write!(f, "{op:?} ; thumb 2"),
+            ThumbInstr::Format3(op) => write!(f, "{op:?} ; thumb 3"),
+            ThumbInstr::Format4(op) => write!(f, "{op:?} ; thumb 4"),
+            ThumbInstr::Format5(op) => write!(f, "{op:?} ; thumb 5"),
+            ThumbInstr::Format6(op) => write!(f, "{op:?} ; thumb 6"),
+            ThumbInstr::Format7(op) => write!(f, "{op:?} ; thumb 7"),
+            ThumbInstr::Format8(op) => write!(f, "{op:?} ; thumb 8"),
+            ThumbInstr::Format9(op) => write!(f, "{op:?} ; thumb 9"),
 
-            ThumbInstr::Format10(op) => write!(f, "{op:?} ; format 10 (thumb)"),
-            ThumbInstr::Format11(op) => write!(f, "{op:?} ; format 11 (thumb)"),
-            ThumbInstr::Format12(op) => write!(f, "{op:?} ; format 12 (thumb)"),
-            ThumbInstr::Format13(op) => write!(f, "{op:?} ; format 13 (thumb)"),
-            ThumbInstr::Format14(op) => write!(f, "{op:?} ; format 14 (thumb)"),
-            ThumbInstr::Format15(op) => write!(f, "{op:?} ; format 15 (thumb)"),
-            ThumbInstr::Format16(op) => write!(f, "{op:?} ; format 16 (thumb)"),
+            ThumbInstr::Format10(op) => write!(f, "{op:?} ; thumb 10"),
+            ThumbInstr::Format11(op) => write!(f, "{op:?} ; thumb 11"),
+            ThumbInstr::Format12(op) => write!(f, "{op:?} ; thumb 12"),
+            ThumbInstr::Format13(op) => write!(f, "{op:?} ; thumb 13"),
+            ThumbInstr::Format14(op) => write!(f, "{op:?} ; thumb 14"),
+            ThumbInstr::Format15(op) => write!(f, "{op:?} ; thumb 15"),
+            ThumbInstr::Format16(op) => write!(f, "{op:?} ; thumb 16"),
         }
     }
 }

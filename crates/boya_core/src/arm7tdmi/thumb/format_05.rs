@@ -75,14 +75,14 @@ mod tests {
     #[test]
     fn test_hi_reg_ops() {
         let asm = r"
-            mov r0, 5
+            mov r0, 24
             mov pc, r0
         ";
 
         AsmTestBuilder::new()
             .thumb()
             .asm(asm)
-            .assert_reg(15, 6) // half-word alignement
+            .assert_reg(15, 28) // pre-fetch + 4
             .run(2);
     }
 }

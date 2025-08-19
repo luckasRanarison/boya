@@ -27,19 +27,11 @@ impl Pipeline {
 }
 
 impl<B: Bus> Arm7tdmi<B> {
-    pub fn reload_pipeline(&mut self) {
-        self.pipeline.flush();
-        self.pre_fetch();
-    }
-
-    pub fn pre_fetch(&mut self) {
-        let offset = self.instruction_size().into();
+    pub fn load_pipeline(&mut self) {
         let current = self.pipeline.next.unwrap_or_else(|| self.fetch());
 
         self.pipeline.current = Some(self.decode(current));
-        self.shift_pc(offset);
         self.pipeline.next = Some(self.fetch());
-        self.shift_pc(offset);
         self.pipeline.last_pc = self.pc();
     }
 }
