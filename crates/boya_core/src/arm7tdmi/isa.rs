@@ -3,8 +3,8 @@ use std::ops::{BitAnd, BitOr, BitXor};
 use crate::{bus::Bus, utils::ops::ExtendedOps};
 
 use super::{
-    common::{Carry, DataType, Operand, RegisterFx, ToOperand},
     Arm7tdmi,
+    common::{Carry, DataType, Operand, RegisterFx, ToOperand},
 };
 
 impl<B: Bus> Arm7tdmi<B> {

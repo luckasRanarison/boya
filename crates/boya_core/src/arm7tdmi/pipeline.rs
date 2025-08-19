@@ -2,33 +2,44 @@ use std::fmt::Debug;
 
 use crate::bus::Bus;
 
-use super::Arm7tdmi;
+use super::{Arm7tdmi, Instruction};
 
 #[derive(Debug, Default)]
 pub struct Pipeline {
-    next_instr: u32,
+    current: Option<Instruction>,
+    next: Option<u32>,
     last_pc: u32,
 }
 
 impl Pipeline {
-    pub fn next(&self) -> u32 {
-        self.next_instr
+    pub fn take(&mut self) -> Option<Instruction> {
+        self.current.take()
     }
 
     pub fn last_pc(&self) -> u32 {
         self.last_pc
     }
+
+    pub fn flush(&mut self) {
+        self.current.take();
+        self.next.take();
+    }
 }
 
 impl<B: Bus> Arm7tdmi<B> {
     pub fn reload_pipeline(&mut self) {
-        self.align_pc();
+        self.pipeline.flush();
         self.pre_fetch();
     }
 
     pub fn pre_fetch(&mut self) {
-        self.pipeline.next_instr = self.fetch();
-        self.increment_pc();
+        let offset = self.instruction_size().into();
+        let current = self.pipeline.next.unwrap_or_else(|| self.fetch());
+
+        self.pipeline.current = Some(self.decode(current));
+        self.shift_pc(offset);
+        self.pipeline.next = Some(self.fetch());
+        self.shift_pc(offset);
         self.pipeline.last_pc = self.pc();
     }
 }

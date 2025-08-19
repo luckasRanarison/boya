@@ -89,7 +89,7 @@ impl<B: Bus> Arm7tdmi<B> {
     pub fn bx_op(&mut self, rs: u8) {
         let value = self.get_reg(rs);
 
-        if value.get(0) == 0 {
+        if !value.has(0) {
             self.cpsr.set_arm_mode();
         }
 
@@ -173,8 +173,11 @@ impl<B: Bus> Arm7tdmi<B> {
     #[inline(always)]
     pub fn branch_op(&mut self, condition: bool, offset: i16) {
         if condition {
-            self.set_pc(self.pc().wrapping_add_signed(offset.into()));
-            self.reload_pipeline();
+            if offset == 0 {
+                self.reload_pipeline();
+            } else {
+                self.shift_pc(offset.into());
+            }
         }
     }
 }

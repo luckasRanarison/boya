@@ -20,7 +20,7 @@ impl Debug for Format6 {
 impl From<u16> for Format6 {
     fn from(value: u16) -> Self {
         let rd = value.get_bits_u8(8, 10);
-        let nn = value.get_bits(0, 7) << 2; // word aligned offset 
+        let nn = value.get_bits(0, 7) << 2; // word aligned offset
 
         Self { rd, nn }
     }

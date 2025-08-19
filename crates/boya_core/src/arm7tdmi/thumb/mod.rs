@@ -19,8 +19,8 @@ mod format_16;
 mod prelude {
     pub use std::fmt::Debug;
 
-    pub use crate::arm7tdmi::common::{Operand, ToOperand};
     pub use crate::arm7tdmi::Arm7tdmi;
+    pub use crate::arm7tdmi::common::{Operand, ToOperand};
     pub use crate::bus::Bus;
     pub use crate::utils::bitflags::Bitflag;
 

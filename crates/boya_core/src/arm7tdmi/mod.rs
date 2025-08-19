@@ -1,3 +1,4 @@
+mod arm;
 mod bank;
 mod common;
 mod isa;
@@ -10,11 +11,18 @@ use bank::Bank;
 use common::{Operand, OperandKind, RegisterFx};
 use pipeline::Pipeline;
 use psr::{Exception, Psr};
+use thumb::ThumbInstr;
 
 #[cfg(test)]
 use common::DataType;
 
-use crate::bus::Bus;
+use crate::{arm7tdmi::arm::ArmInstr, bus::Bus};
+
+#[derive(Debug)]
+pub enum Instruction {
+    Arm(ArmInstr),
+    Thumb(ThumbInstr),
+}
 
 #[derive(Debug)]
 pub struct Arm7tdmi<B: Bus> {
@@ -47,17 +55,14 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn step(&mut self) {
-        let instruction = self.pipeline.next();
-
-        if self.cpsr.thumb() {
-            let decoded = self.decode_thumb(instruction);
-            self.pre_fetch();
-            self.exec_thumb(decoded); // PC is PC + 4
-        } else {
-            todo!()
+        if let Some(instruction) = self.pipeline.take() {
+            self.exec(instruction);
         }
 
+        self.pre_fetch();
+
         if self.pipeline.last_pc() != self.pc() {
+            self.align_pc();
             self.reload_pipeline();
         }
     }
@@ -65,6 +70,23 @@ impl<B: Bus> Arm7tdmi<B> {
     #[inline(always)]
     pub fn fetch(&mut self) -> u32 {
         self.bus.read_word(self.pc())
+    }
+
+    #[inline(always)]
+    pub fn decode(&self, word: u32) -> Instruction {
+        if self.cpsr.thumb() {
+            Instruction::Thumb(self.decode_thumb(word))
+        } else {
+            Instruction::Arm(self.decode_arm(word))
+        }
+    }
+
+    #[inline(always)]
+    pub fn exec(&mut self, instruction: Instruction) {
+        match instruction {
+            Instruction::Thumb(op) => self.exec_thumb(op),
+            Instruction::Arm(op) => self.exec_arm(op),
+        }
     }
 
     #[inline(always)]
@@ -78,8 +100,8 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    fn increment_pc(&mut self) {
-        self.reg[Self::PC] += if self.cpsr.thumb() { 2 } else { 4 };
+    fn shift_pc(&mut self, offset: i32) {
+        self.reg[Self::PC] = self.reg[Self::PC].wrapping_add_signed(offset);
     }
 
     fn align_pc(&mut self) {
@@ -87,6 +109,11 @@ impl<B: Bus> Arm7tdmi<B> {
         let value = self.pc() & mask;
 
         self.set_pc(value);
+    }
+
+    #[inline(always)]
+    fn instruction_size(&self) -> u8 {
+        if self.cpsr.thumb() { 2 } else { 4 }
     }
 
     #[inline(always)]
@@ -99,30 +126,30 @@ impl<B: Bus> Arm7tdmi<B> {
         *self.get_reg_mut(Self::SP) = value;
     }
 
-    #[inline(always)]
     fn store_reg(&mut self, rs: usize, rb: usize, effect: RegisterFx) {
         let value = self.get_reg(rs);
 
         if matches!(effect, RegisterFx::IncB | RegisterFx::DecB) {
-            self.update_register(rb, effect);
-            self.bus.write_word(self.get_reg(rb), value);
-        } else {
-            self.bus.write_word(self.get_reg(rb), value);
-            self.update_register(rb, effect);
+            self.update_reg(rb, effect);
+        }
+
+        self.bus.write_word(self.get_reg(rb), value);
+
+        if matches!(effect, RegisterFx::IncA | RegisterFx::DecA) {
+            self.update_reg(rb, effect);
         }
     }
 
-    #[inline(always)]
     fn load_reg(&mut self, rd: usize, rb: usize, effect: RegisterFx) {
         if matches!(effect, RegisterFx::IncB | RegisterFx::DecB) {
-            self.update_register(rb, effect);
+            self.update_reg(rb, effect);
         }
 
         let addr = self.get_reg(rb);
         let value = self.bus.read_word(addr);
 
         if matches!(effect, RegisterFx::IncA | RegisterFx::DecA) {
-            self.update_register(rb, effect);
+            self.update_reg(rb, effect);
         }
 
         self.set_reg(rd, value);
@@ -161,7 +188,7 @@ impl<B: Bus> Arm7tdmi<B> {
         *self.get_reg_mut(register) -= 4;
     }
 
-    fn update_register(&mut self, rn: usize, effect: RegisterFx) {
+    fn update_reg(&mut self, rn: usize, effect: RegisterFx) {
         match effect {
             RegisterFx::IncB | RegisterFx::IncA => self.increment_reg(rn),
             RegisterFx::DecB | RegisterFx::DecA => self.decrement_reg(rn),
@@ -174,11 +201,7 @@ impl<B: Bus> Arm7tdmi<B> {
             _ => self.get_reg(operand.value as usize),
         };
 
-        if operand.negate {
-            !value
-        } else {
-            value
-        }
+        if operand.negate { !value } else { value }
     }
 }
 
