@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install fasmarm
+        run: |
+          curl https://arm.flatassembler.net/FASMARM_full.ZIP -o fasmarm.zip
+          unzip fasmarm.zip -d fasmarm
+          sudo chmod +x fasmarm/fasmarm.x64
+          sudo cp fasmarm/fasmarm.x64 /usr/local/bin/fasmarm
+
+      - name: Build
+        run: cargo build --verbose
+
+      - name: Test
+        run: cargo test --workspace --lib --verbose
+
+      # - name: Lint
+      #   run: cargo clippy -- -D warnings
