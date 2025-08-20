@@ -48,15 +48,15 @@ impl From<u16> for Opcode {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format3(&mut self, instr: Format3) {
-        let nn = instr.nn.imm();
+impl<B: Bus> Executable<B> for Format3 {
+    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        let nn = self.nn.imm();
 
-        match instr.op {
-            Opcode::MOV => self.mov(instr.rd, nn, true),
-            Opcode::CMP => self.cmp(instr.rd, nn),
-            Opcode::ADD => self.add(instr.rd, nn, instr.rd, true),
-            Opcode::SUB => self.sub(instr.rd, nn, instr.rd, true),
+        match self.op {
+            Opcode::MOV => cpu.mov(self.rd, nn, true),
+            Opcode::CMP => cpu.cmp(self.rd, nn),
+            Opcode::ADD => cpu.add(self.rd, nn, self.rd, true),
+            Opcode::SUB => cpu.sub(self.rd, nn, self.rd, true),
         }
     }
 }

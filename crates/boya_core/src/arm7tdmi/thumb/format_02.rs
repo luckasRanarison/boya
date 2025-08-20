@@ -58,11 +58,11 @@ impl From<u16> for Opcode {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format2(&mut self, instr: Format2) {
-        match instr.op {
-            Opcode::ADD => self.add(instr.rs, instr.nn, instr.rd, true),
-            Opcode::SUB => self.sub(instr.rs, instr.nn, instr.rd, true),
+impl<B: Bus> Executable<B> for Format2 {
+    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        match self.op {
+            Opcode::ADD => cpu.add(self.rs, self.nn, self.rd, true),
+            Opcode::SUB => cpu.sub(self.rs, self.nn, self.rd, true),
         }
     }
 }

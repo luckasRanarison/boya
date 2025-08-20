@@ -12,8 +12,8 @@ pub struct Pipeline {
 }
 
 impl Pipeline {
-    pub fn take(&mut self) -> Option<Instruction> {
-        self.current.take()
+    pub fn take(&mut self) -> Instruction {
+        self.current.take().unwrap() // pipeline should always be pre-loaded
     }
 
     pub fn last_pc(&self) -> u32 {

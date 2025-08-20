@@ -24,10 +24,10 @@ impl From<u16> for Format17 {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
+impl<B: Bus> Executable<B> for Format17 {
     // the immediate parameter is only used by the exception handler
-    pub fn exec_thumb_format17(&mut self, _instr: Format17) {
-        self.swi();
+    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        cpu.swi()
     }
 }
 

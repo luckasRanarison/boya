@@ -26,32 +26,12 @@ impl From<u16> for Format19 {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format19(&mut self, instr: Format19) {
-        match instr.h {
-            false => self.first_instr(instr.nn),
-            true => self.second_instr(instr.nn),
+impl<B: Bus> Executable<B> for Format19 {
+    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        match self.h {
+            false => cpu.branch_long_first_op(self.nn),
+            true => cpu.branch_long_second_op(self.nn),
         }
-    }
-
-    fn first_instr(&mut self, nn: u16) {
-        let nn = ((nn as i32) << 21) >> 21; // sign-extend 11 bits
-        let upper = (nn as u32) << 12;
-        let result = self.pc().wrapping_add(upper);
-
-        self.set_reg(Self::LR, result);
-    }
-
-    fn second_instr(&mut self, nn: u16) {
-        let lower = (nn as u32) << 1;
-        let lr = self.get_reg(Self::LR) as i32;
-        let offset = lr.wrapping_add(lower as i32);
-        let lr = self.next_instr_addr().unwrap_or_default() | 1;
-
-        self.set_pc(offset as u32);
-        self.set_reg(Self::LR, lr);
-
-        self.pipeline.flush();
     }
 }
 

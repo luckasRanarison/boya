@@ -51,11 +51,11 @@ impl From<u16> for Opcode {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format14(&mut self, instr: Format14) {
-        match instr.op {
-            Opcode::PUSH => self.push(instr.rlist, instr.lrpc),
-            Opcode::POP => self.pop(instr.rlist, instr.lrpc),
+impl<B: Bus> Executable<B> for Format14 {
+    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        match self.op {
+            Opcode::PUSH => cpu.push(self.rlist, self.lrpc),
+            Opcode::POP => cpu.pop(self.rlist, self.lrpc),
         }
     }
 }

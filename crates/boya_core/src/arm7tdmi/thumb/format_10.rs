@@ -53,13 +53,13 @@ impl From<u16> for Opcode {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format10(&mut self, instr: Format10) {
-        let addr = self.get_reg(instr.rb) + instr.nn as u32;
+impl<B: Bus> Executable<B> for Format10 {
+    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        let addr = cpu.get_reg(self.rb) + self.nn as u32;
 
-        match instr.op {
-            Opcode::STRH => self.strh(instr.rd, addr),
-            Opcode::LDRH => self.ldrh(instr.rd, addr),
+        match self.op {
+            Opcode::STRH => cpu.strh(self.rd, addr),
+            Opcode::LDRH => cpu.ldrh(self.rd, addr),
         }
     }
 }

@@ -23,7 +23,8 @@ mod prelude {
     pub use std::fmt::Debug;
 
     pub use crate::arm7tdmi::Arm7tdmi;
-    pub use crate::arm7tdmi::common::{Operand, ToOperand};
+    pub use crate::arm7tdmi::common::{Cycle, NamedRegister, Operand, ToOperand};
+    pub use crate::arm7tdmi::isa::Executable;
     pub use crate::bus::Bus;
     pub use crate::utils::bitflags::Bitflag;
 
@@ -53,7 +54,10 @@ use format_18::Format18;
 
 use prelude::*;
 
-use crate::{arm7tdmi::thumb::format_19::Format19, utils::bitflags::BitArray};
+use crate::{
+    arm7tdmi::{common::Cycle, thumb::format_19::Format19},
+    utils::bitflags::BitArray,
+};
 
 pub enum ThumbInstr {
     /// Move shifted register
@@ -154,28 +158,28 @@ impl<B: Bus> Arm7tdmi<B> {
         }
     }
 
-    pub fn exec_thumb(&mut self, instruction: ThumbInstr) {
+    pub fn exec_thumb(&mut self, instruction: ThumbInstr) -> Cycle {
         match instruction {
-            ThumbInstr::Format1(op) => self.exec_thumb_format1(op),
-            ThumbInstr::Format2(op) => self.exec_thumb_format2(op),
-            ThumbInstr::Format3(op) => self.exec_thumb_format3(op),
-            ThumbInstr::Format4(op) => self.exec_thumb_format4(op),
-            ThumbInstr::Format5(op) => self.exec_thumb_format5(op),
-            ThumbInstr::Format6(op) => self.exec_thumb_format6(op),
-            ThumbInstr::Format7(op) => self.exec_thumb_format7(op),
-            ThumbInstr::Format8(op) => self.exec_thumb_format8(op),
-            ThumbInstr::Format9(op) => self.exec_thumb_format9(op),
+            ThumbInstr::Format1(op) => op.dispatch(self),
+            ThumbInstr::Format2(op) => op.dispatch(self),
+            ThumbInstr::Format3(op) => op.dispatch(self),
+            ThumbInstr::Format4(op) => op.dispatch(self),
+            ThumbInstr::Format5(op) => op.dispatch(self),
+            ThumbInstr::Format6(op) => op.dispatch(self),
+            ThumbInstr::Format7(op) => op.dispatch(self),
+            ThumbInstr::Format8(op) => op.dispatch(self),
+            ThumbInstr::Format9(op) => op.dispatch(self),
 
-            ThumbInstr::Format10(op) => self.exec_thumb_format10(op),
-            ThumbInstr::Format11(op) => self.exec_thumb_format11(op),
-            ThumbInstr::Format12(op) => self.exec_thumb_format12(op),
-            ThumbInstr::Format13(op) => self.exec_thumb_format13(op),
-            ThumbInstr::Format14(op) => self.exec_thumb_format14(op),
-            ThumbInstr::Format15(op) => self.exec_thumb_format15(op),
-            ThumbInstr::Format16(op) => self.exec_thumb_format16(op),
-            ThumbInstr::Format17(op) => self.exec_thumb_format17(op),
-            ThumbInstr::Format18(op) => self.exec_thumb_format18(op),
-            ThumbInstr::Format19(op) => self.exec_thumb_format19(op),
+            ThumbInstr::Format10(op) => op.dispatch(self),
+            ThumbInstr::Format11(op) => op.dispatch(self),
+            ThumbInstr::Format12(op) => op.dispatch(self),
+            ThumbInstr::Format13(op) => op.dispatch(self),
+            ThumbInstr::Format14(op) => op.dispatch(self),
+            ThumbInstr::Format15(op) => op.dispatch(self),
+            ThumbInstr::Format16(op) => op.dispatch(self),
+            ThumbInstr::Format17(op) => op.dispatch(self),
+            ThumbInstr::Format18(op) => op.dispatch(self),
+            ThumbInstr::Format19(op) => op.dispatch(self),
         }
     }
 }

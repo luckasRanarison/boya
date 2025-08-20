@@ -11,9 +11,65 @@ pub enum DataType {
 
 #[derive(Debug, Clone, Copy)]
 pub enum NamedRegister {
-    SP = 13,
     LR = 14,
+    SP = 13,
     PC = 15,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum MemoryAccess {
+    Seq,
+    NonSeq,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum RegisterFx {
+    IncB,
+    IncA,
+    DecB,
+    DecA,
+}
+
+#[derive(Debug)]
+pub enum Carry {
+    One,
+    None,
+    Flag,
+}
+
+#[derive(Debug)]
+pub struct Cycle {
+    pub i: u8,
+    pub s: u8,
+    pub n: u8,
+}
+
+impl Cycle {
+    pub fn count(self) -> u8 {
+        self.i + self.s + self.n
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum OperatingMode {
+    USR = 0b10000,
+    FIQ = 0b10001,
+    IRQ = 0b10010,
+    SVC = 0b10011,
+    ABT = 0b10111,
+    UND = 0b11011,
+    SYS = 0b11111,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Exception {
+    Reset,
+    UndefinedInstruction,
+    SoftwareInterrupt,
+    PrefetchAbort,
+    DataAbort,
+    NormalInterrupt,
+    FastInterrupt,
 }
 
 pub struct Operand {
@@ -55,9 +111,16 @@ impl Operand {
             negate: false,
         }
     }
+
+    pub fn is_pc(&self) -> bool {
+        match self.kind {
+            OperandKind::PC | OperandKind::Reg if self.value == 15 => true,
+            _ => false,
+        }
+    }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OperandKind {
     SP,
     PC,
@@ -89,21 +152,6 @@ where
             negate: false,
         }
     }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum RegisterFx {
-    IncB,
-    IncA,
-    DecB,
-    DecA,
-}
-
-#[derive(Debug)]
-pub enum Carry {
-    One,
-    None,
-    Flag,
 }
 
 pub fn format_rlist<I: BitIter>(registers: I, named: Option<NamedRegister>) -> String {

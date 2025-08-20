@@ -1,4 +1,6 @@
-use super::psr::{OperatingMode, Psr};
+use crate::arm7tdmi::common::OperatingMode;
+
+use super::psr::Psr;
 
 #[derive(Debug, Default)]
 pub struct Bank {
@@ -20,11 +22,6 @@ impl Bank {
         self.get_bank_mut(op_mode)
             .filter(|(_, offset)| index >= *offset && index <= 14)
             .map(|(slice, offset)| &mut slice[index - offset])
-    }
-
-    pub fn get_spsr(&self, op_mode: OperatingMode) -> Option<Psr> {
-        self.get_bank(op_mode)
-            .map(|(slice, _)| slice[slice.len() - 1].into())
     }
 
     pub fn set_spsr(&mut self, op_mode: OperatingMode, cpsr: Psr) {

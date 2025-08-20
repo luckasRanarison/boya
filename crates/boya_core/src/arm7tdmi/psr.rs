@@ -1,8 +1,6 @@
 use std::fmt::Debug;
 
-use crate::{bus::Bus, utils::bitflags::Bitflag};
-
-use super::Arm7tdmi;
+use crate::{arm7tdmi::common::OperatingMode, utils::bitflags::Bitflag};
 
 /// +----------------------------------------------------------------------------+
 /// | N(31) | Z(30) | C(29) |   V(28)  |  U(27-8) | I(7) | F(6) | T(5)  | M(4-0) |
@@ -144,54 +142,5 @@ impl Psr {
             Self::T => "T",
             _ => unreachable!("invalid status bit: {bit}"),
         }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum OperatingMode {
-    USR = 0b10000,
-    FIQ = 0b10001,
-    IRQ = 0b10010,
-    SVC = 0b10011,
-    ABT = 0b10111,
-    UND = 0b11011,
-    SYS = 0b11111,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum Exception {
-    Reset,
-    UndefinedInstruction,
-    SoftwareInterrupt,
-    PrefetchAbort,
-    DataAbort,
-    NormalInterrupt,
-    FastInterrupt,
-}
-
-impl<B: Bus> Arm7tdmi<B> {
-    pub fn handle_exception(&mut self, exception: Exception) {
-        let (op_mode, irq, fiq, vector) = match exception {
-            Exception::Reset => (OperatingMode::SVC, true, true, 0x00),
-            Exception::UndefinedInstruction => todo!(),
-            Exception::SoftwareInterrupt => (OperatingMode::SVC, true, self.cpsr.has(Psr::F), 0x08),
-            Exception::PrefetchAbort => todo!(),
-            Exception::DataAbort => todo!(),
-            Exception::NormalInterrupt => todo!(),
-            Exception::FastInterrupt => todo!(),
-        };
-
-        if let Some(next_addr) = self.next_instr_addr() {
-            self.set_reg(Self::LR, next_addr);
-        }
-
-        self.bank.set_spsr(op_mode, self.cpsr);
-        self.cpsr.set_operating_mode(op_mode);
-        self.cpsr.set_arm_mode();
-        self.cpsr.update(Psr::I, irq);
-        self.cpsr.update(Psr::F, fiq);
-
-        self.set_pc(vector);
-        self.load_pipeline();
     }
 }

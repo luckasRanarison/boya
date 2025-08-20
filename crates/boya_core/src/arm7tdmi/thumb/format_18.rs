@@ -24,9 +24,9 @@ impl From<u16> for Format18 {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format18(&mut self, instr: Format18) {
-        self.b(instr.of);
+impl<B: Bus> Executable<B> for Format18 {
+    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        cpu.b(self.of)
     }
 }
 

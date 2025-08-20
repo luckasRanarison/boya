@@ -38,9 +38,9 @@ impl From<u16> for Format12 {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format12(&mut self, instr: Format12) {
-        self.add(instr.rs.value as u8, instr.nn.imm(), instr.rd, false);
+impl<B: Bus> Executable<B> for Format12 {
+    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        cpu.add(self.rs.value as u8, self.nn.imm(), self.rd, false)
     }
 }
 

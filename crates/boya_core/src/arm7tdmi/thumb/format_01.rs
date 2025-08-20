@@ -55,14 +55,14 @@ impl From<u16> for Opcode {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format1(&mut self, instr: Format1) {
-        let nn = instr.of.imm();
+impl<B: Bus> Executable<B> for Format1 {
+    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        let nn = self.of.imm();
 
-        match instr.op {
-            Opcode::LSL => self.lsl(instr.rs, nn, instr.rd),
-            Opcode::LSR => self.lsr(instr.rs, nn, instr.rd),
-            Opcode::ASR => self.asr(instr.rs, nn, instr.rd),
+        match self.op {
+            Opcode::LSL => cpu.lsl(self.rs, nn, self.rd),
+            Opcode::LSR => cpu.lsr(self.rs, nn, self.rd),
+            Opcode::ASR => cpu.asr(self.rs, nn, self.rd),
         }
     }
 }

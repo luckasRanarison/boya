@@ -29,14 +29,14 @@ impl From<u16> for Format13 {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format13(&mut self, instr: Format13) {
-        let sp = Self::SP as u8;
-        let nn = instr.nn.value.imm();
+impl<B: Bus> Executable<B> for Format13 {
+    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        let sp = NamedRegister::SP as u8;
+        let nn = self.nn.value.imm();
 
-        match instr.nn.negate {
-            true => self.sub(sp, nn, sp, false),
-            false => self.add(sp, nn, sp, false),
+        match self.nn.negate {
+            true => cpu.sub(sp, nn, sp, false),
+            false => cpu.add(sp, nn, sp, false),
         }
     }
 }

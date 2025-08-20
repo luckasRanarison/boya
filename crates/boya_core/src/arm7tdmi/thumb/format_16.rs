@@ -66,23 +66,23 @@ impl From<u16> for Opcode {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format16(&mut self, instr: Format16) {
-        match instr.op {
-            Opcode::BEQ => self.beq(instr.of),
-            Opcode::BNE => self.bne(instr.of),
-            Opcode::BCS => self.bcs(instr.of),
-            Opcode::BCC => self.bcc(instr.of),
-            Opcode::BMI => self.bmi(instr.of),
-            Opcode::BPL => self.bpl(instr.of),
-            Opcode::BVS => self.bvs(instr.of),
-            Opcode::BVC => self.bvc(instr.of),
-            Opcode::BHI => self.bhi(instr.of),
-            Opcode::BLS => self.bls(instr.of),
-            Opcode::BGE => self.bge(instr.of),
-            Opcode::BLT => self.blt(instr.of),
-            Opcode::BGT => self.bgt(instr.of),
-            Opcode::BLE => self.ble(instr.of),
+impl<B: Bus> Executable<B> for Format16 {
+    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        match self.op {
+            Opcode::BEQ => cpu.beq(self.of),
+            Opcode::BNE => cpu.bne(self.of),
+            Opcode::BCS => cpu.bcs(self.of),
+            Opcode::BCC => cpu.bcc(self.of),
+            Opcode::BMI => cpu.bmi(self.of),
+            Opcode::BPL => cpu.bpl(self.of),
+            Opcode::BVS => cpu.bvs(self.of),
+            Opcode::BVC => cpu.bvc(self.of),
+            Opcode::BHI => cpu.bhi(self.of),
+            Opcode::BLS => cpu.bls(self.of),
+            Opcode::BGE => cpu.bge(self.of),
+            Opcode::BLT => cpu.blt(self.of),
+            Opcode::BGT => cpu.bgt(self.of),
+            Opcode::BLE => cpu.ble(self.of),
         }
     }
 }

@@ -52,11 +52,11 @@ impl From<u16> for Opcode {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format15(&mut self, instr: Format15) {
-        match instr.op {
-            Opcode::STMIA => self.stmia(instr.rlist, instr.rb),
-            Opcode::LDMIA => self.ldmia(instr.rlist, instr.rb),
+impl<B: Bus> Executable<B> for Format15 {
+    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        match self.op {
+            Opcode::STMIA => cpu.stmia(self.rlist, self.rb),
+            Opcode::LDMIA => cpu.ldmia(self.rlist, self.rb),
         }
     }
 }

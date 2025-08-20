@@ -12,13 +12,19 @@ use std::fmt::Debug;
 use bank::Bank;
 use common::{Operand, OperandKind, RegisterFx};
 use pipeline::Pipeline;
-use psr::{Exception, Psr};
+use psr::Psr;
 use thumb::ThumbInstr;
 
 #[cfg(test)]
 use common::DataType;
 
-use crate::{arm7tdmi::arm::ArmInstr, bus::Bus};
+use crate::{
+    arm7tdmi::{
+        arm::ArmInstr,
+        common::{Cycle, Exception},
+    },
+    bus::Bus,
+};
 
 pub enum Instruction {
     Arm(ArmInstr),
@@ -64,10 +70,9 @@ impl<B: Bus> Arm7tdmi<B> {
         self.handle_exception(Exception::Reset);
     }
 
-    pub fn step(&mut self) {
-        if let Some(instruction) = self.pipeline.take() {
-            self.exec(instruction);
-        }
+    pub fn step(&mut self) -> u8 {
+        let instruction = self.pipeline.take();
+        let cycle = self.exec(instruction);
 
         if self.pipeline.last_pc() != self.pc() {
             self.align_pc();
@@ -75,6 +80,7 @@ impl<B: Bus> Arm7tdmi<B> {
         }
 
         self.load_pipeline();
+        cycle.count()
     }
 
     #[inline(always)]
@@ -96,7 +102,7 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    pub fn exec(&mut self, instruction: Instruction) {
+    pub fn exec(&mut self, instruction: Instruction) -> Cycle {
         match instruction {
             Instruction::Thumb(op) => self.exec_thumb(op),
             Instruction::Arm(op) => self.exec_arm(op),

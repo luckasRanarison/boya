@@ -26,9 +26,9 @@ impl From<u16> for Format6 {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format6(&mut self, instr: Format6) {
-        self.ldr(instr.rd, self.pc() + instr.nn as u32);
+impl<B: Bus> Executable<B> for Format6 {
+    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        cpu.ldr(self.rd, cpu.pc() + self.nn as u32)
     }
 }
 

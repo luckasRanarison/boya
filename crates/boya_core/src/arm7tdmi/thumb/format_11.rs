@@ -50,13 +50,13 @@ impl From<u16> for Opcode {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format11(&mut self, op: Format11) {
-        let instr = self.sp() + op.nn as u32;
+impl<B: Bus> Executable<B> for Format11 {
+    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        let instr = cpu.sp() + self.nn as u32;
 
-        match op.op {
-            Opcode::STR => self.str(op.rd, instr),
-            Opcode::LDR => self.ldr(op.rd, instr),
+        match self.op {
+            Opcode::STR => cpu.str(self.rd, instr),
+            Opcode::LDR => cpu.ldr(self.rd, instr),
         }
     }
 }

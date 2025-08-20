@@ -57,13 +57,13 @@ impl From<u16> for Opcode {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
-    pub fn exec_thumb_format5(&mut self, instr: Format5) {
-        match instr.op {
-            Opcode::ADD => self.add(instr.rd, instr.rs.reg(), instr.rd, false),
-            Opcode::CMP => self.cmp(instr.rd, instr.rs.reg()),
-            Opcode::MOV => self.mov(instr.rd, instr.rs.reg(), false),
-            Opcode::BX => self.bx(instr.rs),
+impl<B: Bus> Executable<B> for Format5 {
+    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        match self.op {
+            Opcode::ADD => cpu.add(self.rd, self.rs.reg(), self.rd, false),
+            Opcode::CMP => cpu.cmp(self.rd, self.rs.reg()),
+            Opcode::MOV => cpu.mov(self.rd, self.rs.reg(), false),
+            Opcode::BX => cpu.bx(self.rs),
         }
     }
 }
