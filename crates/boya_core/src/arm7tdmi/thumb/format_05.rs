@@ -1,4 +1,4 @@
-pub use super::prelude::*;
+pub use crate::arm7tdmi::isa::prelude::*;
 
 /// Hi register operations/branch exchange
 /// +-------------------------------------------------------------------------------+
@@ -60,8 +60,8 @@ impl From<u16> for Opcode {
 impl<B: Bus> Executable<B> for Format5 {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         match self.op {
-            Opcode::ADD => cpu.add(self.rd, self.rs.reg(), self.rd, false),
-            Opcode::CMP => cpu.cmp(self.rd, self.rs.reg()),
+            Opcode::ADD => cpu.add(self.rd, self.rd, self.rs.reg(), false),
+            Opcode::CMP => cpu.cmp(self.rd, self.rs.reg(), true),
             Opcode::MOV => cpu.mov(self.rd, self.rs.reg(), false),
             Opcode::BX => cpu.bx(self.rs),
         }

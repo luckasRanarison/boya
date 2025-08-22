@@ -42,7 +42,7 @@ impl AsmTestBuilder {
     pub fn asm(mut self, code: &str) -> Self {
         let source = match self.thumb {
             true => format!("code16\n{code}"),
-            false => code.to_string(),
+            false => format!("code32\n{code}"),
         };
 
         match compile_asm(&source) {

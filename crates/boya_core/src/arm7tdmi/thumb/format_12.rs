@@ -1,4 +1,4 @@
-use super::prelude::*;
+use crate::arm7tdmi::isa::prelude::*;
 
 /// Get relative address
 /// +-------------------------------------------------------------------------------+
@@ -40,7 +40,7 @@ impl From<u16> for Format12 {
 
 impl<B: Bus> Executable<B> for Format12 {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
-        cpu.add(self.rs.value as u8, self.nn.imm(), self.rd, false)
+        cpu.add(self.rd, self.rs.value as u8, self.nn.imm(), false)
     }
 }
 

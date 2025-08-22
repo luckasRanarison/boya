@@ -1,6 +1,4 @@
-use crate::arm7tdmi::common::format_rlist;
-
-use super::prelude::*;
+use crate::arm7tdmi::isa::prelude::*;
 
 /// Multiple load/store
 /// +-------------------------------------------------------------------------------+

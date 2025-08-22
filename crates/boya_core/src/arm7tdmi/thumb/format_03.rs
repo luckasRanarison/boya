@@ -1,4 +1,4 @@
-use super::prelude::*;
+use crate::arm7tdmi::isa::prelude::*;
 
 // Move/Compare/Add/Substract immediate
 /// +-------------------------------------------------------------------------------+
@@ -54,9 +54,9 @@ impl<B: Bus> Executable<B> for Format3 {
 
         match self.op {
             Opcode::MOV => cpu.mov(self.rd, nn, true),
-            Opcode::CMP => cpu.cmp(self.rd, nn),
-            Opcode::ADD => cpu.add(self.rd, nn, self.rd, true),
-            Opcode::SUB => cpu.sub(self.rd, nn, self.rd, true),
+            Opcode::CMP => cpu.cmp(self.rd, nn, true),
+            Opcode::ADD => cpu.add(self.rd, self.rd, nn, true),
+            Opcode::SUB => cpu.sub(self.rd, self.rd, nn, true),
         }
     }
 }

@@ -1,4 +1,4 @@
-use super::prelude::*;
+use crate::arm7tdmi::isa::prelude::*;
 
 /// Add offset to stack pointer
 /// +-------------------------------------------------------------------------------+
@@ -35,8 +35,8 @@ impl<B: Bus> Executable<B> for Format13 {
         let nn = self.nn.value.imm();
 
         match self.nn.negate {
-            true => cpu.sub(sp, nn, sp, false),
-            false => cpu.add(sp, nn, sp, false),
+            true => cpu.sub(sp, sp, nn, false),
+            false => cpu.add(sp, sp, nn, false),
         }
     }
 }

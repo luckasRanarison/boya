@@ -1,5 +1,5 @@
 use crate::{
-    arm7tdmi::common::{Cycle, Exception, OperandKind, OperatingMode, ToOperand},
+    arm7tdmi::common::{Condition, Cycle, Exception, OperandKind, OperatingMode, ToOperand},
     bus::Bus,
     utils::bitflags::{BitIter, Bitflag},
 };
@@ -14,9 +14,9 @@ impl<B: Bus> Arm7tdmi<B> {
     #[inline(always)]
     pub fn add_sub_op(
         &mut self,
+        dst: Option<u8>,
         lhs: Operand,
         rhs: Operand,
-        dst: Option<u8>,
         carry: Carry,
         update: bool,
     ) -> Cycle {
@@ -48,7 +48,7 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    pub fn shift_op<F>(&mut self, func: F, lhs: u8, rhs: Operand, dst: u8) -> Cycle
+    pub fn shift_op<F>(&mut self, func: F, dst: u8, lhs: u8, rhs: Operand) -> Cycle
     where
         F: Fn(u32, u32) -> u32,
     {
@@ -66,7 +66,14 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    pub fn logical_op<F>(&mut self, func: F, lhs: u8, rhs: Operand, dst: Option<u8>) -> Cycle
+    pub fn logical_op<F>(
+        &mut self,
+        func: F,
+        dst: Option<u8>,
+        lhs: u8,
+        rhs: Operand,
+        update: bool,
+    ) -> Cycle
     where
         F: Fn(u32, u32) -> u32,
     {
@@ -75,7 +82,9 @@ impl<B: Bus> Arm7tdmi<B> {
         let rhs = self.get_operand(rhs);
         let result = func(lhs, rhs);
 
-        self.cpsr.update_zn(result);
+        if update {
+            self.cpsr.update_zn(result);
+        }
 
         if let Some(rd) = dst {
             self.set_reg(rd, result);
@@ -112,7 +121,7 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    pub fn mul_op(&mut self, lhs: u8, rhs: Operand, dst: u8) -> Cycle {
+    pub fn mul_op(&mut self, dst: u8, lhs: u8, rhs: Operand) -> Cycle {
         let lhs = self.get_reg(lhs);
         let rhs = self.get_operand(rhs);
         let result = lhs.wrapping_mul(rhs);
@@ -215,8 +224,8 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    pub fn branch_op(&mut self, condition: bool, offset: i16) -> Cycle {
-        if !condition {
+    pub fn branch_op(&mut self, cond: Condition, offset: i16) -> Cycle {
+        if !self.cpsr.matches(cond) {
             return Cycle { i: 0, s: 1, n: 0 };
         }
 
@@ -234,7 +243,7 @@ impl<B: Bus> Arm7tdmi<B> {
         let upper = (nn as u32) << 12;
         let result = self.pc().wrapping_add(upper);
 
-        self.set_reg(Self::LR as usize, result);
+        self.set_reg(Self::LR, result);
 
         Cycle { i: 0, s: 1, n: 0 }
     }

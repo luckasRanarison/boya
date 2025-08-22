@@ -19,19 +19,6 @@ mod format_17;
 mod format_18;
 mod format_19;
 
-mod prelude {
-    pub use std::fmt::Debug;
-
-    pub use crate::arm7tdmi::Arm7tdmi;
-    pub use crate::arm7tdmi::common::{Cycle, NamedRegister, Operand, ToOperand};
-    pub use crate::arm7tdmi::isa::Executable;
-    pub use crate::bus::Bus;
-    pub use crate::utils::bitflags::Bitflag;
-
-    #[cfg(test)]
-    pub use crate::{arm7tdmi::test::Psr, test::AsmTestBuilder};
-}
-
 use format_01::Format1;
 use format_02::Format2;
 use format_03::Format3;
@@ -52,12 +39,12 @@ use format_16::Format16;
 use format_17::Format17;
 use format_18::Format18;
 
-use prelude::*;
-
 use crate::{
     arm7tdmi::{common::Cycle, thumb::format_19::Format19},
     utils::bitflags::BitArray,
 };
+
+use super::isa::prelude::*;
 
 pub enum ThumbInstr {
     /// Move shifted register
@@ -98,6 +85,8 @@ pub enum ThumbInstr {
     Format18(Format18),
     /// Long branch with link
     Format19(Format19),
+    /// Undefined THUMB instruction
+    Undefined(u16),
 }
 
 impl Debug for ThumbInstr {
@@ -123,6 +112,8 @@ impl Debug for ThumbInstr {
             ThumbInstr::Format17(op) => write!(f, "{op:?} ; thumb 17"),
             ThumbInstr::Format18(op) => write!(f, "{op:?} ; thumb 18"),
             ThumbInstr::Format19(op) => write!(f, "{op:?} ; thumb 19"),
+
+            ThumbInstr::Undefined(op) => write!(f, "{op:x} ; thumb undefined"),
         }
     }
 }
@@ -135,26 +126,26 @@ impl<B: Bus> Arm7tdmi<B> {
         let bit_array = instr.to_bit_array(8);
 
         match bit_array {
-            [0, 0, 0, 1, 1, _, _, _] => ThumbInstr::Format2(Format2::from(instr)),
-            [0, 0, 0, _, _, _, _, _] => ThumbInstr::Format1(Format1::from(instr)),
-            [0, 0, 1, _, _, _, _, _] => ThumbInstr::Format3(Format3::from(instr)),
-            [0, 1, 0, 0, 0, 0, _, _] => ThumbInstr::Format4(Format4::from(instr)),
-            [0, 1, 0, 0, 0, 1, _, _] => ThumbInstr::Format5(Format5::from(instr)),
-            [0, 1, 0, 0, 1, _, _, _] => ThumbInstr::Format6(Format6::from(instr)),
-            [0, 1, 0, 1, _, _, 1, _] => ThumbInstr::Format8(Format8::from(instr)),
-            [0, 1, 0, 1, _, _, _, _] => ThumbInstr::Format7(Format7::from(instr)),
-            [0, 1, 1, _, _, _, _, _] => ThumbInstr::Format9(Format9::from(instr)),
-            [1, 0, 0, 0, _, _, _, _] => ThumbInstr::Format10(Format10::from(instr)),
-            [1, 0, 0, 1, _, _, _, _] => ThumbInstr::Format11(Format11::from(instr)),
-            [1, 0, 1, 0, _, _, _, _] => ThumbInstr::Format12(Format12::from(instr)),
-            [1, 0, 1, 1, 0, 0, 0, 0] => ThumbInstr::Format13(Format13::from(instr)),
-            [1, 0, 1, 1, _, 1, 0, _] => ThumbInstr::Format14(Format14::from(instr)),
-            [1, 1, 0, 0, _, _, _, _] => ThumbInstr::Format15(Format15::from(instr)),
-            [1, 1, 0, 1, 1, 1, 1, 1] => ThumbInstr::Format17(Format17::from(instr)),
-            [1, 1, 0, 1, _, _, _, _] => ThumbInstr::Format16(Format16::from(instr)),
-            [1, 1, 1, 0, 0, _, _, _] => ThumbInstr::Format18(Format18::from(instr)),
-            [1, 1, 1, 1, _, _, _, _] => ThumbInstr::Format19(Format19::from(instr)),
-            _ => todo!(),
+            [0, 0, 0, 1, 1, _, _, _] => ThumbInstr::Format2(instr.into()),
+            [0, 0, 0, _, _, _, _, _] => ThumbInstr::Format1(instr.into()),
+            [0, 0, 1, _, _, _, _, _] => ThumbInstr::Format3(instr.into()),
+            [0, 1, 0, 0, 0, 0, _, _] => ThumbInstr::Format4(instr.into()),
+            [0, 1, 0, 0, 0, 1, _, _] => ThumbInstr::Format5(instr.into()),
+            [0, 1, 0, 0, 1, _, _, _] => ThumbInstr::Format6(instr.into()),
+            [0, 1, 0, 1, _, _, 1, _] => ThumbInstr::Format8(instr.into()),
+            [0, 1, 0, 1, _, _, _, _] => ThumbInstr::Format7(instr.into()),
+            [0, 1, 1, _, _, _, _, _] => ThumbInstr::Format9(instr.into()),
+            [1, 0, 0, 0, _, _, _, _] => ThumbInstr::Format10(instr.into()),
+            [1, 0, 0, 1, _, _, _, _] => ThumbInstr::Format11(instr.into()),
+            [1, 0, 1, 0, _, _, _, _] => ThumbInstr::Format12(instr.into()),
+            [1, 0, 1, 1, 0, 0, 0, 0] => ThumbInstr::Format13(instr.into()),
+            [1, 0, 1, 1, _, 1, 0, _] => ThumbInstr::Format14(instr.into()),
+            [1, 1, 0, 0, _, _, _, _] => ThumbInstr::Format15(instr.into()),
+            [1, 1, 0, 1, 1, 1, 1, 1] => ThumbInstr::Format17(instr.into()),
+            [1, 1, 0, 1, _, _, _, _] => ThumbInstr::Format16(instr.into()),
+            [1, 1, 1, 0, 0, _, _, _] => ThumbInstr::Format18(instr.into()),
+            [1, 1, 1, 1, _, _, _, _] => ThumbInstr::Format19(instr.into()),
+            _ => ThumbInstr::Undefined(instr),
         }
     }
 
@@ -180,6 +171,8 @@ impl<B: Bus> Arm7tdmi<B> {
             ThumbInstr::Format17(op) => op.dispatch(self),
             ThumbInstr::Format18(op) => op.dispatch(self),
             ThumbInstr::Format19(op) => op.dispatch(self),
+
+            ThumbInstr::Undefined(_) => self.handle_exception(Exception::UndefinedInstruction),
         }
     }
 }

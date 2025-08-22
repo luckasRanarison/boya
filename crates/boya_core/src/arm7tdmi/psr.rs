@@ -1,6 +1,9 @@
 use std::fmt::Debug;
 
-use crate::{arm7tdmi::common::OperatingMode, utils::bitflags::Bitflag};
+use crate::{
+    arm7tdmi::common::{Condition, OperatingMode},
+    utils::bitflags::Bitflag,
+};
 
 /// +----------------------------------------------------------------------------+
 /// | N(31) | Z(30) | C(29) |   V(28)  |  U(27-8) | I(7) | F(6) | T(5)  | M(4-0) |
@@ -66,24 +69,24 @@ impl Psr {
         self.0.has(bit)
     }
 
-    #[inline(always)]
-    pub fn z(self) -> bool {
-        self.has(Self::Z)
-    }
-
-    #[inline(always)]
-    pub fn c(self) -> bool {
-        self.has(Self::C)
-    }
-
-    #[inline(always)]
-    pub fn s(self) -> bool {
-        self.has(Self::N)
-    }
-
-    #[inline(always)]
-    pub fn v(self) -> bool {
-        self.has(Self::V)
+    pub fn matches(self, cond: Condition) -> bool {
+        match cond {
+            Condition::EQ => self.has(Self::Z),
+            Condition::NE => !self.has(Self::Z),
+            Condition::CS => self.has(Self::C),
+            Condition::CC => !self.has(Self::C),
+            Condition::MI => self.has(Self::N),
+            Condition::PL => !self.has(Self::N),
+            Condition::VS => self.has(Self::V),
+            Condition::VC => !self.has(Self::V),
+            Condition::HI => self.has(Self::C) && !self.has(Self::Z),
+            Condition::LS => !self.has(Self::C) || self.has(Self::Z),
+            Condition::GE => self.has(Self::N) == self.has(Self::V),
+            Condition::LT => self.has(Self::N) != self.has(Self::V),
+            Condition::GT => !self.has(Self::Z) && self.has(Self::N) == self.has(Self::V),
+            Condition::LE => self.has(Self::Z) || self.has(Self::N) != self.has(Self::V),
+            Condition::AL => true,
+        }
     }
 
     #[inline(always)]

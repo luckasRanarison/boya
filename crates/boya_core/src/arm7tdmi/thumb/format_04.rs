@@ -1,4 +1,4 @@
-use super::prelude::*;
+use crate::arm7tdmi::isa::prelude::*;
 
 /// ALU operations
 /// +-------------------------------------------------------------------------------+
@@ -75,22 +75,22 @@ impl From<u16> for Opcode {
 impl<B: Bus> Executable<B> for Format4 {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         match self.op {
-            Opcode::AND => cpu.and(self.rd, self.rs),
-            Opcode::EOR => cpu.eor(self.rd, self.rs),
-            Opcode::LSL => cpu.lsl(self.rd, self.rs.reg(), self.rd),
-            Opcode::LSR => cpu.lsr(self.rd, self.rs.reg(), self.rd),
-            Opcode::ASR => cpu.asr(self.rd, self.rs.reg(), self.rd),
-            Opcode::ADC => cpu.adc(self.rd, self.rs.reg(), self.rd),
-            Opcode::SBC => cpu.sbc(self.rd, self.rs.reg(), self.rd),
-            Opcode::ROR => cpu.ror(self.rd, self.rs.reg(), self.rd),
-            Opcode::TST => cpu.tst(self.rd, self.rs),
+            Opcode::AND => cpu.and(self.rd, self.rd, self.rs.reg(), true),
+            Opcode::EOR => cpu.eor(self.rd, self.rd, self.rs.reg(), true),
+            Opcode::LSL => cpu.lsl(self.rd, self.rd, self.rs.reg()),
+            Opcode::LSR => cpu.lsr(self.rd, self.rd, self.rs.reg()),
+            Opcode::ASR => cpu.asr(self.rd, self.rd, self.rs.reg()),
+            Opcode::ADC => cpu.adc(self.rd, self.rd, self.rs.reg(), true),
+            Opcode::SBC => cpu.sbc(self.rd, self.rd, self.rs.reg(), true),
+            Opcode::ROR => cpu.ror(self.rd, self.rd, self.rs.reg()),
+            Opcode::TST => cpu.tst(self.rd, self.rs.reg(), true),
             Opcode::NEG => cpu.neg(self.rd, self.rs),
-            Opcode::CMP => cpu.cmp(self.rd, self.rs.reg()),
-            Opcode::CMN => cpu.cmn(self.rd, self.rs.reg()),
-            Opcode::ORR => cpu.orr(self.rd, self.rs),
-            Opcode::MUL => cpu.mul(self.rd, self.rs.reg(), self.rd),
-            Opcode::BIC => cpu.bic(self.rd, self.rs),
-            Opcode::MVN => cpu.mvn(self.rd, self.rs),
+            Opcode::CMP => cpu.cmp(self.rd, self.rs.reg(), true),
+            Opcode::CMN => cpu.cmn(self.rd, self.rs.reg(), true),
+            Opcode::ORR => cpu.orr(self.rd, self.rd, self.rs.reg(), true),
+            Opcode::MUL => cpu.mul(self.rd, self.rd, self.rs.reg()),
+            Opcode::BIC => cpu.bic(self.rd, self.rd, self.rs.reg(), true),
+            Opcode::MVN => cpu.mvn(self.rd, self.rs.reg(), true),
         }
     }
 }

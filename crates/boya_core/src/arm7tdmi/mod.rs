@@ -24,6 +24,7 @@ use crate::{
         common::{Cycle, Exception},
     },
     bus::Bus,
+    utils::ops::ExtendedOps,
 };
 
 pub enum Instruction {
@@ -94,11 +95,11 @@ impl<B: Bus> Arm7tdmi<B> {
 
     #[inline(always)]
     pub fn decode(&self, word: u32) -> Instruction {
-        // if self.cpsr.thumb() {
-        Instruction::Thumb(self.decode_thumb(word))
-        // } else {
-        //     Instruction::Arm(self.decode_arm(word))
-        // }
+        if self.cpsr.thumb() {
+            Instruction::Thumb(self.decode_thumb(word))
+        } else {
+            Instruction::Arm(self.decode_arm(word))
+        }
     }
 
     #[inline(always)]
@@ -216,10 +217,24 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     fn get_operand(&self, operand: Operand) -> u32 {
-        let value = match operand.kind {
+        let mut value = match operand.kind {
             OperandKind::Imm => operand.value,
             _ => self.get_reg(operand.value as usize),
         };
+
+        if let Some(shift) = operand.shift {
+            let rhs = match shift.register {
+                true => self.get_reg(shift.value),
+                false => shift.value.into(),
+            };
+
+            value = match shift.kind {
+                common::ShiftKind::LSL => value.wrapping_shl(rhs),
+                common::ShiftKind::LSR => value.wrapping_shr(rhs),
+                common::ShiftKind::ASR => value.wrapping_asr(rhs),
+                common::ShiftKind::ROR => value.rotate_right(rhs),
+            };
+        }
 
         if operand.negate { !value } else { value }
     }

@@ -72,20 +72,75 @@ pub enum Exception {
     FastInterrupt,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum Condition {
+    EQ,
+    NE,
+    CS,
+    CC,
+    MI,
+    PL,
+    VS,
+    VC,
+    HI,
+    LS,
+    GE,
+    LT,
+    GT,
+    LE,
+    AL,
+}
+
+impl From<u8> for Condition {
+    fn from(value: u8) -> Self {
+        match value {
+            0x0 => Self::EQ,
+            0x1 => Self::NE,
+            0x2 => Self::CS,
+            0x3 => Self::CC,
+            0x4 => Self::MI,
+            0x5 => Self::PL,
+            0x6 => Self::VS,
+            0x7 => Self::VC,
+            0x8 => Self::HI,
+            0x9 => Self::LS,
+            0xA => Self::GE,
+            0xB => Self::LT,
+            0xC => Self::GT,
+            0xD => Self::LE,
+            0xE => Self::AL,
+            _ => panic!("invalid condition: {value:04b}"),
+        }
+    }
+}
+
 pub struct Operand {
     pub kind: OperandKind,
     pub value: u32,
     pub negate: bool,
+    pub shift: Option<Shift>,
 }
 
 impl Debug for Operand {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.kind {
-            OperandKind::SP => write!(f, "SP"),
-            OperandKind::PC => write!(f, "PC"),
-            OperandKind::Imm if self.negate => write!(f, "#-{}", self.value),
-            OperandKind::Imm => write!(f, "#{}", self.value),
-            OperandKind::Reg => write!(f, "R{}", self.value),
+        let lhs = match self.kind {
+            OperandKind::SP => "SP".to_string(),
+            OperandKind::PC => "PC".to_string(),
+            OperandKind::Imm if self.negate => format!("#-{}", self.value),
+            OperandKind::Imm => format!("#{}", self.value),
+            OperandKind::Reg => format!("R{}", self.value),
+        };
+
+        if let Some(shift) = &self.shift {
+            write!(
+                f,
+                "{lhs}, {:?} {}{}",
+                shift.kind,
+                if shift.register { "R" } else { "#" },
+                shift.value
+            )
+        } else {
+            write!(f, "{lhs}")
         }
     }
 }
@@ -96,11 +151,17 @@ impl Operand {
         self
     }
 
+    pub fn shift(mut self, shift: Shift) -> Self {
+        self.shift = Some(shift);
+        self
+    }
+
     pub fn pc() -> Self {
         Operand {
             kind: OperandKind::PC,
             value: 15,
             negate: false,
+            shift: None,
         }
     }
 
@@ -109,6 +170,7 @@ impl Operand {
             kind: OperandKind::SP,
             value: 13,
             negate: false,
+            shift: None,
         }
     }
 
@@ -128,6 +190,51 @@ pub enum OperandKind {
     Reg,
 }
 
+#[derive(Debug)]
+pub enum ShiftKind {
+    LSL,
+    LSR,
+    ASR,
+    ROR,
+}
+
+impl From<u8> for ShiftKind {
+    fn from(value: u8) -> Self {
+        match value {
+            0x0 => Self::LSL,
+            0x1 => Self::LSR,
+            0x2 => Self::ASR,
+            0x3 => Self::ROR,
+            _ => panic!("invalid shift type: {value:b}"),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Shift {
+    pub value: u8,
+    pub register: bool,
+    pub kind: ShiftKind,
+}
+
+impl Shift {
+    pub fn imm(value: u8, kind: ShiftKind) -> Self {
+        Self {
+            value,
+            register: false,
+            kind,
+        }
+    }
+
+    pub fn reg(value: u8, kind: ShiftKind) -> Self {
+        Self {
+            value,
+            register: true,
+            kind,
+        }
+    }
+}
+
 pub trait ToOperand {
     fn reg(self) -> Operand;
     fn imm(self) -> Operand;
@@ -142,6 +249,7 @@ where
             kind: OperandKind::Reg,
             value: self.into(),
             negate: false,
+            shift: None,
         }
     }
 
@@ -150,6 +258,7 @@ where
             kind: OperandKind::Imm,
             value: self.into(),
             negate: false,
+            shift: None,
         }
     }
 }

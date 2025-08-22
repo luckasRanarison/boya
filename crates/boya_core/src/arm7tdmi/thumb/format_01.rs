@@ -1,4 +1,4 @@
-use super::prelude::*;
+use crate::arm7tdmi::isa::prelude::*;
 
 /// Move shifted register
 /// +-------------------------------------------------------------------------------+
@@ -60,9 +60,9 @@ impl<B: Bus> Executable<B> for Format1 {
         let nn = self.of.imm();
 
         match self.op {
-            Opcode::LSL => cpu.lsl(self.rs, nn, self.rd),
-            Opcode::LSR => cpu.lsr(self.rs, nn, self.rd),
-            Opcode::ASR => cpu.asr(self.rs, nn, self.rd),
+            Opcode::LSL => cpu.lsl(self.rd, self.rs, nn),
+            Opcode::LSR => cpu.lsr(self.rd, self.rs, nn),
+            Opcode::ASR => cpu.asr(self.rd, self.rs, nn),
         }
     }
 }

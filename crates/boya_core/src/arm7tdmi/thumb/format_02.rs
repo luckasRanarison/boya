@@ -1,4 +1,4 @@
-use super::prelude::*;
+use crate::arm7tdmi::isa::prelude::*;
 
 /// Add/Substract
 /// +-------------------------------------------------------------------------------+
@@ -61,8 +61,8 @@ impl From<u16> for Opcode {
 impl<B: Bus> Executable<B> for Format2 {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         match self.op {
-            Opcode::ADD => cpu.add(self.rs, self.nn, self.rd, true),
-            Opcode::SUB => cpu.sub(self.rs, self.nn, self.rd, true),
+            Opcode::ADD => cpu.add(self.rd, self.rs, self.nn, true),
+            Opcode::SUB => cpu.sub(self.rd, self.rs, self.nn, true),
         }
     }
 }

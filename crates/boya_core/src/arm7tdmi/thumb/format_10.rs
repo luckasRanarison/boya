@@ -1,4 +1,4 @@
-use super::prelude::*;
+use crate::arm7tdmi::isa::prelude::*;
 
 /// Load/store halfword
 /// +-------------------------------------------------------------------------------+

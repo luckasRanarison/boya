@@ -1,4 +1,4 @@
-pub use super::prelude::*;
+pub use crate::arm7tdmi::isa::prelude::*;
 
 /// Load PC-relative
 /// +-------------------------------------------------------------------------------+

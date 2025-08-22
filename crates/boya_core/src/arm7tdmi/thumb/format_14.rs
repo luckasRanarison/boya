@@ -1,6 +1,4 @@
-use crate::arm7tdmi::common::{NamedRegister, format_rlist};
-
-use super::prelude::*;
+use crate::arm7tdmi::isa::prelude::*;
 
 /// Push/Pop registers
 /// +-------------------------------------------------------------------------------+
