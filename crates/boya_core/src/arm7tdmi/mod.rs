@@ -22,6 +22,7 @@ use crate::{
     arm7tdmi::{
         arm::ArmInstr,
         common::{Cycle, Exception},
+        psr::PsrKind,
     },
     bus::Bus,
     utils::ops::ExtendedOps,
@@ -237,6 +238,13 @@ impl<B: Bus> Arm7tdmi<B> {
         }
 
         if operand.negate { !value } else { value }
+    }
+
+    fn get_psr(&self, kind: PsrKind) -> Psr {
+        match kind {
+            PsrKind::CPSR => self.cpsr,
+            PsrKind::SPSR => self.bank.get_spsr(self.cpsr.operating_mode()),
+        }
     }
 }
 

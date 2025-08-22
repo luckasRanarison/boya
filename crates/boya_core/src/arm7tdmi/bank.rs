@@ -4,11 +4,12 @@ use super::psr::Psr;
 
 #[derive(Debug, Default)]
 pub struct Bank {
-    fiq: [u32; 8], // R08-R14 + SPSR
-    svc: [u32; 3], // R13-R14 + SPSR
-    abt: [u32; 3], // R13-R14 + SPSR
-    irq: [u32; 3], // R13-R14 + SPSR
-    und: [u32; 3], // R13-R14 + SPSR
+    fiq: [u32; 7], // R08-R14
+    svc: [u32; 2], // R13-R14
+    abt: [u32; 2], // R13-R14
+    irq: [u32; 2], // R13-R14
+    und: [u32; 2], // R13-R14
+    psr: [Psr; 5],
 }
 
 impl Bank {
@@ -24,9 +25,25 @@ impl Bank {
             .map(|(slice, offset)| &mut slice[index - offset])
     }
 
+    pub fn get_spsr(&self, op_mode: OperatingMode) -> Psr {
+        match op_mode {
+            OperatingMode::FIQ => self.psr[0],
+            OperatingMode::SVC => self.psr[1],
+            OperatingMode::ABT => self.psr[2],
+            OperatingMode::IRQ => self.psr[3],
+            OperatingMode::UND => self.psr[4],
+            _ => unreachable!("tried to read SPSR from {op_mode:?}"),
+        }
+    }
+
     pub fn set_spsr(&mut self, op_mode: OperatingMode, cpsr: Psr) {
-        if let Some((slice, _)) = self.get_bank_mut(op_mode) {
-            slice[slice.len() - 1] = cpsr.value();
+        match op_mode {
+            OperatingMode::FIQ => self.psr[0] = cpsr,
+            OperatingMode::SVC => self.psr[1] = cpsr,
+            OperatingMode::ABT => self.psr[2] = cpsr,
+            OperatingMode::IRQ => self.psr[3] = cpsr,
+            OperatingMode::UND => self.psr[4] = cpsr,
+            _ => {}
         }
     }
 

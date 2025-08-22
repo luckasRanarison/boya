@@ -148,7 +148,7 @@ impl<B: Bus> Executable<B> for Format1 {
 
 #[cfg(test)]
 mod tests {
-    use crate::{arm7tdmi::psr::Psr, test::AsmTestBuilder};
+    use super::*;
 
     #[test]
     fn test_operand_2() {
