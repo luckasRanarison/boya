@@ -239,13 +239,6 @@ impl<B: Bus> Arm7tdmi<B> {
 
         if operand.negate { !value } else { value }
     }
-
-    fn get_psr(&self, kind: PsrKind) -> Psr {
-        match kind {
-            PsrKind::CPSR => self.cpsr,
-            PsrKind::SPSR => self.bank.get_spsr(self.cpsr.operating_mode()),
-        }
-    }
 }
 
 #[cfg(test)]
@@ -303,5 +296,4 @@ pub mod test {
     use super::*;
 
     pub use common::DataType;
-    pub use psr::Psr;
 }

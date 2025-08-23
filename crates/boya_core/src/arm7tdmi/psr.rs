@@ -153,3 +153,31 @@ impl Psr {
         }
     }
 }
+
+pub struct PsrField {
+    pub mask: u32,
+}
+
+impl Debug for PsrField {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let f_fld = if self.mask.has(0xFF000000) { "F" } else { "" };
+        let s_fld = if self.mask.has(0xFF000000) { "S" } else { "" };
+        let x_fld = if self.mask.has(0xFF000000) { "X" } else { "" };
+        let c_fld = if self.mask.has(0xFF000000) { "C" } else { "" };
+
+        write!(f, "{f_fld}{s_fld}{x_fld}{c_fld}")
+    }
+}
+
+impl From<u8> for PsrField {
+    fn from(value: u8) -> Self {
+        let f = if value.has(3) { 0xFF000000 } else { 0 };
+        let s = if value.has(2) { 0x00FF0000 } else { 0 };
+        let x = if value.has(1) { 0x0000FF00 } else { 0 };
+        let c = if value.has(0) { 0x000000FF } else { 0 };
+
+        Self {
+            mask: f | s | x | c,
+        }
+    }
+}

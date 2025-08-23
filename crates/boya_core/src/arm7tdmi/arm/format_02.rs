@@ -20,7 +20,7 @@ impl Debug for Format2 {
 
         match &self.op {
             Opcode::MRS { rd } => write!(f, "MRS{cd:?} {rd:?}, {psr:?}"),
-            Opcode::MSR { fd, o } => write!(f, "MSR{cd:?} {psr:?}_{fd:?}, {o:?}"),
+            Opcode::MSR { fd, op } => write!(f, "MSR{cd:?} {psr:?}_{fd:?}, {op:?}"),
         }
     }
 }
@@ -42,7 +42,7 @@ impl From<u32> for Format2 {
 #[derive(Debug)]
 enum Opcode {
     MRS { rd: u8 },
-    MSR { fd: Field, o: Operand },
+    MSR { fd: PsrField, op: Operand },
 }
 
 impl From<u32> for Opcode {
@@ -52,11 +52,11 @@ impl From<u32> for Opcode {
                 rd: value.get_bits_u8(12, 15),
             }
         } else {
-            let fd = Field::from(value.get_bits_u8(16, 19));
+            let fd = PsrField::from(value.get_bits_u8(16, 19));
             let imm = value.has(25);
-            let o = decode_operand(value, imm);
+            let op = decode_operand(value, imm);
 
-            Self::MSR { fd, o }
+            Self::MSR { fd, op }
         }
     }
 }
@@ -72,26 +72,6 @@ fn decode_operand(value: u32, imm: bool) -> Operand {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-enum Field {
-    F,
-    S,
-    X,
-    C,
-}
-
-impl From<u8> for Field {
-    fn from(value: u8) -> Self {
-        match value {
-            0b1000 => Self::F,
-            0b0100 => Self::S,
-            0b0010 => Self::X,
-            0b0001 => Self::C,
-            _ => unreachable!(),
-        }
-    }
-}
-
 impl<B: Bus> Executable<B> for Format2 {
     fn condition(&self) -> Condition {
         self.cd
@@ -99,8 +79,8 @@ impl<B: Bus> Executable<B> for Format2 {
 
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         match self.op {
-            Opcode::MRS { rd } => todo!(),
-            Opcode::MSR { fd, o } => todo!(),
+            Opcode::MRS { rd } => cpu.store_psr_op(rd, self.psr),
+            Opcode::MSR { fd, op } => cpu.set_psr_op(op, fd.mask, self.psr),
         }
     }
 }
@@ -111,6 +91,13 @@ mod tests {
 
     #[test]
     fn test_psr_transfer() {
-        //
+        let asm = r"
+            MRS    R1, CPSR
+        ";
+
+        AsmTestBuilder::new()
+            .asm(asm)
+            .assert_reg(1, 0b00000000_00000000_00000000_11010011)
+            .run(1);
     }
 }

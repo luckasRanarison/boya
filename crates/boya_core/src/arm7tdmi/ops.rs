@@ -1,5 +1,8 @@
 use crate::{
-    arm7tdmi::common::{Condition, Cycle, Exception, OperandKind, OperatingMode, ToOperand},
+    arm7tdmi::{
+        common::{Condition, Cycle, Exception, OperandKind, OperatingMode, ToOperand},
+        psr::PsrKind,
+    },
     bus::Bus,
     utils::bitflags::{BitIter, Bitflag},
 };
@@ -277,7 +280,7 @@ impl<B: Bus> Arm7tdmi<B> {
             self.set_reg(Self::LR, next_addr);
         }
 
-        self.bank.set_spsr(op_mode, self.cpsr);
+        self.bank.set_spsr(self.cpsr, op_mode);
         self.cpsr.set_operating_mode(op_mode);
         self.cpsr.set_arm_mode();
         self.cpsr.update(Psr::I, irq);
@@ -287,6 +290,31 @@ impl<B: Bus> Arm7tdmi<B> {
         self.load_pipeline();
 
         Cycle { i: 0, s: 2, n: 1 }
+    }
+
+    #[inline(always)]
+    pub fn store_psr_op(&mut self, rd: u8, kind: PsrKind) -> Cycle {
+        let psr = match kind {
+            PsrKind::CPSR => self.cpsr,
+            PsrKind::SPSR => self.bank.get_spsr(self.cpsr.operating_mode()),
+        };
+
+        self.set_reg(rd, psr.value());
+
+        Cycle { i: 0, s: 1, n: 0 }
+    }
+
+    #[inline(always)]
+    pub fn set_psr_op(&mut self, op: Operand, mask: u32, kind: PsrKind) -> Cycle {
+        let value = self.get_operand(op) & mask;
+        let psr = Psr::from(value);
+
+        match kind {
+            PsrKind::CPSR => self.cpsr = psr,
+            PsrKind::SPSR => self.bank.set_spsr(psr, self.cpsr.operating_mode()),
+        }
+
+        Cycle { i: 0, s: 1, n: 0 }
     }
 
     fn get_sn_cycle(&self, operand: &Operand) -> (u8, u8) {

@@ -36,7 +36,7 @@ impl Bank {
         }
     }
 
-    pub fn set_spsr(&mut self, op_mode: OperatingMode, cpsr: Psr) {
+    pub fn set_spsr(&mut self, cpsr: Psr, op_mode: OperatingMode) {
         match op_mode {
             OperatingMode::FIQ => self.psr[0] = cpsr,
             OperatingMode::SVC => self.psr[1] = cpsr,
