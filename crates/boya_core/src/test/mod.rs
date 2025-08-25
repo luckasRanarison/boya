@@ -6,9 +6,10 @@ use bus::TestBus;
 
 use crate::arm7tdmi::{Arm7tdmi, test::DataType};
 
-type CpuInitFn = Box<dyn Fn(&mut Arm7tdmi<TestBus>)>;
-
 const DEFAULT_SP: u32 = 200;
+
+type CpuFn = Box<dyn Fn(&Arm7tdmi<TestBus>)>;
+type CpuFnMut = Box<dyn Fn(&mut Arm7tdmi<TestBus>)>;
 
 #[derive(Default)]
 pub struct AsmTestBuilder {
@@ -16,12 +17,13 @@ pub struct AsmTestBuilder {
     thumb: bool,
     code: String,
     bytes: Vec<u8>,
-    setup: Option<CpuInitFn>,
+    setup: Option<CpuFnMut>,
     offset: usize,
 
     flag_assertions: Vec<(u32, bool)>,
     reg_assertions: Vec<(usize, u32)>,
     mem_assertions: Vec<(u32, u32, DataType)>,
+    func_assertion: Option<CpuFn>,
 }
 
 impl AsmTestBuilder {
@@ -78,6 +80,14 @@ impl AsmTestBuilder {
 
     pub fn assert_flag(mut self, flag: u32, status: bool) -> Self {
         self.flag_assertions.push((flag, status));
+        self
+    }
+
+    pub fn assert_fn<F>(mut self, func: F) -> Self
+    where
+        F: Fn(&Arm7tdmi<TestBus>) + 'static,
+    {
+        self.func_assertion = Some(Box::new(func));
         self
     }
 

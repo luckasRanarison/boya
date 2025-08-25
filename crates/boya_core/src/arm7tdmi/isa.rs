@@ -4,11 +4,12 @@ pub mod prelude {
     pub use crate::arm7tdmi::Arm7tdmi;
     pub use crate::arm7tdmi::common::*;
     pub use crate::arm7tdmi::isa::Executable;
+    pub use crate::arm7tdmi::psr::*;
     pub use crate::bus::Bus;
     pub use crate::utils::bitflags::Bitflag;
 
     #[cfg(test)]
-    pub use crate::{arm7tdmi::test::Psr, test::AsmTestBuilder};
+    pub use crate::test::AsmTestBuilder;
 }
 
 use std::ops::{BitAnd, BitOr, BitXor};

@@ -50,7 +50,7 @@ impl Cycle {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OperatingMode {
     USR = 0b10000,
     FIQ = 0b10001,
@@ -175,10 +175,7 @@ impl Operand {
     }
 
     pub fn is_pc(&self) -> bool {
-        match self.kind {
-            OperandKind::PC | OperandKind::Reg if self.value == 15 => true,
-            _ => false,
-        }
+        matches!(self.kind, OperandKind::PC | OperandKind::Reg if self.value == 15)
     }
 }
 

@@ -5,6 +5,12 @@ use crate::{
     utils::bitflags::Bitflag,
 };
 
+#[derive(Debug)]
+pub enum PsrKind {
+    CPSR,
+    SPSR,
+}
+
 /// +----------------------------------------------------------------------------+
 /// | N(31) | Z(30) | C(29) |   V(28)  |  U(27-8) | I(7) | F(6) | T(5)  | M(4-0) |
 /// |-------|-------|-------|----------|----------|------|------|-------|--------|
@@ -106,11 +112,6 @@ impl Psr {
     }
 
     #[inline(always)]
-    pub fn set_operating_mode(&mut self, mode: OperatingMode) {
-        self.0.set_bits(0, 4, mode as u32);
-    }
-
-    #[inline(always)]
     pub fn set_arm_mode(&mut self) {
         self.0.clear(Self::T);
     }
@@ -118,6 +119,10 @@ impl Psr {
     #[inline(always)]
     pub fn set_thumb_mode(&mut self) {
         self.0.set(Self::T);
+    }
+
+    pub fn set_operating_mode(&mut self, mode: OperatingMode) {
+        self.0.set_bits(0, 4, mode as u32);
     }
 
     pub fn operating_mode(self) -> OperatingMode {
@@ -129,7 +134,7 @@ impl Psr {
             0b10111 => OperatingMode::ABT,
             0b11011 => OperatingMode::UND,
             0b11111 => OperatingMode::SYS,
-            value => unreachable!("invalid operating mode: {value:b}"),
+            value => unreachable!("invalid operating mode: {value:05b}"),
         }
     }
 
@@ -144,6 +149,34 @@ impl Psr {
             Self::F => "F",
             Self::T => "T",
             _ => unreachable!("invalid status bit: {bit}"),
+        }
+    }
+}
+
+pub struct PsrField {
+    pub mask: u32,
+}
+
+impl Debug for PsrField {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let f_fld = if self.mask & 0xFF000000 != 0 { "F" } else { "" };
+        let s_fld = if self.mask & 0x00FF0000 != 0 { "S" } else { "" };
+        let x_fld = if self.mask & 0x0000FF00 != 0 { "X" } else { "" };
+        let c_fld = if self.mask & 0x000000FF != 0 { "C" } else { "" };
+
+        write!(f, "{f_fld}{s_fld}{x_fld}{c_fld}")
+    }
+}
+
+impl From<u8> for PsrField {
+    fn from(value: u8) -> Self {
+        let f = if value.has(3) { 0xFF000000 } else { 0 };
+        let s = if value.has(2) { 0x00FF0000 } else { 0 };
+        let x = if value.has(1) { 0x0000FF00 } else { 0 };
+        let c = if value.has(0) { 0x000000FF } else { 0 };
+
+        Self {
+            mask: f | s | x | c,
         }
     }
 }
