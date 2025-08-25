@@ -112,11 +112,6 @@ impl Psr {
     }
 
     #[inline(always)]
-    pub fn set_operating_mode(&mut self, mode: OperatingMode) {
-        self.0.set_bits(0, 4, mode as u32);
-    }
-
-    #[inline(always)]
     pub fn set_arm_mode(&mut self) {
         self.0.clear(Self::T);
     }
@@ -124,6 +119,10 @@ impl Psr {
     #[inline(always)]
     pub fn set_thumb_mode(&mut self) {
         self.0.set(Self::T);
+    }
+
+    pub fn set_operating_mode(&mut self, mode: OperatingMode) {
+        self.0.set_bits(0, 4, mode as u32);
     }
 
     pub fn operating_mode(self) -> OperatingMode {
@@ -135,7 +134,7 @@ impl Psr {
             0b10111 => OperatingMode::ABT,
             0b11011 => OperatingMode::UND,
             0b11111 => OperatingMode::SYS,
-            value => unreachable!("invalid operating mode: {value:b}"),
+            value => unreachable!("invalid operating mode: {value:05b}"),
         }
     }
 
@@ -160,10 +159,10 @@ pub struct PsrField {
 
 impl Debug for PsrField {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let f_fld = if self.mask.has(0xFF000000) { "F" } else { "" };
-        let s_fld = if self.mask.has(0xFF000000) { "S" } else { "" };
-        let x_fld = if self.mask.has(0xFF000000) { "X" } else { "" };
-        let c_fld = if self.mask.has(0xFF000000) { "C" } else { "" };
+        let f_fld = if self.mask & 0xFF000000 != 0 { "F" } else { "" };
+        let s_fld = if self.mask & 0x00FF0000 != 0 { "S" } else { "" };
+        let x_fld = if self.mask & 0x0000FF00 != 0 { "X" } else { "" };
+        let c_fld = if self.mask & 0x000000FF != 0 { "C" } else { "" };
 
         write!(f, "{f_fld}{s_fld}{x_fld}{c_fld}")
     }

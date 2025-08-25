@@ -15,14 +15,10 @@ use pipeline::Pipeline;
 use psr::Psr;
 use thumb::ThumbInstr;
 
-#[cfg(test)]
-use common::DataType;
-
 use crate::{
     arm7tdmi::{
         arm::ArmInstr,
         common::{Cycle, Exception},
-        psr::PsrKind,
     },
     bus::Bus,
     utils::ops::ExtendedOps,
@@ -105,6 +101,7 @@ impl<B: Bus> Arm7tdmi<B> {
 
     #[inline(always)]
     pub fn exec(&mut self, instruction: Instruction) -> Cycle {
+        println!("instruction: {instruction:?}");
         match instruction {
             Instruction::Thumb(op) => self.exec_thumb(op),
             Instruction::Arm(op) => self.exec_arm(op),
@@ -250,12 +247,12 @@ impl<B: Bus> Arm7tdmi<B> {
         self.load_pipeline();
     }
 
-    pub fn assert_mem(&self, assertions: Vec<(u32, u32, DataType)>) {
+    pub fn assert_mem(&self, assertions: Vec<(u32, u32, common::DataType)>) {
         for (address, expected, data_type) in assertions {
             let value = match data_type {
-                DataType::Byte => self.bus.read_byte(address).into(),
-                DataType::HWord => self.bus.read_hword(address).into(),
-                DataType::Word => self.bus.read_word(address),
+                common::DataType::Byte => self.bus.read_byte(address).into(),
+                common::DataType::HWord => self.bus.read_hword(address).into(),
+                common::DataType::Word => self.bus.read_word(address),
             };
 
             assert_eq!(
@@ -295,5 +292,5 @@ impl<B: Bus> Arm7tdmi<B> {
 pub mod test {
     use super::*;
 
-    pub use common::DataType;
+    pub use common::{DataType, OperatingMode};
 }

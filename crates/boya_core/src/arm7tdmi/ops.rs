@@ -280,7 +280,7 @@ impl<B: Bus> Arm7tdmi<B> {
             self.set_reg(Self::LR, next_addr);
         }
 
-        self.bank.set_spsr(self.cpsr, op_mode);
+        self.bank.set_spsr(op_mode, self.cpsr);
         self.cpsr.set_operating_mode(op_mode);
         self.cpsr.set_arm_mode();
         self.cpsr.update(Psr::I, irq);
@@ -305,13 +305,13 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    pub fn set_psr_op(&mut self, op: Operand, mask: u32, kind: PsrKind) -> Cycle {
+    pub fn update_psr_op(&mut self, op: Operand, mask: u32, kind: PsrKind) -> Cycle {
         let value = self.get_operand(op) & mask;
-        let psr = Psr::from(value);
+        let op_mode = self.cpsr.operating_mode();
 
         match kind {
-            PsrKind::CPSR => self.cpsr = psr,
-            PsrKind::SPSR => self.bank.set_spsr(psr, self.cpsr.operating_mode()),
+            PsrKind::CPSR => self.cpsr = Psr::from((self.cpsr.value() & !mask) | value),
+            PsrKind::SPSR => self.bank.update_spsr(op_mode, value, mask),
         }
 
         Cycle { i: 0, s: 1, n: 0 }

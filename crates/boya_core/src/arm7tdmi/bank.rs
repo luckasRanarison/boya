@@ -26,25 +26,18 @@ impl Bank {
     }
 
     pub fn get_spsr(&self, op_mode: OperatingMode) -> Psr {
-        match op_mode {
-            OperatingMode::FIQ => self.psr[0],
-            OperatingMode::SVC => self.psr[1],
-            OperatingMode::ABT => self.psr[2],
-            OperatingMode::IRQ => self.psr[3],
-            OperatingMode::UND => self.psr[4],
-            _ => unreachable!("tried to read SPSR from {op_mode:?}"),
-        }
+        self.psr[self.operating_mode_index(op_mode)]
     }
 
-    pub fn set_spsr(&mut self, cpsr: Psr, op_mode: OperatingMode) {
-        match op_mode {
-            OperatingMode::FIQ => self.psr[0] = cpsr,
-            OperatingMode::SVC => self.psr[1] = cpsr,
-            OperatingMode::ABT => self.psr[2] = cpsr,
-            OperatingMode::IRQ => self.psr[3] = cpsr,
-            OperatingMode::UND => self.psr[4] = cpsr,
-            _ => {}
-        }
+    pub fn set_spsr(&mut self, op_mode: OperatingMode, psr: Psr) {
+        self.psr[self.operating_mode_index(op_mode)] = psr;
+    }
+
+    pub fn update_spsr(&mut self, op_mode: OperatingMode, fields: u32, mask: u32) {
+        let index = self.operating_mode_index(op_mode);
+        let value = (self.psr[index].value() & !mask) | fields;
+
+        self.psr[index] = Psr::from(value);
     }
 
     fn get_bank(&self, op_mode: OperatingMode) -> Option<(&[u32], usize)> {
@@ -66,6 +59,17 @@ impl Bank {
             OperatingMode::IRQ => Some((&mut self.irq, 13)),
             OperatingMode::UND => Some((&mut self.und, 13)),
             _ => None,
+        }
+    }
+
+    fn operating_mode_index(&self, op_mode: OperatingMode) -> usize {
+        match op_mode {
+            OperatingMode::FIQ => 0,
+            OperatingMode::SVC => 1,
+            OperatingMode::ABT => 2,
+            OperatingMode::IRQ => 3,
+            OperatingMode::UND => 4,
+            _ => unreachable!("trying to access PSR for invalid operating mode: {op_mode:?}"),
         }
     }
 }

@@ -63,12 +63,12 @@ impl From<u32> for Opcode {
 
 fn decode_operand(value: u32, imm: bool) -> Operand {
     if imm {
-        value.get_bits_u8(0, 3).reg()
-    } else {
-        let shift = value.get_bits(8, 11);
+        let shift = value.get_bits(8, 11) << 1;
         let imm = value.get_bits(0, 7);
 
         imm.rotate_right(shift).imm()
+    } else {
+        value.get_bits_u8(0, 3).reg()
     }
 }
 
@@ -80,7 +80,7 @@ impl<B: Bus> Executable<B> for Format2 {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         match self.op {
             Opcode::MRS { rd } => cpu.store_psr_op(rd, self.psr),
-            Opcode::MSR { fd, op } => cpu.set_psr_op(op, fd.mask, self.psr),
+            Opcode::MSR { fd, op } => cpu.update_psr_op(op, fd.mask, self.psr),
         }
     }
 }
@@ -93,11 +93,27 @@ mod tests {
     fn test_psr_transfer() {
         let asm = r"
             MRS    R1, CPSR
+            MSR    CPSR_C, 11000000_00000000_00000000_00010001b
+            MSR    CPSR_FS, 00100000_00000000_00000000_00000001b
+            MRS    R2, CPSR
+            MSR    SPSR_FSXC, R2
         ";
 
+        // SVC mode on boot
         AsmTestBuilder::new()
             .asm(asm)
             .assert_reg(1, 0b00000000_00000000_00000000_11010011)
-            .run(1);
+            .assert_reg(2, 0b00100000_00000000_00000000_00010001)
+            .assert_flag(Psr::N, false)
+            .assert_flag(Psr::Z, false)
+            .assert_flag(Psr::C, true)
+            .assert_fn(|cpu| {
+                let op_mode = cpu.cpsr.operating_mode();
+                let spsr = cpu.bank.get_spsr(op_mode);
+
+                assert_eq!(op_mode, OperatingMode::FIQ);
+                assert_eq!(spsr.value(), 0b00100000_00000000_00000000_00010001);
+            })
+            .run(5);
     }
 }
