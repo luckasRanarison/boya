@@ -350,6 +350,21 @@ impl<B: Bus> Arm7tdmi<B> {
         Cycle { i: 0, s: 1, n: 0 }
     }
 
+    #[inline(always)]
+    pub fn swap_op(&mut self, rd: u8, rm: u8, rn: u8, byte: bool) -> Cycle {
+        let addr = self.get_reg(rn);
+
+        if byte {
+            self.set_reg(rd, self.bus.read_byte(addr).into());
+            self.bus.write_byte(addr, self.get_reg(rm) as u8);
+        } else {
+            self.set_reg(rd, self.bus.read_word(addr));
+            self.bus.write_word(addr, self.get_reg(rm));
+        }
+
+        Cycle { i: 1, s: 1, n: 2 }
+    }
+
     fn get_sn_cycle(&self, operand: &Operand) -> (u8, u8) {
         if operand.is_pc() { (2, 1) } else { (1, 0) }
     }

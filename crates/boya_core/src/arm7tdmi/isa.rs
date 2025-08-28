@@ -258,4 +258,8 @@ impl<B: Bus> Arm7tdmi<B> {
     pub fn b(&mut self, offset: i16) -> Cycle {
         self.branch_op(Condition::AL, offset)
     }
+
+    pub fn swp(&mut self, rd: u8, rm: u8, rn: u8, byte: bool) -> Cycle {
+        self.swap_op(rd, rm, rn, byte)
+    }
 }

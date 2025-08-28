@@ -22,8 +22,9 @@ impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{:?} {:?}, {:?}, {:?}, {:?}",
+            "{:?}{:?} {:?}, {:?}, {:?}, {:?}",
             self.op,
+            self.cd,
             self.lo.reg(),
             self.hi.reg(),
             self.rm.reg(),
