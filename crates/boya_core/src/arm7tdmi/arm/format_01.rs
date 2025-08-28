@@ -8,7 +8,7 @@ use crate::arm7tdmi::isa::prelude::*;
 /// |-----------------------------------------------------------------|
 /// |  Cond  |0 0|I|   Op  |S|  Rn   |  Rd   |       Operand2         |
 /// +-----------------------------------------------------------------+
-pub struct Format1 {
+pub struct Instruction {
     cd: Condition,
     op: Opcode,
     s: bool,
@@ -17,9 +17,9 @@ pub struct Format1 {
     op2: Operand,
 }
 
-impl Debug for Format1 {
+impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let Format1 { cd, op, op2, .. } = self;
+        let Instruction { cd, op, op2, .. } = self;
         let s = if self.s { "S" } else { "" };
         let rd = self.rd.reg();
         let rn = self.rn.reg();
@@ -28,18 +28,18 @@ impl Debug for Format1 {
             self.op,
             Opcode::TST | Opcode::TEQ | Opcode::CMP | Opcode::CMN | Opcode::MOV | Opcode::MVN
         ) {
-            write!(f, "{op:?}{cd:?}{s} {rd:?}, {op2:?}",)
+            write!(f, "{op:?}{cd:?}{s} {rd:?}, {op2:?}")
         } else {
-            write!(f, "{op:?}{cd:?}{s} {rd:?}, {rn:?}, {op2:?}",)
+            write!(f, "{op:?}{cd:?}{s} {rd:?}, {rn:?}, {op2:?}")
         }
     }
 }
 
-impl From<u32> for Format1 {
+impl From<u32> for Instruction {
     fn from(value: u32) -> Self {
-        let cd = Condition::from(value.get_bits_u8(28, 31));
+        let cd = value.get_bits_u8(28, 31).into();
         let imm = value.has(25);
-        let op = Opcode::from(value.get_bits_u8(21, 24));
+        let op = value.get_bits_u8(21, 24).into();
         let s = value.has(20);
         let rn = value.get_bits_u8(16, 19);
         let rd = value.get_bits_u8(12, 15);
@@ -119,7 +119,7 @@ impl From<u8> for Opcode {
     }
 }
 
-impl<B: Bus> Executable<B> for Format1 {
+impl<B: Bus> Executable<B> for Instruction {
     fn condition(&self) -> Condition {
         self.cd
     }

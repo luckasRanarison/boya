@@ -8,18 +8,18 @@ use crate::arm7tdmi::isa::prelude::*;
 /// |-----------------------------------------------------------------|
 /// |  Cond  |0 0 0 1 0 0 1 0 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 1|   Rn   |
 /// +-----------------------------------------------------------------+
-pub struct Format3 {
+pub struct Instruction {
     cd: Condition,
     rn: u8,
 }
 
-impl Debug for Format3 {
+impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "BX{:?} {:?}", self.cd, self.rn.reg())
     }
 }
 
-impl From<u32> for Format3 {
+impl From<u32> for Instruction {
     fn from(value: u32) -> Self {
         let cd = value.get_bits_u8(28, 31).into();
         let rn = value.get_bits_u8(0, 3);
@@ -27,7 +27,7 @@ impl From<u32> for Format3 {
         Self { cd, rn }
     }
 }
-impl<B: Bus> Executable<B> for Format3 {
+impl<B: Bus> Executable<B> for Instruction {
     fn condition(&self) -> Condition {
         self.cd
     }

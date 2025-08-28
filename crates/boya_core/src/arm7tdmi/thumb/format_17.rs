@@ -6,17 +6,17 @@ use crate::arm7tdmi::isa::prelude::*;
 /// |-------------------------------------------------------------------------------|
 /// |  1 |  1 |  0 |  1 |  1 |  1 |  1 |  1 |                 Value8                |
 /// +-------------------------------------------------------------------------------+
-pub struct Format17 {
+pub struct Instruction {
     nn: u8,
 }
 
-impl Debug for Format17 {
+impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "SWI {:?}", self.nn)
     }
 }
 
-impl From<u16> for Format17 {
+impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         let nn = value.get_bits_u8(0, 7);
 
@@ -24,7 +24,7 @@ impl From<u16> for Format17 {
     }
 }
 
-impl<B: Bus> Executable<B> for Format17 {
+impl<B: Bus> Executable<B> for Instruction {
     // the immediate parameter is only used by the exception handler
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         cpu.swi()

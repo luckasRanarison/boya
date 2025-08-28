@@ -6,14 +6,14 @@ use crate::arm7tdmi::isa::prelude::*;
 /// |-------------------------------------------------------------------------------|
 /// |  0 |  0 |  0 |    Op   |         Offset5        |      Rs      |      Rd      |
 /// +-------------------------------------------------------------------------------+
-pub struct Format1 {
+pub struct Instruction {
     op: Opcode,
     of: u8,
     rs: u8,
     rd: u8,
 }
 
-impl Debug for Format1 {
+impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -26,9 +26,9 @@ impl Debug for Format1 {
     }
 }
 
-impl From<u16> for Format1 {
+impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
-        let op = value.get_bits(11, 12).into();
+        let op = value.get_bits_u8(11, 12).into();
         let of = value.get_bits_u8(6, 10);
         let rs = value.get_bits_u8(3, 5);
         let rd = value.get_bits_u8(0, 2);
@@ -44,8 +44,8 @@ enum Opcode {
     ASR,
 }
 
-impl From<u16> for Opcode {
-    fn from(value: u16) -> Self {
+impl From<u8> for Opcode {
+    fn from(value: u8) -> Self {
         match value {
             0b00 => Self::LSL,
             0b01 => Self::LSR,
@@ -55,7 +55,7 @@ impl From<u16> for Opcode {
     }
 }
 
-impl<B: Bus> Executable<B> for Format1 {
+impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         let nn = self.of.imm();
 

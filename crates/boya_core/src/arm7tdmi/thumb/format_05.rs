@@ -6,13 +6,13 @@ pub use crate::arm7tdmi::isa::prelude::*;
 /// |-------------------------------------------------------------------------------|
 /// |  0 |  1 |  0 |  0 |  0 |  1 |    Op   | Hd | Hs |     Rs/Hs    |     Rd/Hd    |
 /// +-------------------------------------------------------------------------------+
-pub struct Format5 {
+pub struct Instruction {
     op: Opcode,
     rs: u8,
     rd: u8,
 }
 
-impl Debug for Format5 {
+impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.op {
             Opcode::BX => write!(f, "BX {:?}", self.rs.reg()),
@@ -21,9 +21,9 @@ impl Debug for Format5 {
     }
 }
 
-impl From<u16> for Format5 {
+impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
-        let op = Opcode::from(value.get_bits(8, 9));
+        let op = value.get_bits_u8(8, 9).into();
         let msbd = value.get_u8(7);
         let msbs = value.get_u8(6);
         let rs = value.get_bits_u8(3, 5);
@@ -45,8 +45,8 @@ enum Opcode {
     BX,
 }
 
-impl From<u16> for Opcode {
-    fn from(value: u16) -> Self {
+impl From<u8> for Opcode {
+    fn from(value: u8) -> Self {
         match value {
             0 => Self::ADD,
             1 => Self::CMP,
@@ -57,7 +57,7 @@ impl From<u16> for Opcode {
     }
 }
 
-impl<B: Bus> Executable<B> for Format5 {
+impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         match self.op {
             Opcode::ADD => cpu.add(self.rd, self.rd, self.rs.reg(), false),

@@ -6,18 +6,18 @@ pub use crate::arm7tdmi::isa::prelude::*;
 /// |-------------------------------------------------------------------------------|
 /// |  0 |  1 |  0 |  0 |  1 |      Rd      |              Offset8                  |
 /// +-------------------------------------------------------------------------------+
-pub struct Format6 {
+pub struct Instruction {
     rd: u8,
     nn: u16, // 0-1020, steps 4
 }
 
-impl Debug for Format6 {
+impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "LDR, {:?}, [PC, {:?}]", self.rd.reg(), self.nn.imm())
     }
 }
 
-impl From<u16> for Format6 {
+impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         let rd = value.get_bits_u8(8, 10);
         let nn = value.get_bits(0, 7) << 2; // word aligned offset
@@ -26,7 +26,7 @@ impl From<u16> for Format6 {
     }
 }
 
-impl<B: Bus> Executable<B> for Format6 {
+impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         cpu.ldr(self.rd, cpu.pc() + self.nn as u32)
     }

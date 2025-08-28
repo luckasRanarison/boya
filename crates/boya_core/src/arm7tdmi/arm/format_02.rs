@@ -8,15 +8,15 @@ use crate::arm7tdmi::isa::prelude::*;
 /// |-----------------------------------------------------------------|
 /// |  Cond  |0 0|I|1|0|P|O|O| Field |   Rd  |       Operand          |
 /// +-----------------------------------------------------------------+
-pub struct Format2 {
+pub struct Instruction {
     cd: Condition,
     op: Opcode,
     psr: PsrKind,
 }
 
-impl Debug for Format2 {
+impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let Format2 { cd, psr, .. } = self;
+        let Instruction { cd, psr, .. } = self;
 
         match &self.op {
             Opcode::MRS { rd } => write!(f, "MRS{cd:?} {rd:?}, {psr:?}"),
@@ -25,10 +25,10 @@ impl Debug for Format2 {
     }
 }
 
-impl From<u32> for Format2 {
+impl From<u32> for Instruction {
     fn from(value: u32) -> Self {
-        let cd = Condition::from(value.get_bits_u8(28, 31));
-        let op = Opcode::from(value);
+        let cd = value.get_bits_u8(28, 31).into();
+        let op = value.into();
 
         let psr = match value.get(22) {
             0 => PsrKind::CPSR,
@@ -72,7 +72,7 @@ fn decode_operand(value: u32, imm: bool) -> Operand {
     }
 }
 
-impl<B: Bus> Executable<B> for Format2 {
+impl<B: Bus> Executable<B> for Instruction {
     fn condition(&self) -> Condition {
         self.cd
     }

@@ -1,6 +1,8 @@
 use crate::{
     arm7tdmi::{
-        common::{Condition, Cycle, Exception, OperandKind, OperatingMode, ToOperand},
+        common::{
+            Condition, Cycle, Exception, OperandKind, OperatingMode, RegisterOperand, ToOperand,
+        },
         psr::PsrKind,
     },
     bus::Bus,
@@ -121,27 +123,58 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    pub fn mul_op(&mut self, dst: u8, lhs: u8, rhs: u8, acc: Option<u8>, update: bool) -> Cycle {
-        let lhs = self.get_reg(lhs) as u64;
-        let rhs = self.get_reg(rhs) as u64;
-        let result = lhs.wrapping_mul(rhs) as u32;
+    pub fn mul_op(
+        &mut self,
+        dst: RegisterOperand,
+        lhs: u8,
+        rhs: u8,
+        acc: Option<RegisterOperand>,
+        update: bool,
+        signed: bool,
+    ) -> Cycle {
+        let lhs = self.get_reg(lhs);
+        let rhs = self.get_reg(rhs);
 
-        let i = match rhs {
+        let mut i = match rhs {
             _ if rhs.get_bits(24, 31) != 0 => 4,
             _ if rhs.get_bits(16, 23) != 0 => 3,
             _ if rhs.get_bits(8, 15) != 0 => 2,
             _ => 1,
         };
 
-        let i = if acc.is_some() { i + 1 } else { i };
-        let acc = acc.map_or(0, |rn| self.get_reg(rn));
+        let acc = acc.map_or(0, |reg| {
+            let hi = reg.hi.map_or(0, |hi| self.get_reg(hi)) as u64;
+            let lo = self.get_reg(reg.lo) as u64;
+            i += if reg.hi.is_some() { 2 } else { 1 };
+            (hi << 32) | lo
+        });
+
+        let res = if signed {
+            let lhs = lhs as i32 as i64;
+            let rhs = rhs as i32 as i64;
+            let acc = acc as i64;
+            lhs.wrapping_mul(rhs).wrapping_add(acc) as u64
+        } else {
+            let lhs = lhs as u64;
+            let rhs = rhs as u64;
+            let acc = acc as u64;
+            lhs.wrapping_mul(rhs).wrapping_add(acc)
+        };
+
+        let res_hi = res.get_bits(32, 63) as u32;
+        let res_lo = res as u32;
 
         if update {
-            self.cpsr.update_zn(result);
+            self.cpsr.update(Psr::Z, res == 0);
+            self.cpsr.update(Psr::N, res_hi.has(31));
             self.cpsr.update(Psr::C, false);
         }
 
-        self.set_reg(dst, result.wrapping_add(acc));
+        if let Some(hi) = dst.hi {
+            self.set_reg(hi, res_hi);
+        }
+
+        self.set_reg(dst.lo, res_lo);
 
         Cycle { i, s: 1, n: 0 }
     }

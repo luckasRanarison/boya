@@ -6,13 +6,13 @@ use crate::arm7tdmi::isa::prelude::*;
 /// |-------------------------------------------------------------------------------|
 /// |  1 |  0 |  1 |  1 | Op |  1 |  0 |  R |                 RList                 |
 /// +-------------------------------------------------------------------------------+
-pub struct Format14 {
+pub struct Instruction {
     op: Opcode,
     lrpc: bool,
     rlist: u8,
 }
 
-impl Debug for Format14 {
+impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let rlist = match self.op {
             Opcode::PUSH => format_rlist(self.rlist, self.lrpc.then_some(NamedRegister::LR)),
@@ -23,9 +23,9 @@ impl Debug for Format14 {
     }
 }
 
-impl From<u16> for Format14 {
+impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
-        let op = Opcode::from(value.get(11));
+        let op = value.get_u8(11).into();
         let lrpc = value.has(8);
         let rlist = value.get_bits_u8(0, 7);
 
@@ -39,8 +39,8 @@ enum Opcode {
     POP,
 }
 
-impl From<u16> for Opcode {
-    fn from(value: u16) -> Self {
+impl From<u8> for Opcode {
+    fn from(value: u8) -> Self {
         match value {
             0 => Self::PUSH,
             1 => Self::POP,
@@ -49,7 +49,7 @@ impl From<u16> for Opcode {
     }
 }
 
-impl<B: Bus> Executable<B> for Format14 {
+impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         match self.op {
             Opcode::PUSH => cpu.push(self.rlist, self.lrpc),

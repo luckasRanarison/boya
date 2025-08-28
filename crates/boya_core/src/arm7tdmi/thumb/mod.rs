@@ -7,7 +7,6 @@ mod format_06;
 mod format_07;
 mod format_08;
 mod format_09;
-
 mod format_10;
 mod format_11;
 mod format_12;
@@ -19,72 +18,49 @@ mod format_17;
 mod format_18;
 mod format_19;
 
-use format_01::Format1;
-use format_02::Format2;
-use format_03::Format3;
-use format_04::Format4;
-use format_05::Format5;
-use format_06::Format6;
-use format_07::Format7;
-use format_08::Format8;
-use format_09::Format9;
-
-use format_10::Format10;
-use format_11::Format11;
-use format_12::Format12;
-use format_13::Format13;
-use format_14::Format14;
-use format_15::Format15;
-use format_16::Format16;
-use format_17::Format17;
-use format_18::Format18;
-
-use crate::{
-    arm7tdmi::{common::Cycle, thumb::format_19::Format19},
-    utils::bitflags::BitArray,
-};
+use crate::{arm7tdmi::common::Cycle, utils::bitflags::BitArray};
 
 use super::isa::prelude::*;
 
 pub enum ThumbInstr {
     /// Move shifted register
-    Format1(Format1),
+    Format01(format_01::Instruction),
     /// Add/Substract
-    Format2(Format2),
+    Format02(format_02::Instruction),
     /// Move/Compare/Add/Substract immediate
-    Format3(Format3),
+    Format03(format_03::Instruciton),
     /// ALU operations
-    Format4(Format4),
+    Format04(format_04::Instruction),
     /// Hi register operations/branch exchange
-    Format5(Format5),
+    Format05(format_05::Instruction),
     /// Load PC-relative
-    Format6(Format6),
+    Format06(format_06::Instruction),
     /// Load/Store with register offset
-    Format7(Format7),
+    Format07(format_07::Instruction),
     /// Load/store sign-extended byte/halfword
-    Format8(Format8),
+    Format08(format_08::Instruction),
     /// Load/store with immediate offset
-    Format9(Format9),
+    Format09(format_09::Instruction),
     /// Load/store halfword
-    Format10(Format10),
+    Format10(format_10::Instruction),
     /// Load/store SP-relative
-    Format11(Format11),
+    Format11(format_11::Instruction),
     /// Get relative address
-    Format12(Format12),
+    Format12(format_12::Instruction),
     /// Add offset to stack pointer
-    Format13(Format13),
+    Format13(format_13::Instruction),
     /// Push/Pop registers
-    Format14(Format14),
+    Format14(format_14::Instruction),
     /// Multiple load/store
-    Format15(Format15),
+    Format15(format_15::Instruction),
     /// Conditional branch
-    Format16(Format16),
+    Format16(format_16::Instruction),
     /// Software interrupt
-    Format17(Format17),
+    Format17(format_17::Instruction),
     /// Unconditional branch
-    Format18(Format18),
+    Format18(format_18::Instruction),
     /// Long branch with link
-    Format19(Format19),
+    Format19(format_19::Instruction),
     /// Undefined THUMB instruction
     Undefined(u16),
 }
@@ -92,16 +68,15 @@ pub enum ThumbInstr {
 impl Debug for ThumbInstr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ThumbInstr::Format1(op) => write!(f, "{op:?} ; thumb 1"),
-            ThumbInstr::Format2(op) => write!(f, "{op:?} ; thumb 2"),
-            ThumbInstr::Format3(op) => write!(f, "{op:?} ; thumb 3"),
-            ThumbInstr::Format4(op) => write!(f, "{op:?} ; thumb 4"),
-            ThumbInstr::Format5(op) => write!(f, "{op:?} ; thumb 5"),
-            ThumbInstr::Format6(op) => write!(f, "{op:?} ; thumb 6"),
-            ThumbInstr::Format7(op) => write!(f, "{op:?} ; thumb 7"),
-            ThumbInstr::Format8(op) => write!(f, "{op:?} ; thumb 8"),
-            ThumbInstr::Format9(op) => write!(f, "{op:?} ; thumb 9"),
-
+            ThumbInstr::Format01(op) => write!(f, "{op:?} ; thumb 01"),
+            ThumbInstr::Format02(op) => write!(f, "{op:?} ; thumb 02"),
+            ThumbInstr::Format03(op) => write!(f, "{op:?} ; thumb 03"),
+            ThumbInstr::Format04(op) => write!(f, "{op:?} ; thumb 04"),
+            ThumbInstr::Format05(op) => write!(f, "{op:?} ; thumb 05"),
+            ThumbInstr::Format06(op) => write!(f, "{op:?} ; thumb 06"),
+            ThumbInstr::Format07(op) => write!(f, "{op:?} ; thumb 07"),
+            ThumbInstr::Format08(op) => write!(f, "{op:?} ; thumb 08"),
+            ThumbInstr::Format09(op) => write!(f, "{op:?} ; thumb 09"),
             ThumbInstr::Format10(op) => write!(f, "{op:?} ; thumb 10"),
             ThumbInstr::Format11(op) => write!(f, "{op:?} ; thumb 11"),
             ThumbInstr::Format12(op) => write!(f, "{op:?} ; thumb 12"),
@@ -126,41 +101,40 @@ impl<B: Bus> Arm7tdmi<B> {
         let bit_array = instr.to_bit_array(8);
 
         match bit_array {
-            [0, 0, 0, 1, 1, _, _, _] => ThumbInstr::Format2(instr.into()),
-            [0, 0, 0, _, _, _, _, _] => ThumbInstr::Format1(instr.into()),
-            [0, 0, 1, _, _, _, _, _] => ThumbInstr::Format3(instr.into()),
-            [0, 1, 0, 0, 0, 0, _, _] => ThumbInstr::Format4(instr.into()),
-            [0, 1, 0, 0, 0, 1, _, _] => ThumbInstr::Format5(instr.into()),
-            [0, 1, 0, 0, 1, _, _, _] => ThumbInstr::Format6(instr.into()),
-            [0, 1, 0, 1, _, _, 1, _] => ThumbInstr::Format8(instr.into()),
-            [0, 1, 0, 1, _, _, _, _] => ThumbInstr::Format7(instr.into()),
-            [0, 1, 1, _, _, _, _, _] => ThumbInstr::Format9(instr.into()),
-            [1, 0, 0, 0, _, _, _, _] => ThumbInstr::Format10(instr.into()),
-            [1, 0, 0, 1, _, _, _, _] => ThumbInstr::Format11(instr.into()),
-            [1, 0, 1, 0, _, _, _, _] => ThumbInstr::Format12(instr.into()),
-            [1, 0, 1, 1, 0, 0, 0, 0] => ThumbInstr::Format13(instr.into()),
-            [1, 0, 1, 1, _, 1, 0, _] => ThumbInstr::Format14(instr.into()),
-            [1, 1, 0, 0, _, _, _, _] => ThumbInstr::Format15(instr.into()),
+            [1, 1, 1, 1, _, _, _, _] => ThumbInstr::Format19(instr.into()),
+            [1, 1, 1, 0, 0, _, _, _] => ThumbInstr::Format18(instr.into()),
             [1, 1, 0, 1, 1, 1, 1, 1] => ThumbInstr::Format17(instr.into()),
             [1, 1, 0, 1, _, _, _, _] => ThumbInstr::Format16(instr.into()),
-            [1, 1, 1, 0, 0, _, _, _] => ThumbInstr::Format18(instr.into()),
-            [1, 1, 1, 1, _, _, _, _] => ThumbInstr::Format19(instr.into()),
+            [1, 1, 0, 0, _, _, _, _] => ThumbInstr::Format15(instr.into()),
+            [1, 0, 1, 1, _, 1, 0, _] => ThumbInstr::Format14(instr.into()),
+            [1, 0, 1, 1, 0, 0, 0, 0] => ThumbInstr::Format13(instr.into()),
+            [1, 0, 1, 0, _, _, _, _] => ThumbInstr::Format12(instr.into()),
+            [1, 0, 0, 1, _, _, _, _] => ThumbInstr::Format11(instr.into()),
+            [1, 0, 0, 0, _, _, _, _] => ThumbInstr::Format10(instr.into()),
+            [0, 1, 1, _, _, _, _, _] => ThumbInstr::Format09(instr.into()),
+            [0, 1, 0, 1, _, _, 1, _] => ThumbInstr::Format08(instr.into()),
+            [0, 1, 0, 1, _, _, _, _] => ThumbInstr::Format07(instr.into()),
+            [0, 1, 0, 0, 1, _, _, _] => ThumbInstr::Format06(instr.into()),
+            [0, 1, 0, 0, 0, 1, _, _] => ThumbInstr::Format05(instr.into()),
+            [0, 1, 0, 0, 0, 0, _, _] => ThumbInstr::Format04(instr.into()),
+            [0, 0, 1, _, _, _, _, _] => ThumbInstr::Format03(instr.into()),
+            [0, 0, 0, 1, 1, _, _, _] => ThumbInstr::Format02(instr.into()),
+            [0, 0, 0, _, _, _, _, _] => ThumbInstr::Format01(instr.into()),
             _ => ThumbInstr::Undefined(instr),
         }
     }
 
     pub fn exec_thumb(&mut self, instruction: ThumbInstr) -> Cycle {
         match instruction {
-            ThumbInstr::Format1(op) => op.dispatch(self),
-            ThumbInstr::Format2(op) => op.dispatch(self),
-            ThumbInstr::Format3(op) => op.dispatch(self),
-            ThumbInstr::Format4(op) => op.dispatch(self),
-            ThumbInstr::Format5(op) => op.dispatch(self),
-            ThumbInstr::Format6(op) => op.dispatch(self),
-            ThumbInstr::Format7(op) => op.dispatch(self),
-            ThumbInstr::Format8(op) => op.dispatch(self),
-            ThumbInstr::Format9(op) => op.dispatch(self),
-
+            ThumbInstr::Format01(op) => op.dispatch(self),
+            ThumbInstr::Format02(op) => op.dispatch(self),
+            ThumbInstr::Format03(op) => op.dispatch(self),
+            ThumbInstr::Format04(op) => op.dispatch(self),
+            ThumbInstr::Format05(op) => op.dispatch(self),
+            ThumbInstr::Format06(op) => op.dispatch(self),
+            ThumbInstr::Format07(op) => op.dispatch(self),
+            ThumbInstr::Format08(op) => op.dispatch(self),
+            ThumbInstr::Format09(op) => op.dispatch(self),
             ThumbInstr::Format10(op) => op.dispatch(self),
             ThumbInstr::Format11(op) => op.dispatch(self),
             ThumbInstr::Format12(op) => op.dispatch(self),

@@ -6,14 +6,14 @@ use crate::arm7tdmi::isa::prelude::*;
 /// |-------------------------------------------------------------------------------|
 /// |  0 |  1 |  1 |    Op   |           Offset5      |      Rb      |      Rd      |
 /// +-------------------------------------------------------------------------------+
-pub struct Format9 {
+pub struct Instruction {
     op: Opcode,
     nn: u16, // 0-31 for BYTE, 0-124 for WORD
     rb: u8,
     rd: u8,
 }
 
-impl Debug for Format9 {
+impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -26,9 +26,9 @@ impl Debug for Format9 {
     }
 }
 
-impl From<u16> for Format9 {
+impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
-        let op = Opcode::from(value.get_bits(11, 12));
+        let op = value.get_bits_u8(11, 12).into();
         let is_word = matches!(op, Opcode::STR | Opcode::LDR);
         let nn = value.get_bits(6, 10);
         let nn = if is_word { nn << 2 } else { nn };
@@ -47,8 +47,8 @@ enum Opcode {
     LDRB,
 }
 
-impl From<u16> for Opcode {
-    fn from(value: u16) -> Self {
+impl From<u8> for Opcode {
+    fn from(value: u8) -> Self {
         match value {
             0 => Self::STR,
             1 => Self::LDR,
@@ -59,7 +59,7 @@ impl From<u16> for Opcode {
     }
 }
 
-impl<B: Bus> Executable<B> for Format9 {
+impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         let addr = cpu.get_reg(self.rb) + self.nn as u32;
 

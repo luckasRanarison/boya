@@ -6,17 +6,17 @@ use crate::arm7tdmi::isa::prelude::*;
 /// |-------------------------------------------------------------------------------|
 /// |  1 |  0 |  1 |  1 |  0 |  0 |  0 |  0 | Op |            SWord7                |
 /// +-------------------------------------------------------------------------------+
-pub struct Format13 {
+pub struct Instruction {
     nn: Operand, // 0-1020, step 4
 }
 
-impl Debug for Format13 {
+impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "ADD SP, {:?}", self.nn)
     }
 }
 
-impl From<u16> for Format13 {
+impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         let nn = value.get_bits(0, 6) << 2;
 
@@ -29,7 +29,7 @@ impl From<u16> for Format13 {
     }
 }
 
-impl<B: Bus> Executable<B> for Format13 {
+impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         let sp = NamedRegister::SP as u8;
         let nn = self.nn.value.imm();

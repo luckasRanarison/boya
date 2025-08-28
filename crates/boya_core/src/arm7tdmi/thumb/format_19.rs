@@ -6,18 +6,18 @@ use crate::arm7tdmi::isa::prelude::*;
 /// |-------------------------------------------------------------------------------|
 /// |  1 |  1 |  1 |  1 |  H |                      Offset                          |
 /// +-------------------------------------------------------------------------------+
-pub struct Format19 {
+pub struct Instruction {
     h: bool,
     nn: u16,
 }
 
-impl Debug for Format19 {
+impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", if self.h { "; BL label" } else { "BL label" })
     }
 }
 
-impl From<u16> for Format19 {
+impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         let h = value.has(11);
         let nn = value.get_bits(0, 10);
@@ -26,7 +26,7 @@ impl From<u16> for Format19 {
     }
 }
 
-impl<B: Bus> Executable<B> for Format19 {
+impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         match self.h {
             false => cpu.branch_long_first_op(self.nn),

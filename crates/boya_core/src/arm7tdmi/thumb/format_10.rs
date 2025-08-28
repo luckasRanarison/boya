@@ -6,14 +6,14 @@ use crate::arm7tdmi::isa::prelude::*;
 /// |-------------------------------------------------------------------------------|
 /// |  1 |  0 |  0 |  0 | Op |           Offset5      |      Rb      |      Rd      |
 /// +-------------------------------------------------------------------------------+
-pub struct Format10 {
+pub struct Instruction {
     op: Opcode,
     nn: u16,
     rb: u8,
     rd: u8,
 }
 
-impl Debug for Format10 {
+impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -26,9 +26,9 @@ impl Debug for Format10 {
     }
 }
 
-impl From<u16> for Format10 {
+impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
-        let op = Opcode::from(value.get(11));
+        let op = value.get_u8(11).into();
         let nn = value.get_bits(6, 10) << 1;
         let rb = value.get_bits_u8(3, 5);
         let rd = value.get_bits_u8(0, 2);
@@ -43,8 +43,8 @@ enum Opcode {
     LDRH,
 }
 
-impl From<u16> for Opcode {
-    fn from(value: u16) -> Self {
+impl From<u8> for Opcode {
+    fn from(value: u8) -> Self {
         match value {
             0 => Self::STRH,
             1 => Self::LDRH,
@@ -53,7 +53,7 @@ impl From<u16> for Opcode {
     }
 }
 
-impl<B: Bus> Executable<B> for Format10 {
+impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         let addr = cpu.get_reg(self.rb) + self.nn as u32;
 

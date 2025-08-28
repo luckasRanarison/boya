@@ -6,21 +6,21 @@ use crate::arm7tdmi::isa::prelude::*;
 /// |-------------------------------------------------------------------------------|
 /// |  0 |  1 |  0 |  0 |  0 |  0 |         Op        |      Rs      |      Rd      |
 /// +-------------------------------------------------------------------------------+
-pub struct Format4 {
+pub struct Instruction {
     op: Opcode,
     rs: u8,
     rd: u8,
 }
 
-impl Debug for Format4 {
+impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?} {:?}, {:?}", self.op, self.rd.reg(), self.rs.reg())
     }
 }
 
-impl From<u16> for Format4 {
+impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
-        let op = Opcode::from(value.get_bits(6, 9));
+        let op = value.get_bits_u8(6, 9).into();
         let rs = value.get_bits_u8(3, 5);
         let rd = value.get_bits_u8(0, 2);
 
@@ -48,8 +48,8 @@ enum Opcode {
     MVN,
 }
 
-impl From<u16> for Opcode {
-    fn from(value: u16) -> Self {
+impl From<u8> for Opcode {
+    fn from(value: u8) -> Self {
         match value {
             0x0 => Self::AND,
             0x1 => Self::EOR,
@@ -72,7 +72,7 @@ impl From<u16> for Opcode {
     }
 }
 
-impl<B: Bus> Executable<B> for Format4 {
+impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         match self.op {
             Opcode::AND => cpu.and(self.rd, self.rd, self.rs.reg(), true),

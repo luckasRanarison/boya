@@ -232,6 +232,24 @@ impl Shift {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct RegisterOperand {
+    pub lo: u8,
+    pub hi: Option<u8>,
+}
+
+impl From<u8> for RegisterOperand {
+    fn from(lo: u8) -> Self {
+        Self { lo, hi: None }
+    }
+}
+
+impl RegisterOperand {
+    pub fn long(lo: u8, hi: u8) -> Self {
+        Self { lo, hi: Some(hi) }
+    }
+}
+
 pub trait ToOperand {
     fn reg(self) -> Operand;
     fn imm(self) -> Operand;

@@ -6,17 +6,17 @@ use crate::arm7tdmi::isa::prelude::*;
 /// |-------------------------------------------------------------------------------|
 /// |  1 |  1 |  1 |  0 |  0 |                     Offset11                         |
 /// +-------------------------------------------------------------------------------+
-pub struct Format18 {
+pub struct Instruction {
     of: i16,
 }
 
-impl Debug for Format18 {
+impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "B {:?}", self.of)
     }
 }
 
-impl From<u16> for Format18 {
+impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         Self {
             of: ((value.get_bits(0, 10) as i8) as i16) << 1,
@@ -24,7 +24,7 @@ impl From<u16> for Format18 {
     }
 }
 
-impl<B: Bus> Executable<B> for Format18 {
+impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         cpu.b(self.of)
     }
