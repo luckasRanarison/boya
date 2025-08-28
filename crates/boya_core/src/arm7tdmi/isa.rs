@@ -160,19 +160,19 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn umull(&mut self, dst: RegisterOperand, lhs: u8, rhs: u8, update: bool) -> Cycle {
-        self.mul_op(dst.into(), lhs, rhs, None, update, false)
+        self.mul_op(dst, lhs, rhs, None, update, false)
     }
 
     pub fn umula(&mut self, dst: RegisterOperand, lhs: u8, rhs: u8, update: bool) -> Cycle {
-        self.mul_op(dst.into(), lhs, rhs, Some(dst), update, false)
+        self.mul_op(dst, lhs, rhs, Some(dst), update, false)
     }
 
     pub fn smull(&mut self, dst: RegisterOperand, lhs: u8, rhs: u8, update: bool) -> Cycle {
-        self.mul_op(dst.into(), lhs, rhs, None, update, true)
+        self.mul_op(dst, lhs, rhs, None, update, true)
     }
 
     pub fn smula(&mut self, dst: RegisterOperand, lhs: u8, rhs: u8, update: bool) -> Cycle {
-        self.mul_op(dst.into(), lhs, rhs, Some(dst), update, true)
+        self.mul_op(dst, lhs, rhs, Some(dst), update, true)
     }
 
     pub fn bx(&mut self, rs: u8) -> Cycle {

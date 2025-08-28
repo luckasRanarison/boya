@@ -20,7 +20,15 @@ pub struct Instruction {
 
 impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.op)
+        write!(
+            f,
+            "{:?} {:?}, {:?}, {:?}, {:?}",
+            self.op,
+            self.lo.reg(),
+            self.hi.reg(),
+            self.rm.reg(),
+            self.rs.reg()
+        )
     }
 }
 
@@ -61,7 +69,7 @@ impl From<u8> for Opcode {
             0x1 => Self::UMLAL,
             0x2 => Self::SMULL,
             0x3 => Self::SMLAL,
-            _ => panic!("invalid format 4 opcode: {value:b}"),
+            _ => panic!("invalid format 5 opcode: {value:b}"),
         }
     }
 }

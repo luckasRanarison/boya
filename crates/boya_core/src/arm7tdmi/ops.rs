@@ -135,34 +135,32 @@ impl<B: Bus> Arm7tdmi<B> {
         let lhs = self.get_reg(lhs);
         let rhs = self.get_reg(rhs);
 
-        let mut i = match rhs {
+        let i_base = match rhs {
             _ if rhs.get_bits(24, 31) != 0 => 4,
             _ if rhs.get_bits(16, 23) != 0 => 3,
             _ if rhs.get_bits(8, 15) != 0 => 2,
             _ => 1,
         };
 
-        let acc = acc.map_or(0, |reg| {
+        let (acc, i_extra) = acc.map_or((0, 0), |reg| {
             let hi = reg.hi.map_or(0, |hi| self.get_reg(hi)) as u64;
             let lo = self.get_reg(reg.lo) as u64;
-            i += if reg.hi.is_some() { 2 } else { 1 };
-            (hi << 32) | lo
+            let i = if reg.hi.is_some() { 2 } else { 1 };
+            ((hi << 32) | lo, i)
         });
 
-        let res = if signed {
-            let lhs = lhs as i32 as i64;
-            let rhs = rhs as i32 as i64;
-            let acc = acc as i64;
-            lhs.wrapping_mul(rhs).wrapping_add(acc) as u64
+        let (lhs, rhs) = if signed {
+            let lhs = lhs as i32 as i64 as u64;
+            let rhs = rhs as i32 as i64 as u64;
+            (lhs, rhs)
         } else {
-            let lhs = lhs as u64;
-            let rhs = rhs as u64;
-            let acc = acc as u64;
-            lhs.wrapping_mul(rhs).wrapping_add(acc)
+            (lhs as u64, rhs as u64)
         };
 
+        let res = lhs.wrapping_mul(rhs).wrapping_add(acc);
         let res_hi = res.get_bits(32, 63) as u32;
         let res_lo = res as u32;
+        let i = i_base + i_extra;
 
         if update {
             self.cpsr.update(Psr::Z, res == 0);
