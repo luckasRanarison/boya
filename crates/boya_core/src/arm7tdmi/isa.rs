@@ -111,36 +111,36 @@ impl<B: Bus> Arm7tdmi<B> {
         self.logical_op(u32::bitand, dst.into(), lhs, rhs.not(), update)
     }
 
-    pub fn ldrb(&mut self, rd: u8, addr: u32) -> Cycle {
-        self.ldr_op(rd, addr, DataType::Byte, false)
+    pub fn ldrb(&mut self, rd: u8, base: u8, offset: RegisterOffset) -> Cycle {
+        self.ldr_op(rd, base, DataType::Byte, false, offset)
     }
 
-    pub fn ldrh(&mut self, rd: u8, addr: u32) -> Cycle {
-        self.ldr_op(rd, addr, DataType::HWord, false)
+    pub fn ldrh(&mut self, rd: u8, base: u8, offset: RegisterOffset) -> Cycle {
+        self.ldr_op(rd, base, DataType::HWord, false, offset)
     }
 
-    pub fn ldr(&mut self, rd: u8, addr: u32) -> Cycle {
-        self.ldr_op(rd, addr, DataType::Word, false)
+    pub fn ldr(&mut self, rd: u8, base: u8, offset: RegisterOffset) -> Cycle {
+        self.ldr_op(rd, base, DataType::Word, false, offset)
     }
 
-    pub fn ldsb(&mut self, rd: u8, addr: u32) -> Cycle {
-        self.ldr_op(rd, addr, DataType::Byte, true)
+    pub fn ldsb(&mut self, rd: u8, base: u8, offset: RegisterOffset) -> Cycle {
+        self.ldr_op(rd, base, DataType::Byte, true, offset)
     }
 
-    pub fn ldsh(&mut self, rd: u8, addr: u32) -> Cycle {
-        self.ldr_op(rd, addr, DataType::HWord, true)
+    pub fn ldsh(&mut self, rd: u8, base: u8, offset: RegisterOffset) -> Cycle {
+        self.ldr_op(rd, base, DataType::HWord, true, offset)
     }
 
-    pub fn strb(&mut self, rd: u8, addr: u32) -> Cycle {
-        self.str_op(rd, addr, DataType::Byte)
+    pub fn strb(&mut self, rd: u8, base: u8, offset: RegisterOffset) -> Cycle {
+        self.str_op(rd, base, DataType::Byte, offset)
     }
 
-    pub fn strh(&mut self, rd: u8, addr: u32) -> Cycle {
-        self.str_op(rd, addr, DataType::HWord)
+    pub fn strh(&mut self, rd: u8, base: u8, offset: RegisterOffset) -> Cycle {
+        self.str_op(rd, base, DataType::HWord, offset)
     }
 
-    pub fn str(&mut self, rd: u8, addr: u32) -> Cycle {
-        self.str_op(rd, addr, DataType::Word)
+    pub fn str(&mut self, rd: u8, base: u8, offset: RegisterOffset) -> Cycle {
+        self.str_op(rd, base, DataType::Word, offset)
     }
 
     pub fn mvn(&mut self, rd: u8, op: Operand, update: bool) -> Cycle {
@@ -159,19 +159,19 @@ impl<B: Bus> Arm7tdmi<B> {
         self.mul_op(dst.into(), lhs, rhs, Some(acc.into()), update, false)
     }
 
-    pub fn umull(&mut self, dst: RegisterOperand, lhs: u8, rhs: u8, update: bool) -> Cycle {
+    pub fn umull(&mut self, dst: LongOperand, lhs: u8, rhs: u8, update: bool) -> Cycle {
         self.mul_op(dst, lhs, rhs, None, update, false)
     }
 
-    pub fn umula(&mut self, dst: RegisterOperand, lhs: u8, rhs: u8, update: bool) -> Cycle {
+    pub fn umula(&mut self, dst: LongOperand, lhs: u8, rhs: u8, update: bool) -> Cycle {
         self.mul_op(dst, lhs, rhs, Some(dst), update, false)
     }
 
-    pub fn smull(&mut self, dst: RegisterOperand, lhs: u8, rhs: u8, update: bool) -> Cycle {
+    pub fn smull(&mut self, dst: LongOperand, lhs: u8, rhs: u8, update: bool) -> Cycle {
         self.mul_op(dst, lhs, rhs, None, update, true)
     }
 
-    pub fn smula(&mut self, dst: RegisterOperand, lhs: u8, rhs: u8, update: bool) -> Cycle {
+    pub fn smula(&mut self, dst: LongOperand, lhs: u8, rhs: u8, update: bool) -> Cycle {
         self.mul_op(dst, lhs, rhs, Some(dst), update, true)
     }
 

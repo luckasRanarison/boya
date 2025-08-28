@@ -1,7 +1,8 @@
 use crate::{
     arm7tdmi::{
         common::{
-            Condition, Cycle, Exception, OperandKind, OperatingMode, RegisterOperand, ToOperand,
+            Condition, Cycle, Exception, LongOperand, OperandKind, OperatingMode, RegisterOffset,
+            ToOperand,
         },
         psr::PsrKind,
     },
@@ -125,10 +126,10 @@ impl<B: Bus> Arm7tdmi<B> {
     #[inline(always)]
     pub fn mul_op(
         &mut self,
-        dst: RegisterOperand,
+        dst: LongOperand,
         lhs: u8,
         rhs: u8,
-        acc: Option<RegisterOperand>,
+        acc: Option<LongOperand>,
         update: bool,
         signed: bool,
     ) -> Cycle {
@@ -178,7 +179,26 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    pub fn ldr_op(&mut self, rd: u8, addr: u32, kind: DataType, signed: bool) -> Cycle {
+    pub fn ldr_op(
+        &mut self,
+        rd: u8,
+        rn: u8,
+        kind: DataType,
+        signed: bool,
+        offset: RegisterOffset,
+    ) -> Cycle {
+        let base = self.get_reg(rn);
+
+        let addr = match offset.fx {
+            RegisterFx::IncB => base.wrapping_add(offset.value),
+            RegisterFx::DecB => base.wrapping_sub(offset.value),
+            _ => base,
+        };
+
+        if offset.wb {
+            self.set_reg(rn, addr);
+        }
+
         let value = match kind {
             DataType::Byte if signed => self.bus.read_byte(addr) as i8 as i32 as u32,
             DataType::HWord if signed => self.bus.read_hword(addr) as i8 as i32 as u32,
@@ -187,20 +207,45 @@ impl<B: Bus> Arm7tdmi<B> {
             DataType::Word => self.bus.read_word(addr),
         };
 
+        match offset.fx {
+            RegisterFx::IncA => self.set_reg(rn, base.wrapping_add(offset.value)),
+            RegisterFx::DecA => self.set_reg(rn, base.wrapping_sub(offset.value)),
+            _ => {}
+        };
+
+        println!("set R{rd}: {value}, addr: {addr}, offset: {offset:?}");
+
         self.set_reg(rd, value);
 
         Cycle { i: 1, s: 1, n: 1 }
     }
 
     #[inline(always)]
-    pub fn str_op(&mut self, rs: u8, addr: u32, kind: DataType) -> Cycle {
+    pub fn str_op(&mut self, rs: u8, rn: u8, kind: DataType, offset: RegisterOffset) -> Cycle {
+        let base = self.get_reg(rn);
         let value = self.get_reg(rs);
+
+        let addr = match offset.fx {
+            RegisterFx::IncB => base.wrapping_add(offset.value),
+            RegisterFx::DecB => base.wrapping_sub(offset.value),
+            _ => base,
+        };
+
+        if offset.wb {
+            self.set_reg(rn, addr);
+        }
 
         match kind {
             DataType::Byte => self.bus.write_byte(addr, (value & 0xFF) as u8),
             DataType::HWord => self.bus.write_hword(addr, (value & 0xFFFF) as u16),
             DataType::Word => self.bus.write_word(addr, value),
         }
+
+        match offset.fx {
+            RegisterFx::IncA => self.set_reg(rn, base.wrapping_add(offset.value)),
+            RegisterFx::DecA => self.set_reg(rn, base.wrapping_sub(offset.value)),
+            _ => {}
+        };
 
         Cycle { i: 2, s: 0, n: 0 }
     }

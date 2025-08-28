@@ -31,6 +31,19 @@ pub enum RegisterFx {
 }
 
 #[derive(Debug)]
+pub struct RegisterOffset {
+    pub fx: RegisterFx,
+    pub wb: bool,
+    pub value: u32,
+}
+
+impl RegisterOffset {
+    pub fn new(value: u32, fx: RegisterFx, wb: bool) -> Self {
+        Self { fx, wb, value }
+    }
+}
+
+#[derive(Debug)]
 pub enum Carry {
     One,
     None,
@@ -177,6 +190,10 @@ impl Operand {
     pub fn is_pc(&self) -> bool {
         matches!(self.kind, OperandKind::PC | OperandKind::Reg if self.value == 15)
     }
+
+    pub fn is_imm(&self) -> bool {
+        matches!(self.kind, OperandKind::Imm)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -233,18 +250,18 @@ impl Shift {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct RegisterOperand {
+pub struct LongOperand {
     pub lo: u8,
     pub hi: Option<u8>,
 }
 
-impl From<u8> for RegisterOperand {
+impl From<u8> for LongOperand {
     fn from(lo: u8) -> Self {
         Self { lo, hi: None }
     }
 }
 
-impl RegisterOperand {
+impl LongOperand {
     pub fn long(lo: u8, hi: u8) -> Self {
         Self { lo, hi: Some(hi) }
     }

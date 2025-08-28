@@ -81,7 +81,7 @@ impl<B: Bus> Executable<B> for Instruction {
     }
 
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
-        let rd = RegisterOperand::long(self.lo, self.hi);
+        let rd = LongOperand::long(self.lo, self.hi);
 
         match self.op {
             Opcode::UMULL => cpu.umull(rd, self.rm, self.rs, self.s),

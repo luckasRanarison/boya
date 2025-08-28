@@ -61,13 +61,14 @@ impl From<u8> for Opcode {
 
 impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
-        let addr = cpu.get_reg(self.rb) + self.nn as u32;
+        let value = self.nn.into();
+        let offset = RegisterOffset::new(value, RegisterFx::IncB, false);
 
         match self.op {
-            Opcode::STR => cpu.str(self.rd, addr),
-            Opcode::LDR => cpu.ldr(self.rd, addr),
-            Opcode::STRB => cpu.strb(self.rd, addr),
-            Opcode::LDRB => cpu.ldrb(self.rd, addr),
+            Opcode::STR => cpu.str(self.rd, self.rb, offset),
+            Opcode::LDR => cpu.ldr(self.rd, self.rb, offset),
+            Opcode::STRB => cpu.strb(self.rd, self.rb, offset),
+            Opcode::LDRB => cpu.ldrb(self.rd, self.rb, offset),
         }
     }
 }

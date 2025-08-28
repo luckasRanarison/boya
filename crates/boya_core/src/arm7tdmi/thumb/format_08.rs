@@ -57,12 +57,13 @@ impl From<u8> for Opcode {
 
 impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
-        let addr = cpu.get_reg(self.rb) + cpu.get_reg(self.ro);
+        let value = cpu.get_reg(self.ro);
+        let offset = RegisterOffset::new(value, RegisterFx::IncB, false);
 
         match self.op {
-            Opcode::STRH => cpu.strh(self.rd, addr),
-            Opcode::LDSB => cpu.ldsb(self.rd, addr),
-            Opcode::LDSH => cpu.ldsh(self.rd, addr),
+            Opcode::STRH => cpu.strh(self.rd, self.rb, offset),
+            Opcode::LDSB => cpu.ldsb(self.rd, self.rb, offset),
+            Opcode::LDSH => cpu.ldsh(self.rd, self.rb, offset),
         }
     }
 }

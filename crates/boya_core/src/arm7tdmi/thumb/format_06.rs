@@ -28,7 +28,11 @@ impl From<u16> for Instruction {
 
 impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
-        cpu.ldr(self.rd, cpu.pc() + self.nn as u32)
+        let pc = Arm7tdmi::<B>::PC as u8;
+        let value = self.nn.into();
+        let offset = RegisterOffset::new(value, RegisterFx::IncB, false);
+
+        cpu.ldr(self.rd, pc, offset)
     }
 }
 

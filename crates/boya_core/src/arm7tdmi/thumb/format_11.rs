@@ -52,11 +52,13 @@ impl From<u8> for Opcode {
 
 impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
-        let instr = cpu.sp() + self.nn as u32;
+        let sp = Arm7tdmi::<B>::SP as u8;
+        let value = self.nn.into();
+        let offset = RegisterOffset::new(value, RegisterFx::IncB, false);
 
         match self.op {
-            Opcode::STR => cpu.str(self.rd, instr),
-            Opcode::LDR => cpu.ldr(self.rd, instr),
+            Opcode::STR => cpu.str(self.rd, sp, offset),
+            Opcode::LDR => cpu.ldr(self.rd, sp, offset),
         }
     }
 }
