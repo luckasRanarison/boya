@@ -111,16 +111,6 @@ impl Psr {
         self.0.update(Self::N, value.has(31));
     }
 
-    #[inline(always)]
-    pub fn set_arm_mode(&mut self) {
-        self.0.clear(Self::T);
-    }
-
-    #[inline(always)]
-    pub fn set_thumb_mode(&mut self) {
-        self.0.set(Self::T);
-    }
-
     pub fn set_operating_mode(&mut self, mode: OperatingMode) {
         self.0.set_bits(0, 4, mode as u32);
     }

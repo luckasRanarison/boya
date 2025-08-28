@@ -241,7 +241,7 @@ impl<B: Bus> Arm7tdmi<B> {
 #[cfg(test)]
 impl<B: Bus> Arm7tdmi<B> {
     pub fn force_thumb_mode(&mut self) {
-        self.cpsr.set_thumb_mode();
+        self.cpsr.update(Psr::T, true);
         self.set_pc(0x00);
         self.pipeline.flush();
         self.load_pipeline();

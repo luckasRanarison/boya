@@ -114,20 +114,17 @@ impl<B: Bus> Arm7tdmi<B> {
     pub fn bx_op(&mut self, rs: u8) -> Cycle {
         let value = self.get_reg(rs);
 
-        if !value.has(0) {
-            self.cpsr.set_arm_mode();
-        }
-
+        self.cpsr.update(Psr::T, value.has(0));
         self.set_pc(value);
 
         Cycle { i: 0, s: 2, n: 1 }
     }
 
     #[inline(always)]
-    pub fn mul_op(&mut self, dst: u8, lhs: u8, rhs: Operand) -> Cycle {
-        let lhs = self.get_reg(lhs);
-        let rhs = self.get_operand(rhs);
-        let result = lhs.wrapping_mul(rhs);
+    pub fn mul_op(&mut self, dst: u8, lhs: u8, rhs: u8, acc: Option<u8>, update: bool) -> Cycle {
+        let lhs = self.get_reg(lhs) as u64;
+        let rhs = self.get_reg(rhs) as u64;
+        let result = lhs.wrapping_mul(rhs) as u32;
 
         let i = match rhs {
             _ if rhs.get_bits(24, 31) != 0 => 4,
@@ -136,10 +133,15 @@ impl<B: Bus> Arm7tdmi<B> {
             _ => 1,
         };
 
-        self.cpsr.update_zn(result);
-        self.cpsr.update(Psr::C, false);
+        let i = if acc.is_some() { i + 1 } else { i };
+        let acc = acc.map_or(0, |rn| self.get_reg(rn));
 
-        self.set_reg(dst, result);
+        if update {
+            self.cpsr.update_zn(result);
+            self.cpsr.update(Psr::C, false);
+        }
+
+        self.set_reg(dst, result.wrapping_add(acc));
 
         Cycle { i, s: 1, n: 0 }
     }
@@ -282,7 +284,7 @@ impl<B: Bus> Arm7tdmi<B> {
 
         self.bank.set_spsr(op_mode, self.cpsr);
         self.cpsr.set_operating_mode(op_mode);
-        self.cpsr.set_arm_mode();
+        self.cpsr.update(Psr::T, false);
         self.cpsr.update(Psr::I, irq);
         self.cpsr.update(Psr::F, fiq);
 

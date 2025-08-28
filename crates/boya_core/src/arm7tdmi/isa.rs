@@ -151,8 +151,12 @@ impl<B: Bus> Arm7tdmi<B> {
         self.mov_op(rd, op, update)
     }
 
-    pub fn mul(&mut self, dst: u8, lhs: u8, rhs: Operand) -> Cycle {
-        self.mul_op(dst, lhs, rhs)
+    pub fn mul(&mut self, dst: u8, lhs: u8, rhs: u8, update: bool) -> Cycle {
+        self.mul_op(dst, lhs, rhs, None, update)
+    }
+
+    pub fn mla(&mut self, dst: u8, lhs: u8, rhs: u8, acc: u8, update: bool) -> Cycle {
+        self.mul_op(dst, lhs, rhs, acc.into(), update)
     }
 
     pub fn bx(&mut self, rs: u8) -> Cycle {

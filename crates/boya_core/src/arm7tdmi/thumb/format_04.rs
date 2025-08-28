@@ -88,7 +88,7 @@ impl<B: Bus> Executable<B> for Format4 {
             Opcode::CMP => cpu.cmp(self.rd, self.rs.reg(), true),
             Opcode::CMN => cpu.cmn(self.rd, self.rs.reg(), true),
             Opcode::ORR => cpu.orr(self.rd, self.rd, self.rs.reg(), true),
-            Opcode::MUL => cpu.mul(self.rd, self.rd, self.rs.reg()),
+            Opcode::MUL => cpu.mul(self.rd, self.rd, self.rs, true),
             Opcode::BIC => cpu.bic(self.rd, self.rd, self.rs.reg(), true),
             Opcode::MVN => cpu.mvn(self.rd, self.rs.reg(), true),
         }
