@@ -125,6 +125,10 @@ impl<B: Bus> Executable<B> for Instruction {
     }
 
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        if self.s && self.rd.reg().is_pc() {
+            cpu.restore_cpsr();
+        }
+
         match self.op {
             Opcode::AND => cpu.and(self.rd, self.rn, self.op2, self.s),
             Opcode::EOR => cpu.eor(self.rd, self.rn, self.op2, self.s),

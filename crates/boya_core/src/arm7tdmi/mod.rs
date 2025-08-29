@@ -10,7 +10,7 @@ mod thumb;
 use std::fmt::Debug;
 
 use bank::Bank;
-use common::{Operand, OperandKind, RegisterFx};
+use common::{Operand, OperandKind, OperatingMode, RegisterFx};
 use pipeline::Pipeline;
 use psr::Psr;
 use thumb::ThumbInstr;
@@ -234,6 +234,14 @@ impl<B: Bus> Arm7tdmi<B> {
         }
 
         if operand.negate { !value } else { value }
+    }
+
+    pub fn restore_cpsr(&mut self) {
+        let op_mode = self.cpsr.operating_mode();
+
+        if let Some(spsr) = self.bank.get_spsr(op_mode) {
+            self.cpsr = spsr;
+        }
     }
 }
 

@@ -25,19 +25,29 @@ impl Bank {
             .map(|(slice, offset)| &mut slice[index - offset])
     }
 
-    pub fn get_spsr(&self, op_mode: OperatingMode) -> Psr {
-        self.psr[self.operating_mode_index(op_mode)]
+    pub fn get_spsr(&self, op_mode: OperatingMode) -> Option<Psr> {
+        self.operating_mode_index(op_mode)
+            .map(|index| self.psr[index])
+    }
+
+    pub fn get_spsr_unchecked(&self, op_mode: OperatingMode) -> Psr {
+        self.get_spsr(op_mode)
+            .expect(&format!("invalid PSR access, mode: {op_mode:?}"))
     }
 
     pub fn set_spsr(&mut self, op_mode: OperatingMode, psr: Psr) {
-        self.psr[self.operating_mode_index(op_mode)] = psr;
+        if let Some(index) = self.operating_mode_index(op_mode) {
+            self.psr[index] = psr;
+        }
     }
 
     pub fn update_spsr(&mut self, op_mode: OperatingMode, fields: u32, mask: u32) {
-        let index = self.operating_mode_index(op_mode);
-        let value = (self.psr[index].value() & !mask) | fields;
+        if let Some(index) = self.operating_mode_index(op_mode) {
+            let psr = self.psr[index];
+            let value = (psr.value() & !mask) | fields;
 
-        self.psr[index] = Psr::from(value);
+            self.psr[index] = Psr::from(value);
+        }
     }
 
     fn get_bank(&self, op_mode: OperatingMode) -> Option<(&[u32], usize)> {
@@ -62,14 +72,14 @@ impl Bank {
         }
     }
 
-    fn operating_mode_index(&self, op_mode: OperatingMode) -> usize {
+    fn operating_mode_index(&self, op_mode: OperatingMode) -> Option<usize> {
         match op_mode {
-            OperatingMode::FIQ => 0,
-            OperatingMode::SVC => 1,
-            OperatingMode::ABT => 2,
-            OperatingMode::IRQ => 3,
-            OperatingMode::UND => 4,
-            _ => unreachable!("trying to access PSR for invalid operating mode: {op_mode:?}"),
+            OperatingMode::FIQ => Some(0),
+            OperatingMode::SVC => Some(1),
+            OperatingMode::ABT => Some(2),
+            OperatingMode::IRQ => Some(3),
+            OperatingMode::UND => Some(4),
+            _ => None,
         }
     }
 }

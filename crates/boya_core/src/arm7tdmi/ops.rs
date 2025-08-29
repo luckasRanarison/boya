@@ -373,7 +373,7 @@ impl<B: Bus> Arm7tdmi<B> {
     pub fn store_psr_op(&mut self, rd: u8, kind: PsrKind) -> Cycle {
         let psr = match kind {
             PsrKind::CPSR => self.cpsr,
-            PsrKind::SPSR => self.bank.get_spsr(self.cpsr.operating_mode()),
+            PsrKind::SPSR => self.bank.get_spsr_unchecked(self.cpsr.operating_mode()),
         };
 
         self.set_reg(rd, psr.value());
