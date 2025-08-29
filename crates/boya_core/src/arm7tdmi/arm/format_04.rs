@@ -71,7 +71,7 @@ impl From<u8> for Opcode {
         match value {
             0x0 => Self::MUL,
             0x1 => Self::MLA,
-            _ => panic!("invalid format 4 opcode: {value:b}"),
+            _ => unreachable!("invalid format 4 opcode: {value:b}"),
         }
     }
 }

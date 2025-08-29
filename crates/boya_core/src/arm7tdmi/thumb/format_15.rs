@@ -53,8 +53,8 @@ impl From<u8> for Opcode {
 impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         match self.op {
-            Opcode::STMIA => cpu.stmia(self.rlist, self.rb),
-            Opcode::LDMIA => cpu.ldmia(self.rlist, self.rb),
+            Opcode::STMIA => cpu.stm(self.rlist, self.rb, AddrMode::IA, true, false),
+            Opcode::LDMIA => cpu.ldm(self.rlist, self.rb, AddrMode::IA, true, false),
         }
     }
 }

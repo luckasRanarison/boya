@@ -1,12 +1,20 @@
 mod asm;
 mod bus;
 
-use asm::{compile_asm, format_bin_bytes, format_hex_bytes};
+use asm::{format_bin_bytes, format_hex_bytes};
 use bus::TestBus;
 
-use crate::arm7tdmi::{Arm7tdmi, test::DataType};
+use crate::{
+    arm7tdmi::{Arm7tdmi, test::DataType},
+    bus::Bus,
+};
 
-const DEFAULT_SP: u32 = 200;
+pub use asm::compile_asm;
+
+pub const SP_START: u32 = 0x20;
+pub const PRG_START: u32 = 0x200;
+pub const ARM_MAIN_START: u32 = 0x200;
+pub const TMB_MAIN_START: u32 = 0x20E;
 
 type CpuFn = Box<dyn Fn(&Arm7tdmi<TestBus>)>;
 type CpuFnMut = Box<dyn Fn(&mut Arm7tdmi<TestBus>)>;
@@ -18,7 +26,6 @@ pub struct AsmTestBuilder {
     code: String,
     bytes: Vec<u8>,
     setup: Option<CpuFnMut>,
-    offset: usize,
 
     flag_assertions: Vec<(u32, bool)>,
     reg_assertions: Vec<(usize, u32)>,
@@ -36,15 +43,11 @@ impl AsmTestBuilder {
         self
     }
 
-    pub fn prg_offsett(mut self, offset: usize) -> Self {
-        self.offset = offset;
-        self
-    }
-
     pub fn asm(mut self, code: &str) -> Self {
-        let source = match self.thumb {
-            true => format!("code16\n{code}"),
-            false => format!("code32\n{code}"),
+        let source = if self.thumb {
+            self.make_thumb_code(code)
+        } else {
+            code.to_string()
         };
 
         match compile_asm(&source) {
@@ -107,27 +110,42 @@ impl AsmTestBuilder {
         println!("hex: {formated_bytes}");
         println!("bin: {formated_bits}");
 
-        self.bus.load_program(&self.bytes, self.offset);
+        self.bus.write_word(0x0, 0xEA00007E); // reset: branch to 0x200
+        self.bus.load_program(&self.bytes, PRG_START as usize);
 
         let mut cpu = Arm7tdmi::new(self.bus);
 
         cpu.reset();
-        cpu.set_sp(DEFAULT_SP);
-
-        if self.thumb {
-            cpu.force_thumb_mode();
-        }
+        cpu.set_sp(SP_START);
 
         if let Some(setup) = self.setup {
             setup(&mut cpu);
         }
 
-        for _ in 0..steps {
+        let extra_cycle = if self.thumb { 5 } else { 1 };
+
+        for _ in 0..steps + extra_cycle {
             cpu.step();
         }
 
         cpu.assert_mem(self.mem_assertions);
         cpu.assert_reg(self.reg_assertions);
         cpu.assert_flag(self.flag_assertions);
+    }
+
+    fn make_thumb_code(&self, code: &str) -> String {
+        format!(
+            r"
+            _setup:
+                MOV     R0, 0x20C
+                ORR     R0, R0, #1 ; set bit 1
+                BX      R0         ; switch to thumb mode
+
+            code16
+            _main:
+                mov     r0, 0      ; reset r0
+                {code}
+            "
+        )
     }
 }

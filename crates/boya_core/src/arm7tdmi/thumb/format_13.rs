@@ -55,7 +55,7 @@ mod tests {
         AsmTestBuilder::new()
             .thumb()
             .asm(asm)
-            .assert_reg(13, 208 - 4)
+            .assert_reg(13, SP_START + 8 - 4)
             .run(2);
     }
 }

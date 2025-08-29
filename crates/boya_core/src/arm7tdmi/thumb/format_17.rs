@@ -25,7 +25,6 @@ impl From<u16> for Instruction {
 }
 
 impl<B: Bus> Executable<B> for Instruction {
-    // the immediate parameter is only used by the exception handler
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         cpu.swi()
     }
@@ -35,17 +34,21 @@ impl<B: Bus> Executable<B> for Instruction {
 mod tests {
     use super::*;
 
-    // #[test]
-    // fn test_swi() {
-    //     AsmTestBuilder::new()
-    //         .thumb()
-    //         .asm("swi #7")
-    //         .prg_offset(100)
-    //         .setup(|cpu| {
-    //             cpu.bus.write_word(0x08, 0);
-    //             cpu.set_pc(100);
-    //         })
-    //         .assert_reg(2, 2)
-    //         .run(4)
-    // }
+    #[test]
+    fn test_swi() {
+        let asm = r"
+            main:
+                swi  #72    ; 0
+
+            dead:
+                mov  r0, #1 ; 2
+        ";
+
+        AsmTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(0, 0)
+            .assert_reg(15, 16)
+            .run(1)
+    }
 }

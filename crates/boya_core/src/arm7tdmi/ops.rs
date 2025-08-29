@@ -1,18 +1,12 @@
 use crate::{
-    arm7tdmi::{
-        common::{
-            Condition, Cycle, Exception, LongOperand, OperandKind, OperatingMode, RegisterOffset,
-            ToOperand,
-        },
-        psr::PsrKind,
-    },
+    arm7tdmi::{common::*, psr::PsrKind},
     bus::Bus,
     utils::bitflags::{BitIter, Bitflag},
 };
 
 use super::{
     Arm7tdmi,
-    common::{Carry, DataType, Operand, RegisterFx},
+    common::{AddrMode, Carry, DataType, Operand},
     psr::Psr,
 };
 
@@ -191,8 +185,8 @@ impl<B: Bus> Arm7tdmi<B> {
         let (s, n) = if rn.reg().is_pc() { (2, 2) } else { (1, 1) };
 
         let addr = match offset.fx {
-            RegisterFx::IncB => base.wrapping_add(offset.value),
-            RegisterFx::DecB => base.wrapping_sub(offset.value),
+            AddrMode::IB => base.wrapping_add(offset.value),
+            AddrMode::DB => base.wrapping_sub(offset.value),
             _ => base,
         };
 
@@ -209,8 +203,8 @@ impl<B: Bus> Arm7tdmi<B> {
         };
 
         match offset.fx {
-            RegisterFx::IncA => self.set_reg(rn, base.wrapping_add(offset.value)),
-            RegisterFx::DecA => self.set_reg(rn, base.wrapping_sub(offset.value)),
+            AddrMode::IA => self.set_reg(rn, base.wrapping_add(offset.value)),
+            AddrMode::DA => self.set_reg(rn, base.wrapping_sub(offset.value)),
             _ => {}
         };
 
@@ -225,8 +219,8 @@ impl<B: Bus> Arm7tdmi<B> {
         let value = self.get_reg(rs);
 
         let addr = match offset.fx {
-            RegisterFx::IncB => base.wrapping_add(offset.value),
-            RegisterFx::DecB => base.wrapping_sub(offset.value),
+            AddrMode::IB => base.wrapping_add(offset.value),
+            AddrMode::DB => base.wrapping_sub(offset.value),
             _ => base,
         };
 
@@ -241,8 +235,8 @@ impl<B: Bus> Arm7tdmi<B> {
         }
 
         match offset.fx {
-            RegisterFx::IncA => self.set_reg(rn, base.wrapping_add(offset.value)),
-            RegisterFx::DecA => self.set_reg(rn, base.wrapping_sub(offset.value)),
+            AddrMode::IA => self.set_reg(rn, base.wrapping_add(offset.value)),
+            AddrMode::DA => self.set_reg(rn, base.wrapping_sub(offset.value)),
             _ => {}
         };
 
@@ -255,19 +249,22 @@ impl<B: Bus> Arm7tdmi<B> {
         rb: usize,
         rlist: I,
         rn: Option<usize>,
-        effect: RegisterFx,
+        amod: AddrMode,
+        wb: bool,
+        usr: bool,
     ) -> Cycle {
         let mut s = 0;
+        let mut offset = self.get_reg(rb);
 
         for (idx, bit) in rlist.iter_lsb() {
             if bit == 1 {
-                self.store_reg(idx, rb, effect);
+                self.store_reg(idx, rb, amod, &mut offset, wb, usr);
                 s += 1;
             }
         }
 
         if let Some(rn) = rn {
-            self.store_reg(rn, rb, effect);
+            self.store_reg(rn, rb, amod, &mut offset, wb, usr);
             s += 1;
         }
 
@@ -280,19 +277,22 @@ impl<B: Bus> Arm7tdmi<B> {
         rb: usize,
         rlist: I,
         rn: Option<usize>,
-        effect: RegisterFx,
+        amod: AddrMode,
+        wb: bool,
+        usr: bool,
     ) -> Cycle {
         let mut s = 0;
+        let mut offset = self.get_reg(rb);
 
         for (idx, bit) in rlist.iter_lsb() {
             if bit == 1 {
-                self.load_reg(idx, rb, effect);
+                self.load_reg(idx, rb, amod, &mut offset, wb, usr);
                 s += 1;
             }
         }
 
         if let Some(rn) = rn {
-            self.load_reg(rn, rb, effect);
+            self.load_reg(rn, rb, amod, &mut offset, wb, usr);
             s += 1;
         }
 
@@ -304,13 +304,13 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    pub fn branch_op(&mut self, cond: Condition, offset: i16) -> Cycle {
+    pub fn branch_op(&mut self, cond: Condition, offset: i32) -> Cycle {
         if !self.cpsr.matches(cond) {
             return Cycle { i: 0, s: 1, n: 0 };
         }
 
         if offset != 0 {
-            self.shift_pc(offset.into());
+            self.shift_pc(offset);
         } else {
             self.pipeline.flush();
         }
@@ -343,15 +343,10 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn handle_exception(&mut self, exception: Exception) -> Cycle {
-        let (op_mode, irq, fiq, vector) = match exception {
-            Exception::Reset => (OperatingMode::SVC, true, true, 0x00),
-            Exception::UndefinedInstruction => todo!(),
-            Exception::SoftwareInterrupt => (OperatingMode::SVC, true, self.cpsr.has(Psr::F), 0x08),
-            Exception::PrefetchAbort => todo!(),
-            Exception::DataAbort => todo!(),
-            Exception::NormalInterrupt => todo!(),
-            Exception::FastInterrupt => todo!(),
-        };
+        let vector = exception.vector();
+        let op_mode = exception.operating_mode();
+        let irq = exception.disable_irq() || self.cpsr.has(Psr::I);
+        let fiq = exception.disable_fiq() || self.cpsr.has(Psr::F);
 
         if let Some(next_addr) = self.next_instr_addr() {
             self.set_reg(Self::LR, next_addr);

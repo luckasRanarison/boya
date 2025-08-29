@@ -146,7 +146,7 @@ impl<B: Bus> Arm7tdmi<B> {
             ThumbInstr::Format18(op) => op.dispatch(self),
             ThumbInstr::Format19(op) => op.dispatch(self),
 
-            ThumbInstr::Undefined(_) => self.handle_exception(Exception::UndefinedInstruction),
+            ThumbInstr::Undefined(_) => self.handle_exception(Exception::Undefined),
         }
     }
 }

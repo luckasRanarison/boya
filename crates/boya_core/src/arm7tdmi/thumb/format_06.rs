@@ -28,9 +28,9 @@ impl From<u16> for Instruction {
 
 impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
-        let pc = Arm7tdmi::<B>::PC as u8;
         let value = self.nn.into();
-        let offset = RegisterOffset::new(value, RegisterFx::IncB, false);
+        let offset = RegisterOffset::new(value, AddrMode::IB, false);
+        let pc = NamedRegister::PC as u8;
 
         cpu.ldr(self.rd, pc, offset)
     }
@@ -44,7 +44,7 @@ mod tests {
     fn test_ldr_pc_offset() {
         AsmTestBuilder::new()
             .thumb()
-            .setup(|cpu| cpu.bus.write_word(20, 5))
+            .setup(|cpu| cpu.bus.write_word(TMB_MAIN_START + 20, 5))
             .asm("ldr r1, [PC, #16]")
             .assert_reg(1, 5)
             .run(1);

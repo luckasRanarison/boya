@@ -10,7 +10,7 @@ mod thumb;
 use std::fmt::Debug;
 
 use bank::Bank;
-use common::{Operand, OperandKind, OperatingMode, RegisterFx};
+use common::{AddrMode, Operand, OperandKind};
 use pipeline::Pipeline;
 use psr::Psr;
 use thumb::ThumbInstr;
@@ -101,6 +101,7 @@ impl<B: Bus> Arm7tdmi<B> {
 
     #[inline(always)]
     pub fn exec(&mut self, instruction: Instruction) -> Cycle {
+        println!("{instruction:?}");
         match instruction {
             Instruction::Thumb(op) => self.exec_thumb(op),
             Instruction::Arm(op) => self.exec_arm(op),
@@ -135,42 +136,64 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     #[inline(always)]
-    fn sp(&self) -> u32 {
-        self.get_reg(Self::SP)
-    }
-
-    #[inline(always)]
     pub fn set_sp(&mut self, value: u32) {
         *self.get_reg_mut(Self::SP) = value;
     }
 
-    fn store_reg(&mut self, rs: usize, rb: usize, effect: RegisterFx) {
-        let value = self.get_reg(rs);
+    fn store_reg(
+        &mut self,
+        rs: usize,
+        rb: usize,
+        amod: AddrMode,
+        offset: &mut u32,
+        wb: bool,
+        usr: bool,
+    ) {
+        let value = if usr { self.reg[rs] } else { self.get_reg(rs) };
 
-        if matches!(effect, RegisterFx::IncB | RegisterFx::DecB) {
-            self.update_reg(rb, effect);
+        if matches!(amod, AddrMode::IB | AddrMode::DB) {
+            self.update_offset(offset, amod);
         }
 
-        self.bus.write_word(self.get_reg(rb), value);
+        self.bus.write_word(*offset, value);
 
-        if matches!(effect, RegisterFx::IncA | RegisterFx::DecA) {
-            self.update_reg(rb, effect);
+        if matches!(amod, AddrMode::IA | AddrMode::DA) {
+            self.update_offset(offset, amod);
+        }
+
+        if wb {
+            self.set_reg(rb, *offset);
         }
     }
 
-    fn load_reg(&mut self, rd: usize, rb: usize, effect: RegisterFx) {
-        if matches!(effect, RegisterFx::IncB | RegisterFx::DecB) {
-            self.update_reg(rb, effect);
+    fn load_reg(
+        &mut self,
+        rd: usize,
+        rb: usize,
+        effect: AddrMode,
+        offset: &mut u32,
+        wb: bool,
+        usr: bool,
+    ) {
+        if matches!(effect, AddrMode::IB | AddrMode::DB) {
+            self.update_offset(offset, effect);
         }
 
-        let addr = self.get_reg(rb);
-        let value = self.bus.read_word(addr);
+        let value = self.bus.read_word(*offset);
 
-        if matches!(effect, RegisterFx::IncA | RegisterFx::DecA) {
-            self.update_reg(rb, effect);
+        if matches!(effect, AddrMode::IA | AddrMode::DA) {
+            self.update_offset(offset, effect);
         }
 
-        self.set_reg(rd, value);
+        if usr {
+            self.reg[rd] = value
+        } else {
+            self.set_reg(rd, value)
+        };
+
+        if wb {
+            self.set_reg(rb, *offset);
+        }
     }
 
     fn get_reg<I: Into<usize>>(&self, index: I) -> u32 {
@@ -196,20 +219,10 @@ impl<B: Bus> Arm7tdmi<B> {
         *self.get_reg_mut(index) = value;
     }
 
-    #[inline(always)]
-    fn increment_reg<I: Into<usize>>(&mut self, register: I) {
-        *self.get_reg_mut(register) += 4;
-    }
-
-    #[inline(always)]
-    fn decrement_reg<I: Into<usize>>(&mut self, register: I) {
-        *self.get_reg_mut(register) -= 4;
-    }
-
-    fn update_reg(&mut self, rn: usize, effect: RegisterFx) {
+    fn update_offset(&mut self, offset: &mut u32, effect: AddrMode) {
         match effect {
-            RegisterFx::IncB | RegisterFx::IncA => self.increment_reg(rn),
-            RegisterFx::DecB | RegisterFx::DecA => self.decrement_reg(rn),
+            AddrMode::IB | AddrMode::IA => *offset += 4,
+            AddrMode::DB | AddrMode::DA => *offset -= 4,
         }
     }
 

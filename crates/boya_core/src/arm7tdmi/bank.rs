@@ -32,7 +32,7 @@ impl Bank {
 
     pub fn get_spsr_unchecked(&self, op_mode: OperatingMode) -> Psr {
         self.get_spsr(op_mode)
-            .expect(&format!("invalid PSR access, mode: {op_mode:?}"))
+            .unwrap_or_else(|| panic!("invalid SPSR access, mode: {op_mode:?}"))
     }
 
     pub fn set_spsr(&mut self, op_mode: OperatingMode, psr: Psr) {

@@ -23,22 +23,33 @@ pub enum MemoryAccess {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum RegisterFx {
-    IncB,
-    IncA,
-    DecB,
-    DecA,
+pub enum AddrMode {
+    IB,
+    IA,
+    DB,
+    DA,
+}
+
+impl AddrMode {
+    pub fn new(p: u8, u: u8) -> Self {
+        match (p, u) {
+            (0, 0) => Self::DA,
+            (0, 1) => Self::IA,
+            (1, 0) => Self::DB,
+            (_, _) => Self::IB,
+        }
+    }
 }
 
 #[derive(Debug)]
 pub struct RegisterOffset {
-    pub fx: RegisterFx,
+    pub fx: AddrMode,
     pub wb: bool,
     pub value: u32,
 }
 
 impl RegisterOffset {
-    pub fn new(value: u32, fx: RegisterFx, wb: bool) -> Self {
+    pub fn new(value: u32, fx: AddrMode, wb: bool) -> Self {
         Self { fx, wb, value }
     }
 }
@@ -77,12 +88,49 @@ pub enum OperatingMode {
 #[derive(Debug, Clone, Copy)]
 pub enum Exception {
     Reset,
-    UndefinedInstruction,
+    Undefined,
     SoftwareInterrupt,
     PrefetchAbort,
     DataAbort,
     NormalInterrupt,
     FastInterrupt,
+}
+
+impl Exception {
+    pub fn vector(self) -> u32 {
+        match self {
+            Self::Reset => 0x00,
+            Self::Undefined => 0x04,
+            Self::SoftwareInterrupt => 0x08,
+            Self::PrefetchAbort => 0x0C,
+            Self::DataAbort => 0x10,
+            Self::NormalInterrupt => 0x18,
+            Self::FastInterrupt => 0x1C,
+        }
+    }
+
+    pub fn operating_mode(self) -> OperatingMode {
+        match self {
+            Self::Reset => OperatingMode::SVC,
+            Self::Undefined => OperatingMode::UND,
+            Self::SoftwareInterrupt => OperatingMode::SVC,
+            Self::PrefetchAbort => OperatingMode::ABT,
+            Self::DataAbort => OperatingMode::ABT,
+            Self::NormalInterrupt => OperatingMode::IRQ,
+            Self::FastInterrupt => OperatingMode::IRQ,
+        }
+    }
+
+    pub fn disable_irq(self) -> bool {
+        matches!(
+            self,
+            Self::FastInterrupt | Self::NormalInterrupt | Self::Reset
+        )
+    }
+
+    pub fn disable_fiq(self) -> bool {
+        matches!(self, Self::Reset)
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -122,7 +170,7 @@ impl From<u8> for Condition {
             0xC => Self::GT,
             0xD => Self::LE,
             0xE => Self::AL,
-            _ => panic!("invalid condition: {value:04b}"),
+            _ => unreachable!("invalid condition: {value:04b}"),
         }
     }
 }
@@ -219,7 +267,7 @@ impl From<u8> for ShiftKind {
             0x1 => Self::LSR,
             0x2 => Self::ASR,
             0x3 => Self::ROR,
-            _ => panic!("invalid shift type: {value:b}"),
+            _ => unreachable!("invalid shift type: {value:b}"),
         }
     }
 }
@@ -262,7 +310,7 @@ impl From<u8> for LongOperand {
 }
 
 impl LongOperand {
-    pub fn long(lo: u8, hi: u8) -> Self {
+    pub fn new(lo: u8, hi: u8) -> Self {
         Self { lo, hi: Some(hi) }
     }
 }

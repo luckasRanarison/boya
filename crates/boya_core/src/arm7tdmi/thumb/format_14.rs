@@ -75,13 +75,13 @@ mod tests {
         AsmTestBuilder::new()
             .thumb()
             .asm(asm)
-            .assert_word(196, 64)
-            .assert_word(192, 13)
-            .assert_word(188, 25)
+            .assert_word(SP_START - 4, 64)
+            .assert_word(SP_START - 8, 13)
+            .assert_word(SP_START - 12, 25)
             .assert_reg(3, 25)
             .assert_reg(4, 13)
             .assert_reg(5, 64)
-            .assert_reg(13, 200)
+            .assert_reg(13, SP_START)
             .run(5)
     }
 }

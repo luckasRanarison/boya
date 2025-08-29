@@ -13,7 +13,7 @@ use crate::arm7tdmi::isa::prelude::*;
 pub struct Instruction {
     op: Opcode,
     cd: Condition,
-    fx: RegisterFx,
+    amod: AddrMode,
     wb: bool,
     rd: u8,
     rn: u8,
@@ -29,19 +29,19 @@ impl Debug for Instruction {
 
         write!(f, "{op_cd} {:?}, ", self.rd.reg())?;
 
-        match self.fx {
-            RegisterFx::IncB | RegisterFx::DecB if self.of.is_imm() && self.of.value == 0 => {
+        match self.amod {
+            AddrMode::IB | AddrMode::DB if self.of.is_imm() && self.of.value == 0 => {
                 write!(f, "[{rn:?}]")
             }
-            RegisterFx::IncB => write!(f, "[{rn:?}, {:?}]", self.of),
-            RegisterFx::DecB if self.of.is_imm() => write!(f, "[{rn:?}, #-{:?}]", self.of.value),
-            RegisterFx::DecB => write!(f, "[{rn:?}, -{:?}]", self.of),
-            RegisterFx::IncA => write!(f, "[{rn:?}], {:?}", self.of),
-            RegisterFx::DecA if self.of.is_imm() => write!(f, "[{rn:?}], #-{:?}", self.of.value),
-            RegisterFx::DecA => write!(f, "[{rn:?}], -{:?}", self.of),
+            AddrMode::IB => write!(f, "[{rn:?}, {:?}]", self.of),
+            AddrMode::DB if self.of.is_imm() => write!(f, "[{rn:?}, #-{:?}]", self.of.value),
+            AddrMode::DB => write!(f, "[{rn:?}, -{:?}]", self.of),
+            AddrMode::IA => write!(f, "[{rn:?}], {:?}", self.of),
+            AddrMode::DA if self.of.is_imm() => write!(f, "[{rn:?}], #-{:?}", self.of.value),
+            AddrMode::DA => write!(f, "[{rn:?}], -{:?}", self.of),
         }?;
 
-        if matches!(self.fx, RegisterFx::IncB | RegisterFx::DecB) && self.wb {
+        if self.wb && matches!(self.amod, AddrMode::IB | AddrMode::DB) {
             write!(f, "!")?;
         }
 
@@ -52,20 +52,13 @@ impl Debug for Instruction {
 impl From<u32> for Instruction {
     fn from(value: u32) -> Self {
         let cd = value.get_bits_u8(28, 31).into();
-        let p = value.get(24);
-        let u = value.get(23);
+        let p = value.get_u8(24);
+        let u = value.get_u8(23);
         let wb = value.has(22) || p == 0;
         let rn = value.get_bits_u8(16, 19);
         let rd = value.get_bits_u8(12, 15);
         let op = value.into();
-
-        let fx = match (p, u) {
-            (0, 0) => RegisterFx::DecA,
-            (0, 1) => RegisterFx::IncA,
-            (1, 0) => RegisterFx::DecB,
-            (1, 1) => RegisterFx::IncB,
-            _ => unreachable!(),
-        };
+        let amod = AddrMode::new(p, u);
 
         let of = match value.has(22) {
             true => ((value.get_bits(8, 11) << 4) | (value.get_bits(0, 3))).imm(),
@@ -74,7 +67,7 @@ impl From<u32> for Instruction {
 
         Self {
             cd,
-            fx,
+            amod,
             wb,
             rd,
             rn,
@@ -99,7 +92,7 @@ impl From<u32> for Opcode {
             (1, 0x1) => Self::LDRH,
             (1, 0x2) => Self::LDSB,
             (1, 0x3) => Self::LDSH,
-            (_, op) => panic!("invalid format 7 opcode: {op:b}"),
+            (_, op) => unreachable!("invalid format 7 opcode: {op:b}"),
         }
     }
 }
@@ -111,7 +104,7 @@ impl<B: Bus> Executable<B> for Instruction {
 
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         let value = cpu.get_operand(self.of);
-        let offset = RegisterOffset::new(value, self.fx, self.wb);
+        let offset = RegisterOffset::new(value, self.amod, self.wb);
 
         match self.op {
             Opcode::STRH => cpu.strh(self.rd, self.rn, offset),

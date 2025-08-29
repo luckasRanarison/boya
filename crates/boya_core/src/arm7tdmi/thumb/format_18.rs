@@ -26,7 +26,7 @@ impl From<u16> for Instruction {
 
 impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
-        cpu.b(self.of)
+        cpu.b(self.of.into())
     }
 }
 
@@ -55,7 +55,7 @@ mod tests {
             .assert_reg(0, 0)
             .assert_reg(1, 2)
             .assert_reg(2, 4)
-            .assert_reg(15, 10) // + pre-fetch 6
+            .assert_reg(15, TMB_MAIN_START + 10) // + pre-fetch 6
             .run(4)
     }
 }

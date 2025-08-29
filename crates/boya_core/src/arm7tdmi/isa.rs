@@ -9,14 +9,14 @@ pub mod prelude {
     pub use crate::utils::bitflags::Bitflag;
 
     #[cfg(test)]
-    pub use crate::test::AsmTestBuilder;
+    pub use crate::test::*;
 }
 
 use std::ops::{BitAnd, BitOr, BitXor};
 
 use prelude::*;
 
-use crate::utils::ops::ExtendedOps;
+use crate::utils::{bitflags::BitIter, ops::ExtendedOps};
 
 pub trait Executable<B: Bus>: Sized {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle;
@@ -179,83 +179,85 @@ impl<B: Bus> Arm7tdmi<B> {
         self.bx_op(rs)
     }
 
+    #[rustfmt::skip]
     pub fn push(&mut self, rlist: u8, lr: bool) -> Cycle {
-        self.stm_op(Self::SP, rlist, lr.then_some(Self::LR), RegisterFx::DecB)
+        self.stm_op(Self::SP, rlist, lr.then_some(Self::LR), AddrMode::DB, true, false)
     }
 
+    #[rustfmt::skip]
     pub fn pop(&mut self, rlist: u8, pc: bool) -> Cycle {
-        self.ldm_op(Self::SP, rlist, pc.then_some(Self::PC), RegisterFx::IncA)
+        self.ldm_op(Self::SP, rlist, pc.then_some(Self::PC), AddrMode::IA, true, false)
     }
 
-    pub fn stmia(&mut self, rlist: u8, rb: u8) -> Cycle {
-        self.stm_op(rb.into(), rlist, None, RegisterFx::IncA)
+    pub fn stm<I: BitIter>(&mut self, rl: I, rb: u8, amod: AddrMode, wb: bool, usr: bool) -> Cycle {
+        self.stm_op(rb.into(), rl, None, amod, wb, usr)
     }
 
-    pub fn ldmia(&mut self, rlist: u8, rb: u8) -> Cycle {
-        self.ldm_op(rb.into(), rlist, None, RegisterFx::IncA)
+    pub fn ldm<I: BitIter>(&mut self, rl: I, rb: u8, amod: AddrMode, wb: bool, usr: bool) -> Cycle {
+        self.ldm_op(rb.into(), rl, None, amod, wb, usr)
     }
 
     pub fn beq(&mut self, offset: i16) -> Cycle {
-        self.branch_op(Condition::EQ, offset)
+        self.branch_op(Condition::EQ, offset.into())
     }
 
     pub fn bne(&mut self, offset: i16) -> Cycle {
-        self.branch_op(Condition::NE, offset)
+        self.branch_op(Condition::NE, offset.into())
     }
 
     pub fn bcs(&mut self, offset: i16) -> Cycle {
-        self.branch_op(Condition::CS, offset)
+        self.branch_op(Condition::CS, offset.into())
     }
 
     pub fn bcc(&mut self, offset: i16) -> Cycle {
-        self.branch_op(Condition::CC, offset)
+        self.branch_op(Condition::CC, offset.into())
     }
 
     pub fn bmi(&mut self, offset: i16) -> Cycle {
-        self.branch_op(Condition::MI, offset)
+        self.branch_op(Condition::MI, offset.into())
     }
 
     pub fn bpl(&mut self, offset: i16) -> Cycle {
-        self.branch_op(Condition::PL, offset)
+        self.branch_op(Condition::PL, offset.into())
     }
 
     pub fn bvs(&mut self, offset: i16) -> Cycle {
-        self.branch_op(Condition::VS, offset)
+        self.branch_op(Condition::VS, offset.into())
     }
 
     pub fn bvc(&mut self, offset: i16) -> Cycle {
-        self.branch_op(Condition::VC, offset)
+        self.branch_op(Condition::VC, offset.into())
     }
 
     pub fn bhi(&mut self, offset: i16) -> Cycle {
-        self.branch_op(Condition::HI, offset)
+        self.branch_op(Condition::HI, offset.into())
     }
 
     pub fn bls(&mut self, offset: i16) -> Cycle {
-        self.branch_op(Condition::LS, offset)
+        self.branch_op(Condition::LS, offset.into())
     }
 
     pub fn bge(&mut self, offset: i16) -> Cycle {
-        self.branch_op(Condition::GE, offset)
+        self.branch_op(Condition::GE, offset.into())
     }
 
     pub fn blt(&mut self, offset: i16) -> Cycle {
-        self.branch_op(Condition::LT, offset)
+        self.branch_op(Condition::LT, offset.into())
     }
 
     pub fn bgt(&mut self, offset: i16) -> Cycle {
-        self.branch_op(Condition::GT, offset)
+        self.branch_op(Condition::GT, offset.into())
     }
 
     pub fn ble(&mut self, offset: i16) -> Cycle {
-        self.branch_op(Condition::LE, offset)
+        self.branch_op(Condition::LE, offset.into())
     }
 
     pub fn swi(&mut self) -> Cycle {
         self.handle_exception(Exception::SoftwareInterrupt)
     }
 
-    pub fn b(&mut self, offset: i16) -> Cycle {
+    pub fn b(&mut self, offset: i32) -> Cycle {
         self.branch_op(Condition::AL, offset)
     }
 

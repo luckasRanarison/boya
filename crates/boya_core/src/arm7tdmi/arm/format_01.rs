@@ -114,7 +114,7 @@ impl From<u8> for Opcode {
             0xD => Self::MOV,
             0xE => Self::BIC,
             0xF => Self::MVN,
-            _ => panic!("invalid format 1 opcode: {value:b}"),
+            _ => unreachable!("invalid format 1 opcode: {value:b}"),
         }
     }
 }

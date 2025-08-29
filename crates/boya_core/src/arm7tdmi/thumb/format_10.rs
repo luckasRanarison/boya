@@ -56,7 +56,7 @@ impl From<u8> for Opcode {
 impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
         let value = self.nn.into();
-        let offset = RegisterOffset::new(value, RegisterFx::IncB, false);
+        let offset = RegisterOffset::new(value, AddrMode::IB, false);
 
         match self.op {
             Opcode::STRH => cpu.strh(self.rd, self.rb, offset),

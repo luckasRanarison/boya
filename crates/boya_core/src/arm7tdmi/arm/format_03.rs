@@ -33,7 +33,7 @@ impl<B: Bus> Executable<B> for Instruction {
     }
 
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
-        cpu.bx_op(self.rn)
+        cpu.bx(self.rn)
     }
 }
 
@@ -44,14 +44,15 @@ mod tests {
     #[test]
     fn test_bx() {
         let asm = r"
-            MOV    R0, #1011b  
-            BX     R0 ; + pre-fetch 4
+            MOV     R0, 0x224
+            ORR     R0, R0, #1
+            BX      R0 ; + pre-fetch 4
         ";
 
         AsmTestBuilder::new()
             .asm(asm)
-            .assert_reg(15, 14)
+            .assert_reg(15, 0x228)
             .assert_flag(Psr::T, true)
-            .run(2);
+            .run(3);
     }
 }
