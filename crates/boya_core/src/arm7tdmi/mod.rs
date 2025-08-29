@@ -101,7 +101,6 @@ impl<B: Bus> Arm7tdmi<B> {
 
     #[inline(always)]
     pub fn exec(&mut self, instruction: Instruction) -> Cycle {
-        println!("instruction: {instruction:?}");
         match instruction {
             Instruction::Thumb(op) => self.exec_thumb(op),
             Instruction::Arm(op) => self.exec_arm(op),

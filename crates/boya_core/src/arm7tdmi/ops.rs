@@ -188,6 +188,7 @@ impl<B: Bus> Arm7tdmi<B> {
         offset: RegisterOffset,
     ) -> Cycle {
         let base = self.get_reg(rn);
+        let (s, n) = if rn.reg().is_pc() { (2, 2) } else { (1, 1) };
 
         let addr = match offset.fx {
             RegisterFx::IncB => base.wrapping_add(offset.value),
@@ -201,7 +202,7 @@ impl<B: Bus> Arm7tdmi<B> {
 
         let value = match kind {
             DataType::Byte if signed => self.bus.read_byte(addr) as i8 as i32 as u32,
-            DataType::HWord if signed => self.bus.read_hword(addr) as i8 as i32 as u32,
+            DataType::HWord if signed => self.bus.read_hword(addr) as i16 as i32 as u32,
             DataType::Byte => self.bus.read_byte(addr).into(),
             DataType::HWord => self.bus.read_hword(addr).into(),
             DataType::Word => self.bus.read_word(addr),
@@ -213,11 +214,9 @@ impl<B: Bus> Arm7tdmi<B> {
             _ => {}
         };
 
-        println!("set R{rd}: {value}, addr: {addr}, offset: {offset:?}");
-
         self.set_reg(rd, value);
 
-        Cycle { i: 1, s: 1, n: 1 }
+        Cycle { i: 1, s, n }
     }
 
     #[inline(always)]
@@ -247,7 +246,7 @@ impl<B: Bus> Arm7tdmi<B> {
             _ => {}
         };
 
-        Cycle { i: 2, s: 0, n: 0 }
+        Cycle { i: 0, s: 0, n: 2 }
     }
 
     #[inline(always)]
