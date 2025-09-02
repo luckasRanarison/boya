@@ -38,13 +38,27 @@ impl Debug for Instruction {
 impl From<u32> for Instruction {
     fn from(value: u32) -> Self {
         let cd = value.get_bits_u8(28, 31).into();
-        let imm = value.has(25);
         let op = value.get_bits_u8(21, 24).into();
         let s = value.has(20);
         let rn = value.get_bits_u8(16, 19);
         let rd = value.get_bits_u8(12, 15);
-        let op2 = value.get_bits(0, 14);
-        let op2 = decode_operand2(op2, imm);
+
+        let op2 = if value.has(25) {
+            let shift = value.get_bits(8, 11) << 1;
+            let nn = value.get_bits(0, 7);
+
+            nn.rotate_right(shift).imm()
+        } else {
+            let sk = ShiftKind::from(value.get_bits_u8(5, 6));
+            let rm = value.get_bits_u8(0, 3).reg();
+
+            let shift = match value.get(4) {
+                0 => Shift::imm(value.get_bits_u8(7, 11), sk),
+                _ => Shift::reg(value.get_bits_u8(8, 11), sk),
+            };
+
+            rm.shift(shift)
+        };
 
         Self {
             cd,
@@ -55,24 +69,6 @@ impl From<u32> for Instruction {
             op2,
         }
     }
-}
-
-fn decode_operand2(op: u32, imm: bool) -> Operand {
-    if imm {
-        let shift = op.get_bits(8, 11) << 1;
-        let nn = op.get_bits(0, 7);
-
-        return nn.rotate_right(shift).imm();
-    }
-
-    let sk = ShiftKind::from(op.get_bits_u8(5, 6));
-
-    let shift = match op.get(4) {
-        0 => Shift::imm(op.get_bits_u8(7, 11), sk),
-        _ => Shift::reg(op.get_bits_u8(8, 11), sk),
-    };
-
-    op.get_bits_u8(0, 3).reg().shift(shift)
 }
 
 #[derive(Debug)]
@@ -114,7 +110,7 @@ impl From<u8> for Opcode {
             0xD => Self::MOV,
             0xE => Self::BIC,
             0xF => Self::MVN,
-            _ => unreachable!("invalid format 1 opcode: {value:b}"),
+            _ => unreachable!("invalid arm 5 opcode: {value:#b}"),
         }
     }
 }
@@ -218,5 +214,35 @@ mod tests {
             .assert_reg(2, 8)
             .assert_reg(3, 3)
             .run(4);
+    }
+
+    #[test]
+    fn test_special_lsr_shift() {
+        let asm = r"
+            MVN    R0, #0
+            MOV    R1, #8
+            ADD    R2, R1, R0, LSR #32 ; op2 = 0
+        ";
+
+        AsmTestBuilder::new()
+            .asm(asm)
+            .assert_reg(2, 8)
+            .assert_flag(Psr::C, true)
+            .run(3);
+    }
+
+    #[test]
+    fn test_special_asr_shift() {
+        let asm = r"
+            MVN    R0, #0
+            MOV    R1, #0
+            ADD    R2, R1, R0, ASR #32 ; op2 = 0xFFFF_FFFF
+        ";
+
+        AsmTestBuilder::new()
+            .asm(asm)
+            .assert_reg(2, 0xFFFF_FFFF)
+            .assert_flag(Psr::C, true)
+            .run(3);
     }
 }

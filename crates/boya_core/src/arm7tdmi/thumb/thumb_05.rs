@@ -52,7 +52,7 @@ impl From<u8> for Opcode {
             1 => Self::CMP,
             2 => Self::MOV,
             3 => Self::BX,
-            _ => unreachable!("invalid format 5 opcode: {value:b}"),
+            _ => unreachable!("invalid thumb 5 opcode: {value:b}"),
         }
     }
 }

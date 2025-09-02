@@ -6,14 +6,16 @@ use super::{Arm7tdmi, Instruction};
 
 #[derive(Debug, Default)]
 pub struct Pipeline {
-    current: Option<Instruction>,
-    next: Option<u32>,
-    last_pc: u32,
+    pub curr_pc: u32,
+    pub last_pc: u32,
+    pub curr_word: Option<u32>,
+    pub next_word: Option<u32>,
+    pub curr_instr: Option<Instruction>,
 }
 
 impl Pipeline {
     pub fn take(&mut self) -> Instruction {
-        self.current.take().unwrap() // pipeline should always be pre-loaded
+        self.curr_instr.take().unwrap() // pipeline should always be pre-loaded
     }
 
     pub fn last_pc(&self) -> u32 {
@@ -21,8 +23,9 @@ impl Pipeline {
     }
 
     pub fn flush(&mut self) {
-        self.current.take();
-        self.next.take();
+        self.curr_instr.take();
+        self.curr_word.take();
+        self.next_word.take();
     }
 }
 
@@ -35,10 +38,13 @@ impl<B: Bus> Arm7tdmi<B> {
     }
 
     pub fn load_pipeline(&mut self) {
-        let current = self.pipeline.next.unwrap_or_else(|| self.fetch());
+        let curr_pc = self.pc();
+        let word = self.pipeline.next_word.unwrap_or_else(|| self.fetch());
 
-        self.pipeline.current = Some(self.decode(current));
-        self.pipeline.next = Some(self.fetch());
+        self.pipeline.curr_pc = curr_pc;
+        self.pipeline.curr_word = Some(word);
+        self.pipeline.curr_instr = Some(self.decode(word));
+        self.pipeline.next_word = Some(self.fetch());
         self.pipeline.last_pc = self.pc();
     }
 }

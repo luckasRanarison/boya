@@ -18,10 +18,10 @@ use thumb::ThumbInstr;
 use crate::{
     arm7tdmi::{
         arm::ArmInstr,
-        common::{Cycle, Exception},
+        common::{Cycle, Exception, Shift, ShiftKind},
     },
     bus::Bus,
-    utils::ops::ExtendedOps,
+    utils::{bitflags::Bitflag, ops::ExtendedOps},
 };
 
 pub enum Instruction {
@@ -40,12 +40,12 @@ impl Debug for Instruction {
 
 #[derive(Debug)]
 pub struct Arm7tdmi<B: Bus> {
-    reg: [u32; 16], // R0-R15
-    bank: Bank,
-    cpsr: Psr,
-    pipeline: Pipeline,
-    cycles: u64,
-    bus: B,
+    pub reg: [u32; 16], // R0-R15
+    pub bank: Bank,
+    pub cpsr: Psr,
+    pub pipeline: Pipeline,
+    pub cycles: u64,
+    pub bus: B,
 }
 
 impl<B: Bus> Arm7tdmi<B> {
@@ -101,7 +101,6 @@ impl<B: Bus> Arm7tdmi<B> {
 
     #[inline(always)]
     pub fn exec(&mut self, instruction: Instruction) -> Cycle {
-        println!("{instruction:?}");
         match instruction {
             Instruction::Thumb(op) => self.exec_thumb(op),
             Instruction::Arm(op) => self.exec_arm(op),
@@ -133,11 +132,6 @@ impl<B: Bus> Arm7tdmi<B> {
     #[inline(always)]
     fn instr_size(&self) -> u8 {
         if self.cpsr.thumb() { 2 } else { 4 }
-    }
-
-    #[inline(always)]
-    pub fn set_sp(&mut self, value: u32) {
-        *self.get_reg_mut(Self::SP) = value;
     }
 
     fn store_reg(
@@ -219,37 +213,61 @@ impl<B: Bus> Arm7tdmi<B> {
         *self.get_reg_mut(index) = value;
     }
 
-    fn update_offset(&mut self, offset: &mut u32, effect: AddrMode) {
-        match effect {
+    fn update_offset(&mut self, offset: &mut u32, amod: AddrMode) {
+        match amod {
             AddrMode::IB | AddrMode::IA => *offset += 4,
             AddrMode::DB | AddrMode::DA => *offset -= 4,
         }
     }
 
-    fn get_operand(&self, operand: Operand) -> u32 {
-        let mut value = match operand.kind {
+    fn get_base_operand(&self, operand: &Operand) -> u32 {
+        match operand.kind {
             OperandKind::Imm => operand.value,
             _ => self.get_reg(operand.value as usize),
-        };
-
-        if let Some(shift) = operand.shift {
-            let rhs = match shift.register {
-                true => self.get_reg(shift.value),
-                false => shift.value.into(),
-            };
-
-            value = match shift.kind {
-                common::ShiftKind::LSL => value.wrapping_shl(rhs),
-                common::ShiftKind::LSR => value.wrapping_shr(rhs),
-                common::ShiftKind::ASR => value.wrapping_asr(rhs),
-                common::ShiftKind::ROR => value.rotate_right(rhs),
-            };
         }
+    }
+
+    fn get_operand(&mut self, operand: Operand) -> u32 {
+        let value = match operand.shift.clone() {
+            Some(shift) => self.apply_shift(&operand, shift),
+            None => self.get_base_operand(&operand),
+        };
 
         if operand.negate { !value } else { value }
     }
 
-    pub fn restore_cpsr(&mut self) {
+    fn apply_shift(&mut self, operand: &Operand, shift: Shift) -> u32 {
+        let lhs = match operand.is_pc() && shift.register {
+            true => self.pc() + 4,
+            false => self.get_base_operand(operand),
+        };
+
+        let rhs = match shift.register {
+            true => self.get_reg(shift.value),
+            false => shift.value.into(),
+        };
+
+        match (shift.kind, rhs) {
+            (ShiftKind::LSR, 0) => {
+                self.cpsr.update(Psr::C, lhs.has(31));
+                0 // lhs >> 32
+            }
+            (ShiftKind::ASR, 0) => {
+                self.cpsr.update(Psr::C, lhs.has(31));
+                lhs.wrapping_asr(32)
+            }
+            (ShiftKind::ROR, 0) => {
+                let lhs = (lhs & !1) | self.cpsr.has(Psr::C) as u32;
+                lhs.rotate_right(1)
+            }
+            (ShiftKind::LSL, _) => lhs.wrapping_shl(rhs),
+            (ShiftKind::LSR, _) => lhs.wrapping_shr(rhs),
+            (ShiftKind::ASR, _) => lhs.wrapping_asr(rhs),
+            (ShiftKind::ROR, _) => lhs.rotate_right(rhs),
+        }
+    }
+
+    fn restore_cpsr(&mut self) {
         let op_mode = self.cpsr.operating_mode();
 
         if let Some(spsr) = self.bank.get_spsr(op_mode) {
@@ -260,11 +278,8 @@ impl<B: Bus> Arm7tdmi<B> {
 
 #[cfg(test)]
 impl<B: Bus> Arm7tdmi<B> {
-    pub fn force_thumb_mode(&mut self) {
-        self.cpsr.update(Psr::T, true);
-        self.set_pc(0x00);
-        self.pipeline.flush();
-        self.load_pipeline();
+    pub fn set_sp(&mut self, value: u32) {
+        *self.get_reg_mut(Self::SP) = value;
     }
 
     pub fn assert_mem(&self, assertions: Vec<(u32, u32, common::DataType)>) {
@@ -277,7 +292,7 @@ impl<B: Bus> Arm7tdmi<B> {
 
             assert_eq!(
                 value, expected,
-                "expected 0x{expected:x} at @{address:x}, got 0x{value:x}"
+                "expected {expected:#x} at {address:#x}, got 0x{value:#x}"
             )
         }
     }
@@ -288,7 +303,7 @@ impl<B: Bus> Arm7tdmi<B> {
 
             assert_eq!(
                 value, expected,
-                "expected 0x{expected:x} at R{index}, got 0x{value:x}"
+                "expected {expected:#x} at R{index}, got {value:#x}"
             )
         }
     }

@@ -51,14 +51,14 @@ mod tests {
     #[test]
     fn test_get_relative_addr() {
         let asm = r"
-            add r2, PC, 12
-            add r3, SP, 8
+            add r2, PC, #12
+            add r3, SP, #8
         ";
 
         AsmTestBuilder::new()
             .thumb()
             .asm(asm)
-            .assert_reg(2, TMB_MAIN_START + 16)
+            .assert_reg(2, ((TMB_MAIN_START + 4) & !2) + 12)
             .assert_reg(3, SP_START + 8)
             .run(2);
     }

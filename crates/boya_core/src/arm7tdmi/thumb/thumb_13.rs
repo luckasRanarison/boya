@@ -48,8 +48,8 @@ mod tests {
     #[test]
     fn test_add_offset_sp() {
         let asm = r"
-            add SP, 8
-            add SP, -4
+            add SP, #8
+            add SP, #-4
         ";
 
         AsmTestBuilder::new()

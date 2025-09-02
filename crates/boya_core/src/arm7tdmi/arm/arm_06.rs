@@ -47,28 +47,24 @@ enum Opcode {
 
 impl From<u32> for Opcode {
     fn from(value: u32) -> Self {
-        if value.get(21) == 0 {
-            Self::MRS {
+        if !value.has(21) {
+            return Self::MRS {
                 rd: value.get_bits_u8(12, 15),
-            }
-        } else {
-            let fd = PsrField::from(value.get_bits_u8(16, 19));
-            let imm = value.has(25);
-            let op = decode_operand(value, imm);
-
-            Self::MSR { fd, op }
+            };
         }
-    }
-}
 
-fn decode_operand(value: u32, imm: bool) -> Operand {
-    if imm {
-        let shift = value.get_bits(8, 11) << 1;
-        let imm = value.get_bits(0, 7);
+        let fd = PsrField::from(value.get_bits_u8(16, 19));
 
-        imm.rotate_right(shift).imm()
-    } else {
-        value.get_bits_u8(0, 3).reg()
+        let op = if value.has(25) {
+            let shift = value.get_bits(8, 11) << 1;
+            let imm = value.get_bits(0, 7);
+
+            imm.rotate_right(shift).imm()
+        } else {
+            value.get_bits_u8(0, 3).reg()
+        };
+
+        Self::MSR { fd, op }
     }
 }
 

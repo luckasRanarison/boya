@@ -108,7 +108,7 @@ impl AsmTestBuilder {
 
         println!("code: {}", self.code);
         println!("hex: {formated_bytes}");
-        println!("bin: {formated_bits}");
+        println!("bin: {formated_bits}\n");
 
         self.bus.write_word(0x0, 0xEA00007E); // reset: branch to 0x200
         self.bus.load_program(&self.bytes, PRG_START as usize);
@@ -124,8 +124,20 @@ impl AsmTestBuilder {
 
         let extra_cycle = if self.thumb { 5 } else { 1 };
 
-        for _ in 0..steps + extra_cycle {
+        for _ in 0..extra_cycle {
             cpu.step();
+        }
+
+        for _ in 0..steps {
+            if let Some(instr) = &cpu.pipeline.curr_instr {
+                println!("{:#08x}: {instr:?}", cpu.pipeline.curr_pc);
+            }
+
+            cpu.step();
+        }
+
+        if let Some(assert) = self.func_assertion {
+            assert(&cpu);
         }
 
         cpu.assert_mem(self.mem_assertions);

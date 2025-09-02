@@ -50,7 +50,7 @@ impl From<u8> for Opcode {
             0 => Self::STRH,
             1 => Self::LDSB,
             2 | 3 => Self::LDSH,
-            _ => unreachable!("invalid format 8 opcode: {value:b}"),
+            _ => unreachable!("invalid thumb 8 opcode: {value:b}"),
         }
     }
 }
@@ -75,8 +75,8 @@ mod tests {
     #[test]
     fn test_lds() {
         let asm = r"
-            mov   r0, 10
-            mov   r1, 11
+            mov   r0, #10
+            mov   r1, #11
             ldrsb r2, [r0, r0]
             ldrsh r3, [r0, r1]
         ";

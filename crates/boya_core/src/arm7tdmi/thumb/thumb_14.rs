@@ -44,7 +44,7 @@ impl From<u8> for Opcode {
         match value {
             0 => Self::PUSH,
             1 => Self::POP,
-            _ => unreachable!("invalid format 14 opcode: {value:b}"),
+            _ => unreachable!("invalid thumb 14 opcode: {value:b}"),
         }
     }
 }
@@ -65,9 +65,9 @@ mod tests {
     #[test]
     fn test_push_reg() {
         let asm = r"
-            mov  r0, 64
-            mov  r1, 13
-            mov  r2, 25
+            mov  r0, #64
+            mov  r1, #13
+            mov  r2, #25
             push {r0,r1,r2}
             pop  {r3,r4,r5}
         ";

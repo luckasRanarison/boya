@@ -20,9 +20,13 @@ impl<B: Bus> Arm7tdmi<B> {
         carry: Carry,
         update: bool,
     ) -> Cycle {
-        let (s, n) = self.get_sn_cycle(&lhs);
-        let lhs = self.get_operand(lhs);
+        let cycle = self.get_variable_cycle(dst, &rhs);
         let rhs = self.get_operand(rhs);
+
+        let lhs = match lhs.is_pc() && self.cpsr.thumb() {
+            false => self.get_operand(lhs),
+            true => self.pc() & !2, // special case for thumb 12
+        };
 
         let carry = match carry {
             Carry::One => 1,
@@ -44,7 +48,7 @@ impl<B: Bus> Arm7tdmi<B> {
             self.set_reg(rd, res2);
         }
 
-        Cycle { i: 0, s, n }
+        cycle
     }
 
     #[inline(always)]
@@ -77,7 +81,7 @@ impl<B: Bus> Arm7tdmi<B> {
     where
         F: Fn(u32, u32) -> u32,
     {
-        let (s, n) = self.get_sn_cycle(&lhs.reg());
+        let cycle = self.get_variable_cycle(dst, &rhs);
         let lhs = self.get_reg(lhs);
         let rhs = self.get_operand(rhs);
         let result = func(lhs, rhs);
@@ -90,12 +94,12 @@ impl<B: Bus> Arm7tdmi<B> {
             self.set_reg(rd, result);
         }
 
-        Cycle { i: 0, s, n }
+        cycle
     }
 
     #[inline(always)]
     pub fn mov_op(&mut self, rd: u8, operand: Operand, update: bool) -> Cycle {
-        let (s, n) = self.get_sn_cycle(&rd.reg());
+        let cycle = self.get_variable_cycle(rd.into(), &operand);
         let value = self.get_operand(operand);
 
         if update {
@@ -104,7 +108,7 @@ impl<B: Bus> Arm7tdmi<B> {
 
         self.set_reg(rd, value);
 
-        Cycle { i: 0, s, n }
+        cycle
     }
 
     #[inline(always)]
@@ -184,7 +188,7 @@ impl<B: Bus> Arm7tdmi<B> {
         let base = self.get_reg(rn);
         let (s, n) = if rn.reg().is_pc() { (2, 2) } else { (1, 1) };
 
-        let addr = match offset.fx {
+        let addr = match offset.amod {
             AddrMode::IB => base.wrapping_add(offset.value),
             AddrMode::DB => base.wrapping_sub(offset.value),
             _ => base,
@@ -202,7 +206,7 @@ impl<B: Bus> Arm7tdmi<B> {
             DataType::Word => self.bus.read_word(addr),
         };
 
-        match offset.fx {
+        match offset.amod {
             AddrMode::IA => self.set_reg(rn, base.wrapping_add(offset.value)),
             AddrMode::DA => self.set_reg(rn, base.wrapping_sub(offset.value)),
             _ => {}
@@ -218,7 +222,7 @@ impl<B: Bus> Arm7tdmi<B> {
         let base = self.get_reg(rn);
         let value = self.get_reg(rs);
 
-        let addr = match offset.fx {
+        let addr = match offset.amod {
             AddrMode::IB => base.wrapping_add(offset.value),
             AddrMode::DB => base.wrapping_sub(offset.value),
             _ => base,
@@ -234,7 +238,7 @@ impl<B: Bus> Arm7tdmi<B> {
             DataType::Word => self.bus.write_word(addr, value),
         }
 
-        match offset.fx {
+        match offset.amod {
             AddrMode::IA => self.set_reg(rn, base.wrapping_add(offset.value)),
             AddrMode::DA => self.set_reg(rn, base.wrapping_sub(offset.value)),
             _ => {}
@@ -404,7 +408,16 @@ impl<B: Bus> Arm7tdmi<B> {
         Cycle { i: 1, s: 1, n: 2 }
     }
 
-    fn get_sn_cycle(&self, operand: &Operand) -> (u8, u8) {
-        if operand.is_pc() { (2, 1) } else { (1, 0) }
+    fn get_variable_cycle(&self, dst: Option<u8>, operand: &Operand) -> Cycle {
+        let reg_shift = operand.shift.as_ref().filter(|s| s.register).is_some();
+        let pc_operand = dst.filter(|r| *r == NamedRegister::PC as u8).is_some();
+        let r = if operand.is_reg() && reg_shift { 1 } else { 0 };
+        let p = if pc_operand { 1 } else { 0 };
+
+        Cycle {
+            i: r,
+            s: 1 + p,
+            n: p,
+        }
     }
 }

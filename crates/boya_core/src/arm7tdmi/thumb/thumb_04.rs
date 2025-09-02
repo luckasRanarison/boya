@@ -67,7 +67,7 @@ impl From<u8> for Opcode {
             0xD => Self::MUL,
             0xE => Self::BIC,
             0xF => Self::MVN,
-            _ => unreachable!("invalid format 4 opcode: {value:b}"),
+            _ => unreachable!("invalid thumb 4 opcode: {value:b}"),
         }
     }
 }
@@ -121,8 +121,8 @@ mod tests {
     #[test]
     fn test_sub_carry() {
         let asm = r"
-            mov r0, 5
-            mov r1, 1
+            mov r0, #5
+            mov r1, #1
             sbc r0, r1
         ";
 
@@ -140,7 +140,7 @@ mod tests {
     #[test]
     fn test_negation() {
         let asm = r"
-            mov r0, 2
+            mov r0, #2
             neg r1, r0
         ";
 
@@ -158,10 +158,10 @@ mod tests {
     #[test]
     fn test_logical_op() {
         let asm = r"
-            mov r0, 2
-            mov r1, 1
-            mov r2, 2
-            mov r3, 3
+            mov r0, #2
+            mov r1, #1
+            mov r2, #2
+            mov r3, #3
             orr r1, r0
             bic r3, r2
         ";
@@ -179,8 +179,8 @@ mod tests {
     #[test]
     fn test_mul_basic() {
         let asm = r"
-            mov r0, 2
-            mov r1, 3
+            mov r0, #2
+            mov r1, #3
             sub r2, r1, r0 ; sets carry
             mul r0, r1
         ";

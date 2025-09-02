@@ -1,15 +1,14 @@
 use crate::arm7tdmi::isa::prelude::*;
 
-/// Load/Store with register offset
+/// Load/store SP-relative
 /// +-------------------------------------------------------------------------------+
 /// | 15 | 14 | 13 | 12 | 11 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
 /// |-------------------------------------------------------------------------------|
-/// |  0 |  1 |  0 |  1 |    Op   |  0 |      Ro      |      Rb      |      Rd      |
+/// |  1 |  0 |  0 |  1 | Op |      Rd      |                Offset8                |
 /// +-------------------------------------------------------------------------------+
 pub struct Instruction {
     op: Opcode,
-    ro: u8,
-    rb: u8,
+    nn: u16,
     rd: u8,
 }
 
@@ -17,56 +16,49 @@ impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{:?} {:?}, [{:?}, {:?}]",
+            "{:?} R{:?}, [SP, {:?}]",
             self.op,
             self.rd.reg(),
-            self.rb.reg(),
-            self.ro.reg()
+            self.nn.imm()
         )
     }
 }
 
 impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
-        let op = value.get_bits_u8(10, 11).into();
-        let ro = value.get_bits_u8(6, 8);
-        let rb = value.get_bits_u8(3, 5);
-        let rd = value.get_bits_u8(0, 2);
+        let op = value.get_u8(11).into();
+        let rd = value.get_bits_u8(8, 10);
+        let nn = value.get_bits(0, 7) << 2;
 
-        Self { op, ro, rb, rd }
+        Self { op, nn, rd }
     }
 }
 
 #[derive(Debug)]
 enum Opcode {
     STR,
-    STRB,
     LDR,
-    LDRB,
 }
 
 impl From<u8> for Opcode {
     fn from(value: u8) -> Self {
         match value {
             0 => Self::STR,
-            1 => Self::STRB,
-            2 => Self::LDR,
-            3 => Self::LDRB,
-            _ => unreachable!("invalid format 7 opcode: {value:b}"),
+            1 => Self::LDR,
+            _ => unreachable!("invalid thumb 11 opcode: {value:b}"),
         }
     }
 }
 
 impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
-        let value = cpu.get_reg(self.ro);
+        let value = self.nn.into();
         let offset = RegisterOffset::new(value, AddrMode::IB, false);
+        let sp = NamedRegister::SP as u8;
 
         match self.op {
-            Opcode::STR => cpu.str(self.rd, self.rb, offset),
-            Opcode::STRB => cpu.strb(self.rd, self.rb, offset),
-            Opcode::LDR => cpu.ldr(self.rd, self.rb, offset),
-            Opcode::LDRB => cpu.ldrb(self.rd, self.rb, offset),
+            Opcode::STR => cpu.str(self.rd, sp, offset),
+            Opcode::LDR => cpu.ldr(self.rd, sp, offset),
         }
     }
 }
@@ -76,20 +68,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_ldr_str_reg_offset() {
+    fn test_ldr_sp_relative() {
         let asm = r"
-            mov r0, 3
-            mov r1, 5
-            mov r2, 6
-            str r0, [r1, r2]
-            ldr r3, [r1, r2]
+            mov r0, #25
+            str r0, [SP, #12]
+            ldr r2, [SP, #24]
         ";
 
         AsmTestBuilder::new()
             .thumb()
             .asm(asm)
-            .assert_word(11, 3)
-            .assert_reg(3, 3)
-            .run(5);
+            .setup(|cpu| {
+                cpu.set_reg(13_usize, 48);
+                cpu.bus.write_word(72, 9);
+            })
+            .assert_byte(60, 25)
+            .assert_reg(2, 9)
+            .run(3);
     }
 }

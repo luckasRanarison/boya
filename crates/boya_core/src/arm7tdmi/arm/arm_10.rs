@@ -25,21 +25,13 @@ impl Debug for Instruction {
         let op = format!("{:?}", self.op);
         let (prefix, suffix) = op.split_at(3);
         let op_cd = format!("{}{:?}{}", prefix, self.cd, suffix);
-        let rn = self.rn.reg();
 
-        write!(f, "{op_cd} {:?}, ", self.rd.reg())?;
-
-        match self.amod {
-            AddrMode::IB | AddrMode::DB if self.of.is_imm() && self.of.value == 0 => {
-                write!(f, "[{rn:?}]")
-            }
-            AddrMode::IB => write!(f, "[{rn:?}, {:?}]", self.of),
-            AddrMode::DB if self.of.is_imm() => write!(f, "[{rn:?}, #-{:?}]", self.of.value),
-            AddrMode::DB => write!(f, "[{rn:?}, -{:?}]", self.of),
-            AddrMode::IA => write!(f, "[{rn:?}], {:?}", self.of),
-            AddrMode::DA if self.of.is_imm() => write!(f, "[{rn:?}], #-{:?}", self.of.value),
-            AddrMode::DA => write!(f, "[{rn:?}], -{:?}", self.of),
-        }?;
+        write!(
+            f,
+            "{op_cd} {:?}, {}",
+            self.rd.reg(),
+            format_addr_mode(self.amod, self.rn, &self.of)
+        )?;
 
         if self.wb && matches!(self.amod, AddrMode::IB | AddrMode::DB) {
             write!(f, "!")?;
@@ -92,7 +84,7 @@ impl From<u32> for Opcode {
             (1, 0x1) => Self::LDRH,
             (1, 0x2) => Self::LDSB,
             (1, 0x3) => Self::LDSH,
-            (_, op) => unreachable!("invalid format 7 opcode: {op:b}"),
+            (_, op) => unreachable!("invalid arm 10 opcode: {op:#b}"),
         }
     }
 }

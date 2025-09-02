@@ -1,14 +1,14 @@
 use crate::arm7tdmi::isa::prelude::*;
 
-/// Load/store halfword
+/// Load/Store with register offset
 /// +-------------------------------------------------------------------------------+
 /// | 15 | 14 | 13 | 12 | 11 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
 /// |-------------------------------------------------------------------------------|
-/// |  1 |  0 |  0 |  0 | Op |           Offset5      |      Rb      |      Rd      |
+/// |  0 |  1 |  0 |  1 |    Op   |  0 |      Ro      |      Rb      |      Rd      |
 /// +-------------------------------------------------------------------------------+
 pub struct Instruction {
     op: Opcode,
-    nn: u16,
+    ro: u8,
     rb: u8,
     rd: u8,
 }
@@ -21,46 +21,52 @@ impl Debug for Instruction {
             self.op,
             self.rd.reg(),
             self.rb.reg(),
-            self.nn.imm()
+            self.ro.reg()
         )
     }
 }
 
 impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
-        let op = value.get_u8(11).into();
-        let nn = value.get_bits(6, 10) << 1;
+        let op = value.get_bits_u8(10, 11).into();
+        let ro = value.get_bits_u8(6, 8);
         let rb = value.get_bits_u8(3, 5);
         let rd = value.get_bits_u8(0, 2);
 
-        Self { op, nn, rb, rd }
+        Self { op, ro, rb, rd }
     }
 }
 
 #[derive(Debug)]
 enum Opcode {
-    STRH,
-    LDRH,
+    STR,
+    STRB,
+    LDR,
+    LDRB,
 }
 
 impl From<u8> for Opcode {
     fn from(value: u8) -> Self {
         match value {
-            0 => Self::STRH,
-            1 => Self::LDRH,
-            _ => unreachable!("invalid format 10 opcode: {value:b}"),
+            0 => Self::STR,
+            1 => Self::STRB,
+            2 => Self::LDR,
+            3 => Self::LDRB,
+            _ => unreachable!("invalid thumb 7 opcode: {value:b}"),
         }
     }
 }
 
 impl<B: Bus> Executable<B> for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
-        let value = self.nn.into();
+        let value = cpu.get_reg(self.ro);
         let offset = RegisterOffset::new(value, AddrMode::IB, false);
 
         match self.op {
-            Opcode::STRH => cpu.strh(self.rd, self.rb, offset),
-            Opcode::LDRH => cpu.ldrh(self.rd, self.rb, offset),
+            Opcode::STR => cpu.str(self.rd, self.rb, offset),
+            Opcode::STRB => cpu.strb(self.rd, self.rb, offset),
+            Opcode::LDR => cpu.ldr(self.rd, self.rb, offset),
+            Opcode::LDRB => cpu.ldrb(self.rd, self.rb, offset),
         }
     }
 }
@@ -70,19 +76,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_ldr_word() {
+    fn test_ldr_str_reg_offset() {
         let asm = r"
-            mov   r0, 72
-            ldrh  r1, [r0, 8]
-            strh  r0, [r1, 4]
+            mov r0, #3
+            mov r1, #5
+            mov r2, #6
+            str r0, [r1, r2]
+            ldr r3, [r1, r2]
         ";
 
         AsmTestBuilder::new()
             .thumb()
             .asm(asm)
-            .setup(|cpu| cpu.bus.write_hword(80, 420))
-            .assert_reg(1, 420)
-            .assert_hword(424, 72)
-            .run(3);
+            .assert_word(11, 3)
+            .assert_reg(3, 3)
+            .run(5);
     }
 }

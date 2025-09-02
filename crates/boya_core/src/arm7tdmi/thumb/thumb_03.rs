@@ -43,7 +43,7 @@ impl From<u8> for Opcode {
             0b01 => Self::CMP,
             0b10 => Self::ADD,
             0b11 => Self::SUB,
-            _ => unreachable!("invalid format 3 opcode: {value:b}"),
+            _ => unreachable!("invalid thumb 3 opcode: {value:b}"),
         }
     }
 }
@@ -68,9 +68,9 @@ mod tests {
     #[test]
     fn test_move() {
         let asm = r"
-            mov r1, 5
+            mov r1, #5
             mvn r2, r1
-            mov r3, 0
+            mov r3, #0
         ";
 
         AsmTestBuilder::new()

@@ -1,19 +1,19 @@
 use crate::arm7tdmi::isa::prelude::*;
 
-/// Multiply and Multiply-Accumulate
+/// Multiply long and Multiply-Accumulate long
 /// +-----------------------------------------------------------------+
 /// |...3 ..................2 ..................1 ..................0.|
 /// |-----------------------------------------------------------------|
 /// |_1_0_9_8_7_6_5_4_3_2_1_0_9_8_7_6_5_4_3_2_1_0_9_8_7_6_5_4_3_2_1_0_|
 /// |-----------------------------------------------------------------|
-/// |  Cond  |0 0 0 0 0 0|A|S|  Rd   |  Rn   |  Rs   |1 0 0 1|  Rm    |
+/// |  Cond  |0 0 0 0 1|U|A|S|  RdHi |  RdLo |  Rn   |1 0 0 1|  Rm    |
 /// +-----------------------------------------------------------------+
 pub struct Instruction {
     cd: Condition,
     op: Opcode,
     s: bool,
-    rd: u8,
-    rn: u8,
+    hi: u8,
+    lo: u8,
     rs: u8,
     rm: u8,
 }
@@ -22,29 +22,24 @@ impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{:?}{:?} {:?}, {:?}, {:?}",
+            "{:?}{:?} {:?}, {:?}, {:?}, {:?}",
             self.op,
             self.cd,
-            self.rd.reg(),
+            self.lo.reg(),
+            self.hi.reg(),
             self.rm.reg(),
             self.rs.reg()
-        )?;
-
-        if matches!(self.op, Opcode::MLA) {
-            write!(f, ", {:?}", self.rn.reg())?;
-        }
-
-        Ok(())
+        )
     }
 }
 
 impl From<u32> for Instruction {
     fn from(value: u32) -> Self {
         let cd = value.get_bits_u8(28, 31).into();
-        let op = value.get_u8(21).into();
+        let op = value.get_bits_u8(21, 22).into();
         let s = value.has(20);
-        let rd = value.get_bits_u8(16, 19);
-        let rn = value.get_bits_u8(12, 15);
+        let hi = value.get_bits_u8(16, 19);
+        let lo = value.get_bits_u8(12, 15);
         let rs = value.get_bits_u8(8, 11);
         let rm = value.get_bits_u8(0, 3);
 
@@ -52,8 +47,8 @@ impl From<u32> for Instruction {
             cd,
             op,
             s,
-            rd,
-            rn,
+            hi,
+            lo,
             rs,
             rm,
         }
@@ -62,16 +57,20 @@ impl From<u32> for Instruction {
 
 #[derive(Debug)]
 enum Opcode {
-    MUL,
-    MLA,
+    UMULL,
+    UMLAL,
+    SMULL,
+    SMLAL,
 }
 
 impl From<u8> for Opcode {
     fn from(value: u8) -> Self {
         match value {
-            0x0 => Self::MUL,
-            0x1 => Self::MLA,
-            _ => unreachable!("invalid format 4 opcode: {value:b}"),
+            0x0 => Self::UMULL,
+            0x1 => Self::UMLAL,
+            0x2 => Self::SMULL,
+            0x3 => Self::SMLAL,
+            _ => unreachable!("invalid arm 8 opcode: {value:#b}"),
         }
     }
 }
@@ -82,9 +81,13 @@ impl<B: Bus> Executable<B> for Instruction {
     }
 
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+        let rd = LongOperand::new(self.lo, self.hi);
+
         match self.op {
-            Opcode::MUL => cpu.mul(self.rd, self.rm, self.rs, self.s),
-            Opcode::MLA => cpu.mla(self.rd, self.rm, self.rs, self.rn, self.s),
+            Opcode::UMULL => cpu.umull(rd, self.rm, self.rs, self.s),
+            Opcode::UMLAL => cpu.umula(rd, self.rm, self.rs, self.s),
+            Opcode::SMULL => cpu.smull(rd, self.rm, self.rs, self.s),
+            Opcode::SMLAL => cpu.smula(rd, self.rm, self.rs, self.s),
         }
     }
 }
@@ -94,20 +97,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_multiply() {
+    fn test_multiply_long() {
         let asm = r"
-            MOV    R0, #0xFFFF_FFFF
-            MOV    R1, #0x2
-            MOV    R2, #0x5
-            MOV    R3, #0x1
-            MUL    R4, R0, R1
-            MLA    R5, R1, R2, R3
+            MOV    R0, #-5
+            MOV    R1, #2
+            SMULL  R2, R3, R0, R1
+            MOV    R4, R2
+            MOV    R5, R3
+            SMLAL  R4, R5, R0, R1
         ";
 
         AsmTestBuilder::new()
             .asm(asm)
-            .assert_reg(4, 0xFFFF_FFFE)
-            .assert_reg(5, 11)
+            .assert_reg(2, -10_i64 as u32)
+            .assert_reg(3, (-10_i64 >> 32) as u32)
+            .assert_reg(4, -20_i64 as u32)
+            .assert_reg(5, (-20_i64 >> 32) as u32)
             .run(6);
     }
 }

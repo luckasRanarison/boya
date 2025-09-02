@@ -41,7 +41,7 @@ impl From<u8> for Opcode {
         match value {
             0x0 => Self::B,
             0x1 => Self::BL,
-            _ => unreachable!("invalid format 9 opcode: {value:b}"),
+            _ => unreachable!("invalid arm 4 opcode: {value:#b}"),
         }
     }
 }

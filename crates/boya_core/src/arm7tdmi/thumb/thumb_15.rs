@@ -45,7 +45,7 @@ impl From<u8> for Opcode {
         match value {
             0 => Self::STMIA,
             1 => Self::LDMIA,
-            _ => unreachable!("invalid format 15 opcode: {value:b}"),
+            _ => unreachable!("invalid thumb 15 opcode: {value:b}"),
         }
     }
 }
@@ -86,7 +86,7 @@ mod tests {
     #[test]
     fn test_ldmia() {
         let asm = r"
-            mov   r0, 24
+            mov   r0, #24
             ldmia r0!, {r1,r2,r3}
         ";
 

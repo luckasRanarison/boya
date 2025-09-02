@@ -1,22 +1,22 @@
-mod format_01;
-mod format_02;
-mod format_03;
-mod format_04;
-mod format_05;
-mod format_06;
-mod format_07;
-mod format_08;
-mod format_09;
-mod format_10;
-mod format_11;
-mod format_12;
-mod format_13;
-mod format_14;
-mod format_15;
-mod format_16;
-mod format_17;
-mod format_18;
-mod format_19;
+mod thumb_01;
+mod thumb_02;
+mod thumb_03;
+mod thumb_04;
+mod thumb_05;
+mod thumb_06;
+mod thumb_07;
+mod thumb_08;
+mod thumb_09;
+mod thumb_10;
+mod thumb_11;
+mod thumb_12;
+mod thumb_13;
+mod thumb_14;
+mod thumb_15;
+mod thumb_16;
+mod thumb_17;
+mod thumb_18;
+mod thumb_19;
 
 use crate::{arm7tdmi::common::Cycle, utils::bitflags::BitArray};
 
@@ -24,43 +24,43 @@ use super::isa::prelude::*;
 
 pub enum ThumbInstr {
     /// Move shifted register
-    Format01(format_01::Instruction),
+    Format01(thumb_01::Instruction),
     /// Add/Substract
-    Format02(format_02::Instruction),
+    Format02(thumb_02::Instruction),
     /// Move/Compare/Add/Substract immediate
-    Format03(format_03::Instruciton),
+    Format03(thumb_03::Instruciton),
     /// ALU operations
-    Format04(format_04::Instruction),
+    Format04(thumb_04::Instruction),
     /// Hi register operations/branch exchange
-    Format05(format_05::Instruction),
+    Format05(thumb_05::Instruction),
     /// Load PC-relative
-    Format06(format_06::Instruction),
+    Format06(thumb_06::Instruction),
     /// Load/Store with register offset
-    Format07(format_07::Instruction),
+    Format07(thumb_07::Instruction),
     /// Load/store sign-extended byte/halfword
-    Format08(format_08::Instruction),
+    Format08(thumb_08::Instruction),
     /// Load/store with immediate offset
-    Format09(format_09::Instruction),
+    Format09(thumb_09::Instruction),
     /// Load/store halfword
-    Format10(format_10::Instruction),
+    Format10(thumb_10::Instruction),
     /// Load/store SP-relative
-    Format11(format_11::Instruction),
+    Format11(thumb_11::Instruction),
     /// Get relative address
-    Format12(format_12::Instruction),
+    Format12(thumb_12::Instruction),
     /// Add offset to stack pointer
-    Format13(format_13::Instruction),
+    Format13(thumb_13::Instruction),
     /// Push/Pop registers
-    Format14(format_14::Instruction),
+    Format14(thumb_14::Instruction),
     /// Multiple load/store
-    Format15(format_15::Instruction),
+    Format15(thumb_15::Instruction),
     /// Conditional branch
-    Format16(format_16::Instruction),
+    Format16(thumb_16::Instruction),
     /// Software interrupt
-    Format17(format_17::Instruction),
+    Format17(thumb_17::Instruction),
     /// Unconditional branch
-    Format18(format_18::Instruction),
+    Format18(thumb_18::Instruction),
     /// Long branch with link
-    Format19(format_19::Instruction),
+    Format19(thumb_19::Instruction),
     /// Undefined THUMB instruction
     Undefined(u16),
 }

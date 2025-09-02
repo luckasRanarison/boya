@@ -1,35 +1,35 @@
 use crate::arm7tdmi::isa::prelude::*;
 
-/// Block data transfer
+/// Single data transfer
 /// +-----------------------------------------------------------------+
 /// |...3 ..................2 ..................1 ..................0.|
 /// |-----------------------------------------------------------------|
 /// |_1_0_9_8_7_6_5_4_3_2_1_0_9_8_7_6_5_4_3_2_1_0_9_8_7_6_5_4_3_2_1_0_|
 /// |-----------------------------------------------------------------|
-/// |  Cond  |1 0 0|P|U|S|W|L|   Rn  |              RList             |
+/// |  Cond  |0 1|I|P|U|B|W|L|   Rn  |   Rd  |        Offset          |
 /// +-----------------------------------------------------------------+
 pub struct Instruction {
     cd: Condition,
     op: Opcode,
-    s: bool,
     amod: AddrMode,
-    wb: bool,
     rn: u8,
-    rlist: u16,
+    rd: u8,
+    b: bool,
+    wb: bool,
+    of: Operand,
 }
 
 impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{:?}{:?}{:?} {:?}{}, {:?}{}",
+            "{:?}{:?}{} {:?}, {}{}",
             self.op,
             self.cd,
-            self.amod,
-            self.rn.reg(),
-            if self.wb { "!" } else { "" },
-            format_rlist(self.rlist, None),
-            if self.s { "^" } else { "" }
+            if self.b { "B" } else { "" },
+            self.rd.reg(),
+            format_addr_mode(self.amod, self.rn, &self.of),
+            if self.wb { "!" } else { "" }
         )
     }
 }
@@ -39,37 +39,48 @@ impl From<u32> for Instruction {
         let cd = value.get_bits_u8(28, 31).into();
         let p = value.get_u8(24);
         let u = value.get_u8(23);
-        let s = value.has(22);
+        let b = value.has(22);
+        let amod = AddrMode::new(p, u);
         let wb = value.has(21);
         let op = value.get_u8(20).into();
         let rn = value.get_bits_u8(16, 19);
-        let rlist = value.get_bits(0, 15) as u16;
-        let amod = AddrMode::new(p, u);
+        let rd = value.get_bits_u8(12, 15);
+
+        let of = if value.has(25) {
+            let kind = ShiftKind::from(value.get_bits_u8(5, 6));
+            let shift = Shift::imm(value.get_bits_u8(7, 11), kind);
+            let rm = value.get_bits_u8(0, 3).reg();
+
+            rm.shift(shift)
+        } else {
+            value.get_bits(0, 11).imm()
+        };
 
         Self {
             cd,
             op,
-            s,
             amod,
             wb,
+            b,
             rn,
-            rlist,
+            rd,
+            of,
         }
     }
 }
 
 #[derive(Debug)]
 enum Opcode {
-    STM,
-    LDM,
+    STR,
+    LDR,
 }
 
 impl From<u8> for Opcode {
     fn from(value: u8) -> Self {
         match value {
-            0x0 => Self::STM,
-            0x1 => Self::LDM,
-            _ => unreachable!("invalid format 8 opcode: {value:b}"),
+            0x0 => Self::STR,
+            0x1 => Self::LDR,
+            _ => unreachable!("invalid arm 9 opcode: {value:#b}"),
         }
     }
 }
@@ -80,15 +91,14 @@ impl<B: Bus> Executable<B> for Instruction {
     }
 
     fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
-        match self.op {
-            Opcode::STM => cpu.stm(self.rlist, self.rn, self.amod, self.wb, self.s),
-            Opcode::LDM => {
-                if self.s && self.rlist.has(15) {
-                    cpu.restore_cpsr();
-                }
+        let value = cpu.get_operand(self.of);
+        let offset = RegisterOffset::new(value, self.amod, self.wb);
 
-                cpu.ldm(self.rlist, self.rn, self.amod, self.wb, self.s)
-            }
+        match self.op {
+            Opcode::STR if self.b => cpu.strb(self.rd, self.rn, offset),
+            Opcode::LDR if self.b => cpu.ldrb(self.rd, self.rn, offset),
+            Opcode::STR => cpu.str(self.rd, self.rn, offset),
+            Opcode::LDR => cpu.ldr(self.rd, self.rn, offset),
         }
     }
 }
@@ -98,20 +108,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_block_data_transfer() {
-        // TODO: Cover edge cases
+    fn test_single_data_transfer() {
         let asm = r"
-            MOV     R0, #1 ; 0
-            MOV     R1, #2 ; 4
-            STMIA   R13!, {R0, R1, R15} ; 8
+            MOV     R0, #5 ; 0
+            MOV     R1, #0
+            MOV     R2, 0xF
+            STRB    R0, [R1, R2, LSL #8]
+            LDR     R3, [R1, 0xF00]
         ";
 
         AsmTestBuilder::new()
             .asm(asm)
-            .assert_word(SP_START, 1)
-            .assert_word(SP_START + 4, 2)
-            .assert_word(SP_START + 8, ARM_MAIN_START + 16)
-            .assert_reg(13, SP_START + 12)
-            .run(3)
+            .assert_byte(0xF00, 5)
+            .assert_reg(3, 5)
+            .run(5)
     }
 }

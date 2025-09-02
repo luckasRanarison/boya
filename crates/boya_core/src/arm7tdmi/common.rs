@@ -43,14 +43,14 @@ impl AddrMode {
 
 #[derive(Debug)]
 pub struct RegisterOffset {
-    pub fx: AddrMode,
+    pub amod: AddrMode,
     pub wb: bool,
     pub value: u32,
 }
 
 impl RegisterOffset {
-    pub fn new(value: u32, fx: AddrMode, wb: bool) -> Self {
-        Self { fx, wb, value }
+    pub fn new(value: u32, amod: AddrMode, wb: bool) -> Self {
+        Self { amod, wb, value }
     }
 }
 
@@ -242,6 +242,10 @@ impl Operand {
     pub fn is_imm(&self) -> bool {
         matches!(self.kind, OperandKind::Imm)
     }
+
+    pub fn is_reg(&self) -> bool {
+        matches!(self.kind, OperandKind::Reg)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -252,7 +256,7 @@ pub enum OperandKind {
     Reg,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum ShiftKind {
     LSL,
     LSR,
@@ -267,12 +271,12 @@ impl From<u8> for ShiftKind {
             0x1 => Self::LSR,
             0x2 => Self::ASR,
             0x3 => Self::ROR,
-            _ => unreachable!("invalid shift type: {value:b}"),
+            _ => unreachable!("invalid shift type: {value:#b}"),
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Shift {
     pub value: u8,
     pub register: bool,
@@ -353,4 +357,20 @@ pub fn format_rlist<I: BitIter>(registers: I, named: Option<NamedRegister>) -> S
         .join(",");
 
     format!("{{{inner}}}")
+}
+
+pub fn format_addr_mode(amod: AddrMode, base: u8, offset: &Operand) -> String {
+    let rn = base.reg();
+
+    match amod {
+        AddrMode::IB | AddrMode::DB if offset.is_imm() && offset.value == 0 => {
+            format!("[{rn:?}]")
+        }
+        AddrMode::IB => format!("[{rn:?}, {:?}]", offset),
+        AddrMode::DB if offset.is_imm() => format!("[{rn:?}, #-{:?}]", offset.value),
+        AddrMode::DB => format!("[{rn:?}, -{:?}]", offset),
+        AddrMode::IA => format!("[{rn:?}], {:?}", offset),
+        AddrMode::DA if offset.is_imm() => format!("[{rn:?}], #-{:?}", offset.value),
+        AddrMode::DA => format!("[{rn:?}], -{:?}", offset),
+    }
 }

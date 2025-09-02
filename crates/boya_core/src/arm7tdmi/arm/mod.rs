@@ -1,39 +1,42 @@
-mod format_01;
-mod format_02;
-mod format_03;
-mod format_04;
-mod format_05;
-mod format_06;
-mod format_07;
-mod format_08;
-mod format_09;
-mod format_10;
+mod arm_03;
+mod arm_04;
+mod arm_05;
+mod arm_06;
+mod arm_07;
+mod arm_08;
+mod arm_09;
+mod arm_10;
+mod arm_11;
+mod arm_12;
+mod arm_13;
 
 use crate::utils::bitflags::BitArray;
 
 use super::isa::prelude::*;
 
 pub enum ArmInstr {
-    /// Data processing
-    Format01(format_01::Instruction),
-    /// PSR transfer
-    Format02(format_02::Instruction),
     /// Branch X
-    Format03(format_03::Instruction),
+    Arm03(arm_03::Instruction),
+    /// Branch and Branch with Link
+    Arm04(arm_04::Instruction),
+    /// Data processing
+    Arm05(arm_05::Instruction),
+    /// PSR transfer
+    Arm06(arm_06::Instruction),
     /// Multiply and Multiply-Accumulate
-    Format04(format_04::Instruction),
+    Arm07(arm_07::Instruction),
     /// Multiply long and Multiply-Accumulate long
-    Format05(format_05::Instruction),
-    /// Single data swap
-    Format06(format_06::Instruction),
+    Arm08(arm_08::Instruction),
+    /// Single data transfer
+    Arm09(arm_09::Instruction),
     /// Halfword and Signed data transfer
-    Format07(format_07::Instruction),
+    Arm10(arm_10::Instruction),
     /// Block data transfer
-    Format08(format_08::Instruction),
-    /// Block data transfer
-    Format09(format_09::Instruction),
+    Arm11(arm_11::Instruction),
+    /// Single data swap
+    Arm12(arm_12::Instruction),
     /// Software interrupt
-    Format10(format_10::Instruction),
+    Arm13(arm_13::Instruction),
     /// Undefined ARM instruction
     Undefined(u32),
 }
@@ -41,16 +44,17 @@ pub enum ArmInstr {
 impl Debug for ArmInstr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ArmInstr::Format01(op) => write!(f, "{op:?} ; arm 01"),
-            ArmInstr::Format02(op) => write!(f, "{op:?} ; arm 02"),
-            ArmInstr::Format03(op) => write!(f, "{op:?} ; arm 03"),
-            ArmInstr::Format04(op) => write!(f, "{op:?} ; arm 04"),
-            ArmInstr::Format05(op) => write!(f, "{op:?} ; arm 05"),
-            ArmInstr::Format06(op) => write!(f, "{op:?} ; arm 06"),
-            ArmInstr::Format07(op) => write!(f, "{op:?} ; arm 07"),
-            ArmInstr::Format08(op) => write!(f, "{op:?} ; arm 08"),
-            ArmInstr::Format09(op) => write!(f, "{op:?} ; arm 09"),
-            ArmInstr::Format10(op) => write!(f, "{op:?} ; arm 10"),
+            ArmInstr::Arm03(op) => write!(f, "{op:?} ; arm 03"),
+            ArmInstr::Arm04(op) => write!(f, "{op:?} ; arm 04"),
+            ArmInstr::Arm05(op) => write!(f, "{op:?} ; arm 05"),
+            ArmInstr::Arm06(op) => write!(f, "{op:?} ; arm 06"),
+            ArmInstr::Arm07(op) => write!(f, "{op:?} ; arm 07"),
+            ArmInstr::Arm08(op) => write!(f, "{op:?} ; arm 08"),
+            ArmInstr::Arm09(op) => write!(f, "{op:?} ; arm 09"),
+            ArmInstr::Arm10(op) => write!(f, "{op:?} ; arm 10"),
+            ArmInstr::Arm11(op) => write!(f, "{op:?} ; arm 11"),
+            ArmInstr::Arm12(op) => write!(f, "{op:?} ; arm 12"),
+            ArmInstr::Arm13(op) => write!(f, "{op:?} ; arm 13"),
             ArmInstr::Undefined(op) => write!(f, "{op:x} ; arm undefined"),
         }
     }
@@ -62,33 +66,35 @@ impl<B: Bus> Arm7tdmi<B> {
         let bit_array = word.to_bit_array(4);
 
         match bit_array {
-            [1, 1, 1, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Format10(word.into()),
-            [1, 0, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Format09(word.into()),
-            [1, 0, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Format08(word.into()),
+            [1, 1, 1, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Arm13(word.into()),
+            [1, 0, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Arm04(word.into()),
+            [1, 0, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Arm11(word.into()),
+            [0, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Arm09(word.into()),
             [0, 0, 0, _, _, _, _, 0, _, _, _, _, _, _, _, _, _, _, _, _, 1, 0, 1, 1] |
-            [0, 0, 0, _, _, _, _, 1, _, _, _, _, _, _, _, _, _, _, _, _, 1, _, _, 1] => ArmInstr::Format07(word.into()),
-            [0, 0, 0, 1, 0, _, 0, 0, _, _, _, _, _, _, _, _, 0, 0, 0, 0, 1, 0, 0, 1] => ArmInstr::Format06(word.into()),
-            [0, 0, 0, 0, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, 1, 0, 0, 1] => ArmInstr::Format05(word.into()),
-            [0, 0, 0, 0, 0, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, 1, 0, 0, 1] => ArmInstr::Format04(word.into()),
-            [0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1] => ArmInstr::Format03(word.into()),
-            [0, 0, _, 1, 0, _, _, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Format02(word.into()),
-            [0, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Format01(word.into()),
+            [0, 0, 0, _, _, _, _, 1, _, _, _, _, _, _, _, _, _, _, _, _, 1, _, _, 1] => ArmInstr::Arm10(word.into()),
+            [0, 0, 0, 1, 0, _, 0, 0, _, _, _, _, _, _, _, _, 0, 0, 0, 0, 1, 0, 0, 1] => ArmInstr::Arm12(word.into()),
+            [0, 0, 0, 0, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, 1, 0, 0, 1] => ArmInstr::Arm08(word.into()),
+            [0, 0, 0, 0, 0, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, 1, 0, 0, 1] => ArmInstr::Arm07(word.into()),
+            [0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1] => ArmInstr::Arm03(word.into()),
+            [0, 0, _, 1, 0, _, _, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Arm06(word.into()),
+            [0, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Arm05(word.into()),
             _ => ArmInstr::Undefined(word),
         }
     }
 
     pub fn exec_arm(&mut self, instruction: ArmInstr) -> Cycle {
         match instruction {
-            ArmInstr::Format01(op) => op.dispatch_checked(self),
-            ArmInstr::Format02(op) => op.dispatch_checked(self),
-            ArmInstr::Format03(op) => op.dispatch_checked(self),
-            ArmInstr::Format04(op) => op.dispatch_checked(self),
-            ArmInstr::Format05(op) => op.dispatch_checked(self),
-            ArmInstr::Format06(op) => op.dispatch_checked(self),
-            ArmInstr::Format07(op) => op.dispatch_checked(self),
-            ArmInstr::Format08(op) => op.dispatch_checked(self),
-            ArmInstr::Format09(op) => op.dispatch_checked(self),
-            ArmInstr::Format10(op) => op.dispatch_checked(self),
+            ArmInstr::Arm03(op) => op.dispatch_checked(self),
+            ArmInstr::Arm04(op) => op.dispatch_checked(self),
+            ArmInstr::Arm05(op) => op.dispatch_checked(self),
+            ArmInstr::Arm06(op) => op.dispatch_checked(self),
+            ArmInstr::Arm07(op) => op.dispatch_checked(self),
+            ArmInstr::Arm08(op) => op.dispatch_checked(self),
+            ArmInstr::Arm09(op) => op.dispatch_checked(self),
+            ArmInstr::Arm10(op) => op.dispatch_checked(self),
+            ArmInstr::Arm11(op) => op.dispatch_checked(self),
+            ArmInstr::Arm12(op) => op.dispatch_checked(self),
+            ArmInstr::Arm13(op) => op.dispatch_checked(self),
             ArmInstr::Undefined(_) => self.handle_exception(Exception::Undefined),
         }
     }
