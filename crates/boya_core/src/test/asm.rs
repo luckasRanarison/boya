@@ -39,3 +39,20 @@ pub fn format_bin_bytes(bytes: &[u8]) -> String {
         .collect::<Vec<_>>()
         .join(" ")
 }
+
+pub const FAKE_BIOS: &str = r"
+    vectors:
+        B       reset_handler
+        dw      0x0000_0000 ; UNDEFINED
+        dw      0x0000_0000 ; SWI
+        dw      0x0000_0000 ; PREFETCH_ABORT
+        dw      0x0000_0000 ; DATA_ABORT
+        dw      0x0000_0000 ; RESERVED
+        dw      0x0000_0000 ; IRQ
+        dw      0x0000_0000 ; FIQ
+
+    reset_handler:
+        MOV     SP, 0x0300_0000
+        ADD     SP, SP, 0x0000_7F00
+        MOV     PC, 0x0800_0000
+";

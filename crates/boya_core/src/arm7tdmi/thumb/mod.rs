@@ -87,7 +87,6 @@ impl Debug for ThumbInstr {
             ThumbInstr::Format17(op) => write!(f, "{op:?} ; thumb 17"),
             ThumbInstr::Format18(op) => write!(f, "{op:?} ; thumb 18"),
             ThumbInstr::Format19(op) => write!(f, "{op:?} ; thumb 19"),
-
             ThumbInstr::Undefined(op) => write!(f, "{op:x} ; thumb undefined"),
         }
     }
@@ -145,8 +144,32 @@ impl Arm7tdmi {
             ThumbInstr::Format17(op) => op.dispatch(self),
             ThumbInstr::Format18(op) => op.dispatch(self),
             ThumbInstr::Format19(op) => op.dispatch(self),
-
             ThumbInstr::Undefined(_) => self.handle_exception(Exception::Undefined),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const TEST_REG: usize = 7;
+    const TEST_START: u32 = 0x0800_00FC;
+    const TEST_END: u32 = 0x0800_0930;
+
+    const TEST_FILE: &[u8] = include_bytes!("../../../../../submodules/gba-tests/thumb/thumb.gba");
+
+    #[test]
+    fn test_thumb_suite() {
+        AsmTestBuilder::new()
+            .bytes(TEST_FILE)
+            .setup(|cpu| {
+                cpu.cpsr.update(Psr::T, true);
+                cpu.set_pc(TEST_START);
+                cpu.pipeline.flush();
+                cpu.load_pipeline();
+            })
+            .assert_reg(TEST_REG, 0)
+            .run_while(|cpu| cpu.pc() < TEST_END || cpu.reg[TEST_REG] == 0);
     }
 }

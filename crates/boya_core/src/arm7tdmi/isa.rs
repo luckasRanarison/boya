@@ -52,19 +52,19 @@ pub trait Executable: Sized {
 
 impl Arm7tdmi {
     pub fn lsl(&mut self, dst: u8, lhs: u8, rhs: Operand) -> Cycle {
-        self.shift_op(u32::wrapping_shl, dst, lhs, rhs)
+        self.shift_op(dst, lhs, rhs, ShiftKind::LSL)
     }
 
     pub fn lsr(&mut self, dst: u8, lhs: u8, rhs: Operand) -> Cycle {
-        self.shift_op(u32::wrapping_shr, dst, lhs, rhs)
+        self.shift_op(dst, lhs, rhs, ShiftKind::LSR)
     }
 
     pub fn asr(&mut self, dst: u8, lhs: u8, rhs: Operand) -> Cycle {
-        self.shift_op(u32::wrapping_asr, dst, lhs, rhs)
+        self.shift_op(dst, lhs, rhs, ShiftKind::ASR)
     }
 
     pub fn ror(&mut self, dst: u8, lhs: u8, rhs: Operand) -> Cycle {
-        self.shift_op(u32::rotate_right, dst, lhs, rhs)
+        self.shift_op(dst, lhs, rhs, ShiftKind::ROR)
     }
 
     pub fn add(&mut self, dst: u8, lhs: u8, rhs: Operand, update: bool) -> Cycle {

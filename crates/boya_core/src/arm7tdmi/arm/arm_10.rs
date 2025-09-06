@@ -22,12 +22,14 @@ pub struct Instruction {
 
 impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let op = format!("{:?}", self.op);
-        let (prefix, suffix) = op.split_at(3);
-        let op_cd = format!("{}{:?}{}", prefix, self.cd, suffix);
-        let addr = format_addr_mode(self.amod, self.rn, &self.of, self.wb);
-
-        write!(f, "{op_cd} {:?}, {addr}", self.rd.reg())
+        write!(
+            f,
+            "{:?}{:?} {:?}, {}",
+            self.op,
+            self.cd,
+            self.rd.reg(),
+            format_addr_mode(self.amod, self.rn, &self.of, self.wb)
+        )
     }
 }
 

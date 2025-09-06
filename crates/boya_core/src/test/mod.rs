@@ -4,6 +4,7 @@ use asm::{format_bin_bytes, format_hex_bytes};
 use crate::{
     arm7tdmi::{Arm7tdmi, test::DataType},
     bus::{BIOS_SIZE, GbaBus},
+    test::asm::FAKE_BIOS,
 };
 
 pub use asm::compile_asm;
@@ -51,6 +52,11 @@ impl AsmTestBuilder {
             Err(err) => panic!("{err}\n\nfailed to compile:\n{code}"),
         }
 
+        self
+    }
+
+    pub fn bytes(mut self, bytes: &[u8]) -> Self {
+        self.bytes = bytes.to_vec();
         self
     }
 
@@ -116,9 +122,11 @@ impl AsmTestBuilder {
         println!("bin: {formated_bits}\n");
 
         let mut bios = [0; BIOS_SIZE];
-        let reset = [2, 243, 160, 227]; // skip bios (mov pc, 0x0800_0000)
+        let fake_bios = compile_asm(FAKE_BIOS).unwrap();
 
-        bios[0..4].copy_from_slice(&reset);
+        for (i, byte) in fake_bios.iter().enumerate() {
+            bios[i] = *byte;
+        }
 
         self.bus.load_bios(&bios);
         self.bus.load_rom(&self.bytes);
@@ -126,22 +134,23 @@ impl AsmTestBuilder {
         let mut cpu = Arm7tdmi::new(self.bus);
 
         cpu.reset();
-        cpu.set_sp(SP_START);
 
-        if let Some(setup) = self.setup {
-            setup(&mut cpu);
-        }
-
-        let extra_cycle = if self.thumb { 6 } else { 1 };
+        let extra_cycle = if self.thumb { 9 } else { 4 };
 
         for _ in 0..extra_cycle {
             cpu.step();
         }
 
+        if let Some(setup) = self.setup {
+            setup(&mut cpu);
+        }
+
         while func(&cpu) {
-            if let Some(instr) = &cpu.pipeline.curr_instr {
-                println!("{:#08x}: {instr:?}", cpu.pipeline.curr_pc);
-            }
+            println!(
+                "{:#08x}: {:?}",
+                cpu.pipeline.curr_pc,
+                cpu.pipeline.curr_instr.as_ref().unwrap(),
+            );
 
             cpu.step();
         }

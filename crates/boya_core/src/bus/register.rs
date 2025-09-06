@@ -15,7 +15,7 @@ impl SystemControl {
             0x202..=0x203 => self.r#if.read(address),
             0x204..=0x205 => self.waitcnt.read(address),
             0x208..=0x209 => self.ime.read(address),
-            _ => unreachable!("invalid system control read address: {address:#08X}"),
+            _ => unreachable!("invalid system control read address: {address:#010X}"),
         }
     }
 
@@ -25,7 +25,7 @@ impl SystemControl {
             0x202..=0x203 => self.r#if.write(address, value),
             0x204..=0x205 => self.waitcnt.write(address, value),
             0x208..=0x209 => self.ime.write(address, value),
-            _ => unreachable!("invalid system control write address: {address:#08X}"),
+            _ => unreachable!("invalid system control write address: {address:#010X}"),
         }
     }
 }

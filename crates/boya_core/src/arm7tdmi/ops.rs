@@ -1,7 +1,10 @@
 use crate::{
     arm7tdmi::{common::*, psr::PsrKind},
     bus::Bus,
-    utils::bitflags::{BitIter, Bitflag},
+    utils::{
+        bitflags::{BitIter, Bitflag},
+        ops::ExtendedOps,
+    },
 };
 
 use super::{
@@ -52,17 +55,29 @@ impl Arm7tdmi {
     }
 
     #[inline(always)]
-    pub fn shift_op<F>(&mut self, func: F, dst: u8, lhs: u8, rhs: Operand) -> Cycle
-    where
-        F: Fn(u32, u32) -> u32,
-    {
+    pub fn shift_op(&mut self, dst: u8, lhs: u8, rhs: Operand, shift: ShiftKind) -> Cycle {
         let i = if rhs.kind == OperandKind::Reg { 1 } else { 0 };
         let lhs = self.get_reg(lhs);
         let rhs = self.get_operand(rhs) & 0xFF;
-        let result = func(lhs, rhs);
 
+        let (result, carry_bit) = match shift {
+            ShiftKind::LSL if rhs >= 32 => (0, 0),
+            ShiftKind::LSR if rhs >= 32 || rhs == 0 => (0, 31),
+            ShiftKind::ASR if rhs == 0 => (lhs.extended_asr(32), 31),
+            ShiftKind::ROR if rhs == 0 => (lhs, 0),
+            ShiftKind::LSL => (lhs.wrapping_shl(rhs), 32 - rhs),
+            ShiftKind::LSR => (lhs.wrapping_shr(rhs), rhs - 1),
+            ShiftKind::ASR => (lhs.extended_asr(rhs), rhs - 1),
+            ShiftKind::ROR => (lhs.rotate_right(rhs), rhs - 1),
+        };
+
+        // println!("lhs: {lhs}, rhs: {rhs}, res: {result}");
+        // println!("{:?}", self.cpsr);
         self.cpsr.update_zn(result);
-        self.cpsr.update(Psr::C, rhs > 0);
+        self.cpsr.update(
+            Psr::C,
+            rhs <= 32 && carry_bit < 32 && lhs.get(carry_bit) != 0,
+        );
 
         self.set_reg(dst, result);
 

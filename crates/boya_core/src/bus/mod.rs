@@ -47,15 +47,17 @@ impl GbaBus {
 
     fn read_io_register(&self, address: usize) -> u8 {
         match address {
+            0x0400_0000..=0x040001FF => 0x0, // todo!()
             0x0400_0200..=0x0400_0209 => self.sys_ctrl.read(address),
-            _ => panic!("invalid I/O register read address: {address:#08X}"),
+            _ => panic!("invalid I/O register read address: {address:#010X}"),
         }
     }
 
     fn write_io_register(&mut self, address: usize, value: u8) {
         match address {
+            0x0400_0000..=0x040001FF => {} // todo!()
             0x0400_0200..=0x0400_0209 => self.sys_ctrl.write(address, value),
-            _ => panic!("invalid I/O register write address: {address:#08X}"),
+            _ => panic!("invalid I/O register write address: {address:#010X}"),
         }
     }
 }
@@ -68,10 +70,13 @@ impl Bus for GbaBus {
             0x0000_0000..=0x0000_3FFF => self.bios[address],
             0x0200_0000..=0x0203_FFFF => self.ewram[address - 0x0200_0000],
             0x0300_0000..=0x0300_7FFF => self.iwram[address - 0x0300_0000],
-            0x0400_0000..=0x0400_03EE => self.read_io_register(address),
+            0x0400_0000..=0x0400_03FE => self.read_io_register(address),
+            0x0500_0000..=0x0500_03FF => 0x0, // BG/OBJ Palette RAM
+            0x0600_0000..=0x0617_FFFF => 0x0, // VRAM
+            0x0700_0000..=0x0700_03FF => 0x0, // OAM
             0x0800_0000..=0x0DFF_FFFF => self.read_rom(address),
             0x0E00_0000..=0x0E00_FFFF => self.sram[address - 0x0E00_0000],
-            _ => panic!("invalid read address: {address:#08X}"),
+            _ => panic!("invalid read address: {address:#010X}"),
         }
     }
 
@@ -82,8 +87,11 @@ impl Bus for GbaBus {
             0x0200_0000..=0x0203_FFFF => self.ewram[address - 0x0200_0000] = value,
             0x0300_0000..=0x0300_7FFF => self.iwram[address - 0x0300_0000] = value,
             0x0400_0000..=0x0400_03EE => self.write_io_register(address, value),
+            0x0500_0000..=0x0500_03FF => {} // BG/OBJ Palette RAM
+            0x0600_0000..=0x0617_FFFF => {} // VRAM
+            0x0700_0000..=0x0700_03FF => {} // OAM
             0x0E00_0000..=0x0E00_FFFF => self.sram[address - 0x0E00_0000] = value,
-            _ => panic!("invalid write address: {address:#08X}"),
+            _ => panic!("invalid write address: {address:#010X}"),
         };
     }
 }

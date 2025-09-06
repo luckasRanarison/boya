@@ -236,7 +236,7 @@ impl Arm7tdmi {
             }
             (ShiftKind::ASR, 0) => {
                 self.cpsr.update(Psr::C, lhs.has(31));
-                lhs.wrapping_asr(32)
+                lhs.extended_asr(32)
             }
             (ShiftKind::ROR, 0) => {
                 let lhs = (lhs & !1) | self.cpsr.has(Psr::C) as u32;
@@ -244,7 +244,7 @@ impl Arm7tdmi {
             }
             (ShiftKind::LSL, _) => lhs.wrapping_shl(rhs),
             (ShiftKind::LSR, _) => lhs.wrapping_shr(rhs),
-            (ShiftKind::ASR, _) => lhs.wrapping_asr(rhs),
+            (ShiftKind::ASR, _) => lhs.extended_asr(rhs),
             (ShiftKind::ROR, _) => lhs.rotate_right(rhs),
         }
     }
