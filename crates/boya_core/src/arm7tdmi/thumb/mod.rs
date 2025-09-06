@@ -93,7 +93,7 @@ impl Debug for ThumbInstr {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
+impl Arm7tdmi {
     pub fn decode_thumb(&self, word: u32) -> ThumbInstr {
         let word_aligned = self.pc() & 0b1 == 0;
         let (lsb, msb) = if word_aligned { (0, 15) } else { (16, 31) };

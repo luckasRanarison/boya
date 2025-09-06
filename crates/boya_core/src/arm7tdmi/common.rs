@@ -359,10 +359,10 @@ pub fn format_rlist<I: BitIter>(registers: I, named: Option<NamedRegister>) -> S
     format!("{{{inner}}}")
 }
 
-pub fn format_addr_mode(amod: AddrMode, base: u8, offset: &Operand) -> String {
+pub fn format_addr_mode(amod: AddrMode, base: u8, offset: &Operand, wb: bool) -> String {
     let rn = base.reg();
 
-    match amod {
+    let addr = match amod {
         AddrMode::IB | AddrMode::DB if offset.is_imm() && offset.value == 0 => {
             format!("[{rn:?}]")
         }
@@ -372,5 +372,10 @@ pub fn format_addr_mode(amod: AddrMode, base: u8, offset: &Operand) -> String {
         AddrMode::IA => format!("[{rn:?}], {:?}", offset),
         AddrMode::DA if offset.is_imm() => format!("[{rn:?}], #-{:?}", offset.value),
         AddrMode::DA => format!("[{rn:?}], -{:?}", offset),
+    };
+
+    match amod {
+        AddrMode::IB | AddrMode::DB if wb => format!("{addr}!"),
+        _ => addr,
     }
 }

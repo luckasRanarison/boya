@@ -1,7 +1,5 @@
 use std::fmt::Debug;
 
-use crate::bus::Bus;
-
 use super::{Arm7tdmi, Instruction};
 
 #[derive(Debug, Default)]
@@ -29,7 +27,7 @@ impl Pipeline {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
+impl Arm7tdmi {
     pub fn next_instr_addr(&self) -> Option<u32> {
         let last_pc = self.pipeline.last_pc();
         let instr_size = self.instr_size().into();

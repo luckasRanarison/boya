@@ -26,8 +26,8 @@ impl From<u16> for Instruction {
     }
 }
 
-impl<B: Bus> Executable<B> for Instruction {
-    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+impl Executable for Instruction {
+    fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         match self.h {
             false => cpu.branch_long_first_op(self.nn),
             true => cpu.branch_long_second_op(self.nn),

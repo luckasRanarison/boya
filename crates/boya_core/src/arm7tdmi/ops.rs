@@ -10,7 +10,7 @@ use super::{
     psr::Psr,
 };
 
-impl<B: Bus> Arm7tdmi<B> {
+impl Arm7tdmi {
     #[inline(always)]
     pub fn add_sub_op(
         &mut self,

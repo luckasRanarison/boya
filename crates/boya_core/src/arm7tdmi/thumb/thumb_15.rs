@@ -50,8 +50,8 @@ impl From<u8> for Opcode {
     }
 }
 
-impl<B: Bus> Executable<B> for Instruction {
-    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+impl Executable for Instruction {
+    fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         match self.op {
             Opcode::STMIA => cpu.stm(self.rlist, self.rb, AddrMode::IA, true, false),
             Opcode::LDMIA => cpu.ldm(self.rlist, self.rb, AddrMode::IA, true, false),
@@ -66,27 +66,29 @@ mod tests {
     #[test]
     fn test_stmia() {
         let asm = r"
-            mov   r0, 24
-            mov   r1, 1
-            mov   r2, 2
-            mov   r3, 3
+            mov   r0, #2
+            lsl   r0, #24
+            mov   r1, #1
+            mov   r2, #2
+            mov   r3, #3
             stmia r0!, {r1,r2,r3}
         ";
 
         AsmTestBuilder::new()
             .thumb()
             .asm(asm)
-            .assert_reg(0, 36)
-            .assert_word(24, 1)
-            .assert_word(28, 2)
-            .assert_word(32, 3)
-            .run(5)
+            .assert_reg(0, 0x0200_000C)
+            .assert_word(0x0200_0000, 1)
+            .assert_word(0x0200_0004, 2)
+            .assert_word(0x0200_0008, 3)
+            .run(6)
     }
 
     #[test]
     fn test_ldmia() {
         let asm = r"
-            mov   r0, #24
+            mov   r0, #2
+            lsl   r0, r0, #24 ; 0x0200_0000
             ldmia r0!, {r1,r2,r3}
         ";
 
@@ -94,14 +96,14 @@ mod tests {
             .thumb()
             .asm(asm)
             .setup(|cpu| {
-                cpu.bus.write_word(24, 1);
-                cpu.bus.write_word(28, 2);
-                cpu.bus.write_word(32, 3);
+                cpu.bus.write_word(0x0200_0000, 1);
+                cpu.bus.write_word(0x0200_0004, 2);
+                cpu.bus.write_word(0x0200_0008, 3);
             })
-            .assert_reg(0, 36)
+            .assert_reg(0, 0x0200_000C)
             .assert_reg(1, 1)
             .assert_reg(2, 2)
             .assert_reg(3, 3)
-            .run(2)
+            .run(3)
     }
 }

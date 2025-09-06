@@ -23,13 +23,12 @@ impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{:?}{:?}{} {:?}, {}{}",
+            "{:?}{:?}{} {:?}, {}",
             self.op,
             self.cd,
             if self.b { "B" } else { "" },
             self.rd.reg(),
-            format_addr_mode(self.amod, self.rn, &self.of),
-            if self.wb { "!" } else { "" }
+            format_addr_mode(self.amod, self.rn, &self.of, self.wb),
         )
     }
 }
@@ -85,12 +84,12 @@ impl From<u8> for Opcode {
     }
 }
 
-impl<B: Bus> Executable<B> for Instruction {
+impl Executable for Instruction {
     fn condition(&self) -> Condition {
         self.cd
     }
 
-    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+    fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         let value = cpu.get_operand(self.of);
         let offset = RegisterOffset::new(value, self.amod, self.wb);
 
@@ -111,7 +110,7 @@ mod tests {
     fn test_single_data_transfer() {
         let asm = r"
             MOV     R0, #5 ; 0
-            MOV     R1, #0
+            MOV     R1, 0x0200_0000
             MOV     R2, 0xF
             STRB    R0, [R1, R2, LSL #8]
             LDR     R3, [R1, 0xF00]
@@ -119,7 +118,7 @@ mod tests {
 
         AsmTestBuilder::new()
             .asm(asm)
-            .assert_byte(0xF00, 5)
+            .assert_byte(0x0200_0F00, 5)
             .assert_reg(3, 5)
             .run(5)
     }

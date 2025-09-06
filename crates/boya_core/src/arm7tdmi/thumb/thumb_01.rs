@@ -55,8 +55,8 @@ impl From<u8> for Opcode {
     }
 }
 
-impl<B: Bus> Executable<B> for Instruction {
-    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+impl Executable for Instruction {
+    fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         let nn = self.of.imm();
 
         match self.op {

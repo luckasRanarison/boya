@@ -7,53 +7,35 @@ mod pipeline;
 mod psr;
 mod thumb;
 
-use std::fmt::Debug;
-
 use bank::Bank;
 use common::{AddrMode, Operand, OperandKind};
 use pipeline::Pipeline;
 use psr::Psr;
-use thumb::ThumbInstr;
 
 use crate::{
     arm7tdmi::{
-        arm::ArmInstr,
         common::{Cycle, Exception, Shift, ShiftKind},
+        isa::Instruction,
     },
-    bus::Bus,
+    bus::{Bus, GbaBus},
     utils::{bitflags::Bitflag, ops::ExtendedOps},
 };
 
-pub enum Instruction {
-    Arm(ArmInstr),
-    Thumb(ThumbInstr),
-}
-
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Instruction::Arm(op) => write!(f, "{op:?}"),
-            Instruction::Thumb(op) => write!(f, "{op:?}"),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct Arm7tdmi<B: Bus> {
+pub struct Arm7tdmi {
     pub reg: [u32; 16], // R0-R15
     pub bank: Bank,
     pub cpsr: Psr,
     pub pipeline: Pipeline,
     pub cycles: u64,
-    pub bus: B,
+    pub bus: GbaBus,
 }
 
-impl<B: Bus> Arm7tdmi<B> {
+impl Arm7tdmi {
     const PC: usize = 15;
     const LR: usize = 14;
     const SP: usize = 13;
 
-    pub fn new(bus: B) -> Self {
+    pub fn new(bus: GbaBus) -> Self {
         Self {
             reg: [0; 16],
             bank: Bank::default(),
@@ -277,7 +259,7 @@ impl<B: Bus> Arm7tdmi<B> {
 }
 
 #[cfg(test)]
-impl<B: Bus> Arm7tdmi<B> {
+impl Arm7tdmi {
     pub fn set_sp(&mut self, value: u32) {
         *self.get_reg_mut(Self::SP) = value;
     }
@@ -292,7 +274,7 @@ impl<B: Bus> Arm7tdmi<B> {
 
             assert_eq!(
                 value, expected,
-                "expected {expected:#x} at {address:#x}, got 0x{value:#x}"
+                "expected {expected:#x} at {address:#x}, got {value:#x}"
             )
         }
     }

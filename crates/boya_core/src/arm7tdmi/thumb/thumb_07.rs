@@ -57,8 +57,8 @@ impl From<u8> for Opcode {
     }
 }
 
-impl<B: Bus> Executable<B> for Instruction {
-    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+impl Executable for Instruction {
+    fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         let value = cpu.get_reg(self.ro);
         let offset = RegisterOffset::new(value, AddrMode::IB, false);
 
@@ -79,7 +79,8 @@ mod tests {
     fn test_ldr_str_reg_offset() {
         let asm = r"
             mov r0, #3
-            mov r1, #5
+            mov r1, #2
+            lsl r1, r1, #24 ; 0x0200_0000
             mov r2, #6
             str r0, [r1, r2]
             ldr r3, [r1, r2]
@@ -88,8 +89,8 @@ mod tests {
         AsmTestBuilder::new()
             .thumb()
             .asm(asm)
-            .assert_word(11, 3)
+            .assert_word(0x0200_0006, 3)
             .assert_reg(3, 3)
-            .run(5);
+            .run(6);
     }
 }

@@ -42,12 +42,12 @@ impl From<u32> for Instruction {
     }
 }
 
-impl<B: Bus> Executable<B> for Instruction {
+impl Executable for Instruction {
     fn condition(&self) -> Condition {
         self.cd
     }
 
-    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+    fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         cpu.swp(self.rd, self.rm, self.rn, self.b)
     }
 }
@@ -61,22 +61,22 @@ mod tests {
         let asm = r"
             MOV    R0, #5
             MOV    R1, #25
-            MOV    R2, #300
+            MOV    R2, 0x0200_0000
             SWPB   R0, R1, [R2]
-            MOV    R5, #320
+            ADD    R5, R2, 0x20
             SWP    R3, R0, [R5]
         ";
 
         AsmTestBuilder::new()
             .asm(asm)
             .setup(|cpu| {
-                cpu.bus.write_byte(300, 40);
-                cpu.bus.write_word(320, 0xFFFF0000);
+                cpu.bus.write_byte(0x0200_0000, 40);
+                cpu.bus.write_word(0x0200_0020, 0xFFFF0000);
             })
             .assert_reg(0, 40)
             .assert_reg(3, 0xFFFF0000)
-            .assert_byte(300, 25)
-            .assert_word(320, 40)
+            .assert_byte(0x0200_0000, 25)
+            .assert_word(0x0200_0020, 40)
             .run(6);
     }
 }

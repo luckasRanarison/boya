@@ -1,6 +1,6 @@
 use crate::arm7tdmi::isa::prelude::*;
 
-/// Halfword and Signed data transer
+/// Halfword and Signed data transfer
 /// +-----------------------------------------------------------------+
 /// |...3 ..................2 ..................1 ..................0.|
 /// |-----------------------------------------------------------------|
@@ -25,19 +25,9 @@ impl Debug for Instruction {
         let op = format!("{:?}", self.op);
         let (prefix, suffix) = op.split_at(3);
         let op_cd = format!("{}{:?}{}", prefix, self.cd, suffix);
+        let addr = format_addr_mode(self.amod, self.rn, &self.of, self.wb);
 
-        write!(
-            f,
-            "{op_cd} {:?}, {}",
-            self.rd.reg(),
-            format_addr_mode(self.amod, self.rn, &self.of)
-        )?;
-
-        if self.wb && matches!(self.amod, AddrMode::IB | AddrMode::DB) {
-            write!(f, "!")?;
-        }
-
-        Ok(())
+        write!(f, "{op_cd} {:?}, {addr}", self.rd.reg())
     }
 }
 
@@ -89,12 +79,12 @@ impl From<u32> for Opcode {
     }
 }
 
-impl<B: Bus> Executable<B> for Instruction {
+impl Executable for Instruction {
     fn condition(&self) -> Condition {
         self.cd
     }
 
-    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+    fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         let value = cpu.get_operand(self.of);
         let offset = RegisterOffset::new(value, self.amod, self.wb);
 
@@ -114,18 +104,18 @@ mod tests {
     #[test]
     fn test_hword_signed_transfer() {
         let asm = r"
-            MOV     R0, 3
-            MOV     R1, 5
-            MOV     R2, 50
-            STRH    R0, [R1, #45]!
+            MOV     R0, #3
+            MOV     R1, 0x0200_0000
+            STRH    R0, [R1, 0x50]!
+            MOV     R2, R1
             LDRH    R3, [R2], -R0
         ";
 
         AsmTestBuilder::new()
             .asm(asm)
-            .assert_hword(50, 3)
-            .assert_reg(1, 50)
-            .assert_reg(2, 47)
+            .assert_hword(0x0200_0050, 3)
+            .assert_reg(1, 0x0200_0050)
+            .assert_reg(2, 0x0200_004D)
             .assert_reg(3, 3)
             .run(5);
     }

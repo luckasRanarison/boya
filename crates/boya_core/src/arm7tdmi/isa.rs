@@ -5,27 +5,43 @@ pub mod prelude {
     pub use crate::arm7tdmi::common::*;
     pub use crate::arm7tdmi::isa::Executable;
     pub use crate::arm7tdmi::psr::*;
-    pub use crate::bus::Bus;
     pub use crate::utils::bitflags::Bitflag;
 
     #[cfg(test)]
-    pub use crate::test::*;
+    pub use crate::{bus::Bus, test::*};
 }
 
 use std::ops::{BitAnd, BitOr, BitXor};
 
 use prelude::*;
 
-use crate::utils::{bitflags::BitIter, ops::ExtendedOps};
+use crate::{
+    arm7tdmi::{arm::ArmInstr, thumb::ThumbInstr},
+    utils::{bitflags::BitIter, ops::ExtendedOps},
+};
 
-pub trait Executable<B: Bus>: Sized {
-    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle;
+pub enum Instruction {
+    Arm(ArmInstr),
+    Thumb(ThumbInstr),
+}
+
+impl Debug for Instruction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Instruction::Arm(op) => write!(f, "{op:?}"),
+            Instruction::Thumb(op) => write!(f, "{op:?}"),
+        }
+    }
+}
+
+pub trait Executable: Sized {
+    fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle;
 
     fn condition(&self) -> Condition {
         Condition::AL
     }
 
-    fn dispatch_checked(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+    fn dispatch_checked(self, cpu: &mut Arm7tdmi) -> Cycle {
         if cpu.cpsr.matches(self.condition()) {
             self.dispatch(cpu)
         } else {
@@ -34,7 +50,7 @@ pub trait Executable<B: Bus>: Sized {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
+impl Arm7tdmi {
     pub fn lsl(&mut self, dst: u8, lhs: u8, rhs: Operand) -> Cycle {
         self.shift_op(u32::wrapping_shl, dst, lhs, rhs)
     }

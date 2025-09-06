@@ -1,36 +1,29 @@
 mod asm;
-mod bus;
-
 use asm::{format_bin_bytes, format_hex_bytes};
-use bus::TestBus;
 
 use crate::{
     arm7tdmi::{Arm7tdmi, test::DataType},
-    bus::Bus,
+    bus::{BIOS_SIZE, GbaBus},
 };
 
 pub use asm::compile_asm;
 
-pub const SP_START: u32 = 0x20;
-pub const PRG_START: u32 = 0x200;
-pub const ARM_MAIN_START: u32 = 0x200;
-pub const TMB_MAIN_START: u32 = 0x20E;
-
-type CpuFn = Box<dyn Fn(&Arm7tdmi<TestBus>)>;
-type CpuFnMut = Box<dyn Fn(&mut Arm7tdmi<TestBus>)>;
+pub const SP_START: u32 = 0x0300_7F00;
+pub const ARM_MAIN_START: u32 = 0x0800_0000;
+pub const TMB_MAIN_START: u32 = 0x0800_0012;
 
 #[derive(Default)]
 pub struct AsmTestBuilder {
-    bus: TestBus,
+    bus: GbaBus,
     thumb: bool,
     code: String,
     bytes: Vec<u8>,
-    setup: Option<CpuFnMut>,
+    setup: Option<Box<dyn Fn(&mut Arm7tdmi)>>,
 
     flag_assertions: Vec<(u32, bool)>,
     reg_assertions: Vec<(usize, u32)>,
     mem_assertions: Vec<(u32, u32, DataType)>,
-    func_assertion: Option<CpuFn>,
+    func_assertion: Option<Box<dyn Fn(&Arm7tdmi)>>,
 }
 
 impl AsmTestBuilder {
@@ -88,7 +81,7 @@ impl AsmTestBuilder {
 
     pub fn assert_fn<F>(mut self, func: F) -> Self
     where
-        F: Fn(&Arm7tdmi<TestBus>) + 'static,
+        F: Fn(&Arm7tdmi) + 'static,
     {
         self.func_assertion = Some(Box::new(func));
         self
@@ -96,13 +89,25 @@ impl AsmTestBuilder {
 
     pub fn setup<F>(mut self, func: F) -> Self
     where
-        F: Fn(&mut Arm7tdmi<TestBus>) + 'static,
+        F: Fn(&mut Arm7tdmi) + 'static,
     {
         self.setup = Some(Box::new(func));
         self
     }
 
-    pub fn run(mut self, steps: usize) {
+    pub fn run(self, steps: usize) {
+        let mut i = 0;
+
+        self.run_while(move |_| {
+            i += 1;
+            i <= steps
+        });
+    }
+
+    pub fn run_while<F>(mut self, mut func: F)
+    where
+        F: FnMut(&Arm7tdmi) -> bool + 'static,
+    {
         let formated_bits = format_bin_bytes(&self.bytes);
         let formated_bytes = format_hex_bytes(&self.bytes);
 
@@ -110,8 +115,13 @@ impl AsmTestBuilder {
         println!("hex: {formated_bytes}");
         println!("bin: {formated_bits}\n");
 
-        self.bus.write_word(0x0, 0xEA00007E); // reset: branch to 0x200
-        self.bus.load_program(&self.bytes, PRG_START as usize);
+        let mut bios = [0; BIOS_SIZE];
+        let reset = [2, 243, 160, 227]; // skip bios (mov pc, 0x0800_0000)
+
+        bios[0..4].copy_from_slice(&reset);
+
+        self.bus.load_bios(&bios);
+        self.bus.load_rom(&self.bytes);
 
         let mut cpu = Arm7tdmi::new(self.bus);
 
@@ -122,13 +132,13 @@ impl AsmTestBuilder {
             setup(&mut cpu);
         }
 
-        let extra_cycle = if self.thumb { 5 } else { 1 };
+        let extra_cycle = if self.thumb { 6 } else { 1 };
 
         for _ in 0..extra_cycle {
             cpu.step();
         }
 
-        for _ in 0..steps {
+        while func(&cpu) {
             if let Some(instr) = &cpu.pipeline.curr_instr {
                 println!("{:#08x}: {instr:?}", cpu.pipeline.curr_pc);
             }
@@ -149,7 +159,8 @@ impl AsmTestBuilder {
         format!(
             r"
             _setup:
-                MOV     R0, 0x20C
+                MOV     R0, 0x0800_0000
+                ADD     R0, R0, 0x10
                 ORR     R0, R0, #1 ; set bit 1
                 BX      R0         ; switch to thumb mode
 

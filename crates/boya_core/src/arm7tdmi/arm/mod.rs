@@ -60,7 +60,7 @@ impl Debug for ArmInstr {
     }
 }
 
-impl<B: Bus> Arm7tdmi<B> {
+impl Arm7tdmi {
     #[rustfmt::skip]
     pub fn decode_arm(&self, word: u32) -> ArmInstr {
         let bit_array = word.to_bit_array(4);

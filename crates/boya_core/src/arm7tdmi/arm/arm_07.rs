@@ -76,12 +76,12 @@ impl From<u8> for Opcode {
     }
 }
 
-impl<B: Bus> Executable<B> for Instruction {
+impl Executable for Instruction {
     fn condition(&self) -> Condition {
         self.cd
     }
 
-    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+    fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         match self.op {
             Opcode::MUL => cpu.mul(self.rd, self.rm, self.rs, self.s),
             Opcode::MLA => cpu.mla(self.rd, self.rm, self.rs, self.rn, self.s),

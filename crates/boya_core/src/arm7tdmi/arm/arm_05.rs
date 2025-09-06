@@ -115,12 +115,12 @@ impl From<u8> for Opcode {
     }
 }
 
-impl<B: Bus> Executable<B> for Instruction {
+impl Executable for Instruction {
     fn condition(&self) -> Condition {
         self.cd
     }
 
-    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+    fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         if self.s && self.rd.reg().is_pc() {
             cpu.restore_cpsr();
         }

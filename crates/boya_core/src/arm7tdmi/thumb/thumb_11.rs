@@ -50,8 +50,8 @@ impl From<u8> for Opcode {
     }
 }
 
-impl<B: Bus> Executable<B> for Instruction {
-    fn dispatch(self, cpu: &mut Arm7tdmi<B>) -> Cycle {
+impl Executable for Instruction {
+    fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         let value = self.nn.into();
         let offset = RegisterOffset::new(value, AddrMode::IB, false);
         let sp = NamedRegister::SP as u8;
@@ -78,11 +78,8 @@ mod tests {
         AsmTestBuilder::new()
             .thumb()
             .asm(asm)
-            .setup(|cpu| {
-                cpu.set_reg(13_usize, 48);
-                cpu.bus.write_word(72, 9);
-            })
-            .assert_byte(60, 25)
+            .setup(|cpu| cpu.bus.write_word(SP_START + 24, 9))
+            .assert_byte(SP_START + 12, 25)
             .assert_reg(2, 9)
             .run(3);
     }
