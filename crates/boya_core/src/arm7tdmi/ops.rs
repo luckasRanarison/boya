@@ -224,12 +224,14 @@ impl Arm7tdmi {
         }
 
         let value = match kind {
+            DataType::HWord if signed => {
+                self.bus
+                    .read_hword(addr & !1)
+                    .cast_signed()
+                    .rotate_right((addr & 1) * 8) as i32 as u32
+            }
+
             DataType::Byte if signed => self.bus.read_byte(addr) as i8 as i32 as u32,
-            DataType::HWord if signed => self
-                .bus
-                .read_hword(addr & !1)
-                .cast_signed()
-                .rotate_right(addr & 1) as i32 as u32,
             DataType::Byte => self.bus.read_byte(addr).into(),
             DataType::HWord => self.bus.read_hword(addr & !1).rotate_right((addr & 1) * 8) as u32,
             DataType::Word => self.bus.read_word(addr & !3).rotate_right((addr & 3) * 8),
