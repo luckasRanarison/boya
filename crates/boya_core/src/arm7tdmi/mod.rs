@@ -51,10 +51,11 @@ impl Arm7tdmi {
     }
 
     pub fn step(&mut self) -> u8 {
+        let prev_mode = self.cpsr.thumb();
         let instruction = self.pipeline.take();
         let cycle = self.exec(instruction);
 
-        if self.pipeline.last_pc() != self.pc() {
+        if self.pipeline.last_pc() != self.pc() || prev_mode != self.cpsr.thumb() {
             self.align_pc();
             self.pipeline.flush();
         }
