@@ -301,6 +301,13 @@ impl Shift {
     }
 }
 
+#[derive(Debug)]
+pub enum CarryUpdate {
+    Unchanged,
+    Clear,
+    Bit(u32),
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct LongOperand {
     pub lo: u8,

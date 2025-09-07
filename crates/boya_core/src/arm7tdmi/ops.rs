@@ -24,9 +24,10 @@ impl Arm7tdmi {
         update: bool,
     ) -> Cycle {
         let cycle = self.get_variable_cycle(dst, &rhs);
+        let imm = rhs.is_imm();
         let rhs = self.get_operand(rhs);
 
-        let lhs = match lhs.is_pc() && self.cpsr.thumb() {
+        let lhs = match lhs.is_pc() && self.cpsr.thumb() && imm {
             false => self.get_operand(lhs),
             true => self.pc() & !2, // special case for thumb 12
         };
@@ -57,27 +58,33 @@ impl Arm7tdmi {
     #[inline(always)]
     pub fn shift_op(&mut self, dst: u8, lhs: u8, rhs: Operand, shift: ShiftKind) -> Cycle {
         let i = if rhs.kind == OperandKind::Reg { 1 } else { 0 };
+        let imm = rhs.is_imm();
         let lhs = self.get_reg(lhs);
         let rhs = self.get_operand(rhs) & 0xFF;
 
-        let (result, carry_bit) = match shift {
-            ShiftKind::LSL if rhs >= 32 => (0, 0),
-            ShiftKind::LSR if rhs >= 32 || rhs == 0 => (0, 31),
-            ShiftKind::ASR if rhs == 0 => (lhs.extended_asr(32), 31),
-            ShiftKind::ROR if rhs == 0 => (lhs, 0),
-            ShiftKind::LSL => (lhs.wrapping_shl(rhs), 32 - rhs),
-            ShiftKind::LSR => (lhs.wrapping_shr(rhs), rhs - 1),
-            ShiftKind::ASR => (lhs.extended_asr(rhs), rhs - 1),
-            ShiftKind::ROR => (lhs.rotate_right(rhs), rhs - 1),
+        let (result, carry) = match (shift, rhs) {
+            (ShiftKind::LSL, 0) if imm => (lhs, CarryUpdate::Unchanged),
+            (ShiftKind::LSR, 0) if imm => (0, CarryUpdate::Bit(31)),
+            (ShiftKind::ASR, 0) if imm => (lhs.extended_asr(31), CarryUpdate::Bit(31)),
+            (ShiftKind::LSL, 32) => (0, CarryUpdate::Bit(0)),
+            (ShiftKind::LSR, 32) => (0, CarryUpdate::Bit(31)),
+            (ShiftKind::ASR, 32) => (lhs.extended_asr(rhs), CarryUpdate::Bit(31)),
+            (ShiftKind::LSL, 33..) => (0, CarryUpdate::Clear),
+            (ShiftKind::LSR, 33..) => (0, CarryUpdate::Clear),
+            (ShiftKind::LSL, 1..) => (lhs.wrapping_shl(rhs), CarryUpdate::Bit(32 - rhs)),
+            (ShiftKind::LSR, 1..) => (lhs.wrapping_shr(rhs), CarryUpdate::Bit(rhs - 1)),
+            (ShiftKind::ASR, 1..) => (lhs.extended_asr(rhs), CarryUpdate::Bit(rhs - 1)),
+            (ShiftKind::ROR, 1..) => (lhs.rotate_right(rhs), CarryUpdate::Bit((rhs - 1) % 32)),
+            (_, 0) => (lhs, CarryUpdate::Unchanged),
         };
 
-        // println!("lhs: {lhs}, rhs: {rhs}, res: {result}");
-        // println!("{:?}", self.cpsr);
         self.cpsr.update_zn(result);
-        self.cpsr.update(
-            Psr::C,
-            rhs <= 32 && carry_bit < 32 && lhs.get(carry_bit) != 0,
-        );
+
+        match carry {
+            CarryUpdate::Clear => self.cpsr.update(Psr::C, false),
+            CarryUpdate::Bit(bit) => self.cpsr.update(Psr::C, lhs.has(bit)),
+            CarryUpdate::Unchanged => {}
+        }
 
         self.set_reg(dst, result);
 

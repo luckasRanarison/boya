@@ -23,6 +23,9 @@ jobs:
           sudo chmod +x fasmarm/fasmarm.x64
           sudo cp fasmarm/fasmarm.x64 /usr/local/bin/fasmarm
 
+      - name: Initialize submodules
+        run: git submodule update --init
+
       - name: Build
         run: cargo build --verbose
 

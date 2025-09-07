@@ -230,17 +230,16 @@ impl Arm7tdmi {
         };
 
         match (shift.kind, rhs) {
-            (ShiftKind::LSR, 0) => {
+            (ShiftKind::LSR, 0) if !shift.register => {
                 self.cpsr.update(Psr::C, lhs.has(31));
                 0 // lhs >> 32
             }
-            (ShiftKind::ASR, 0) => {
+            (ShiftKind::ASR, 0) if !shift.register => {
                 self.cpsr.update(Psr::C, lhs.has(31));
                 lhs.extended_asr(32)
             }
-            (ShiftKind::ROR, 0) => {
-                let lhs = (lhs & !1) | self.cpsr.has(Psr::C) as u32;
-                lhs.rotate_right(1)
+            (ShiftKind::ROR, 0) if !shift.register => {
+                lhs.rotate_right(1) | (self.cpsr.get(Psr::C) << 31)
             }
             (ShiftKind::LSL, _) => lhs.wrapping_shl(rhs),
             (ShiftKind::LSR, _) => lhs.wrapping_shr(rhs),

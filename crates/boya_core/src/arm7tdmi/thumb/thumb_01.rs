@@ -82,7 +82,7 @@ mod tests {
             .thumb()
             .asm(asm)
             .assert_reg(2, 8)
-            .assert_flag(Psr::C, true)
+            .assert_flag(Psr::C, false)
             .assert_flag(Psr::Z, false)
             .assert_flag(Psr::N, false)
             .run(2);

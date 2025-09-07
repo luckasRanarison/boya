@@ -130,11 +130,11 @@ mod tests {
             .thumb()
             .asm(asm)
             .assert_reg(0, 3)
-            .assert_flag(Psr::C, false)
+            .assert_flag(Psr::C, true)
             .assert_flag(Psr::Z, false)
             .assert_flag(Psr::N, false)
             .assert_flag(Psr::V, false)
-            .run(4);
+            .run(3);
     }
 
     #[test]

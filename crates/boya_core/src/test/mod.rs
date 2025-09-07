@@ -146,6 +146,7 @@ impl AsmTestBuilder {
         }
 
         while func(&cpu) {
+            // println!("{:?}", cpu.cpsr);
             println!(
                 "{:#08x}: {:?}",
                 cpu.pipeline.curr_pc,
