@@ -170,9 +170,6 @@ mod tests {
                 cpu.load_pipeline();
             })
             .assert_reg(TEST_REG, 0)
-            .assert_fn(|cpu| {
-                println!("r1: {}, r2: {}", cpu.get_reg(1_usize), cpu.get_reg(2_usize));
-            })
             .run_while(|cpu| cpu.pc() < TEST_END || cpu.reg[TEST_REG] == 0);
     }
 }

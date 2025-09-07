@@ -223,14 +223,16 @@ impl Arm7tdmi {
             self.set_reg(rn, addr);
         }
 
-        println!("load, raw {addr:x}, aligned: {:x}", addr & !3);
-
         let value = match kind {
             DataType::Byte if signed => self.bus.read_byte(addr) as i8 as i32 as u32,
-            DataType::HWord if signed => self.bus.read_hword(addr & !0b01) as i16 as i32 as u32,
+            DataType::HWord if signed => self
+                .bus
+                .read_hword(addr & !1)
+                .cast_signed()
+                .rotate_right(addr & 1) as i32 as u32,
             DataType::Byte => self.bus.read_byte(addr).into(),
-            DataType::HWord => self.bus.read_hword(addr & !0b01).into(),
-            DataType::Word => self.bus.read_word(addr & !0b11),
+            DataType::HWord => self.bus.read_hword(addr & !1).rotate_right((addr & 1) * 8) as u32,
+            DataType::Word => self.bus.read_word(addr & !3).rotate_right((addr & 3) * 8),
         };
 
         match offset.amod {
@@ -258,8 +260,6 @@ impl Arm7tdmi {
         if offset.wb {
             self.set_reg(rn, addr);
         }
-
-        println!("store, raw {addr:x}");
 
         match kind {
             DataType::Byte => self.bus.write_byte(addr, (value & 0xFF) as u8),
