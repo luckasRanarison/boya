@@ -237,6 +237,8 @@ impl Arm7tdmi {
             DataType::Word => self.bus.read_word(addr & !3).rotate_right((addr & 3) * 8),
         };
 
+        println!("addr: {addr}, hword: {}", self.bus.read_hword(addr));
+
         match offset.amod {
             AddrMode::IA => self.set_reg(rn, base.wrapping_add(offset.value)),
             AddrMode::DA => self.set_reg(rn, base.wrapping_sub(offset.value)),
