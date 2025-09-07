@@ -18,7 +18,10 @@ use crate::{
         isa::Instruction,
     },
     bus::{Bus, GbaBus},
-    utils::{bitflags::Bitflag, ops::ExtendedOps},
+    utils::{
+        bitflags::{BitIter, Bitflag},
+        ops::ExtendedOps,
+    },
 };
 
 pub struct Arm7tdmi {
@@ -51,11 +54,10 @@ impl Arm7tdmi {
     }
 
     pub fn step(&mut self) -> u8 {
-        let prev_mode = self.cpsr.thumb();
         let instruction = self.pipeline.take();
         let cycle = self.exec(instruction);
 
-        if self.pipeline.last_pc() != self.pc() || prev_mode != self.cpsr.thumb() {
+        if self.pipeline.last_pc() != self.pc() {
             self.align_pc();
             self.pipeline.flush();
         }
@@ -117,63 +119,53 @@ impl Arm7tdmi {
         if self.cpsr.thumb() { 2 } else { 4 }
     }
 
-    fn store_reg(
-        &mut self,
-        rs: usize,
-        rb: usize,
-        amod: AddrMode,
-        offset: &mut u32,
-        wb: bool,
-        usr: bool,
-    ) {
-        let value = if usr { self.reg[rs] } else { self.get_reg(rs) };
+    fn count_rlist<I: BitIter>(&self, rlist: I, rn: Option<usize>) -> u8 {
+        rlist.iter_lsb().filter(|(_, b)| *b == 1).count() as u8 + rn.is_some() as u8
+    }
 
-        if matches!(amod, AddrMode::IB | AddrMode::DB) {
-            self.update_offset(offset, amod);
-        }
+    fn get_lowest_address(&self, rb: usize, n: u8, amod: AddrMode) -> u32 {
+        let base = self.get_reg(rb);
 
-        self.bus.write_word(*offset, value);
-
-        if matches!(amod, AddrMode::IA | AddrMode::DA) {
-            self.update_offset(offset, amod);
-        }
-
-        if wb {
-            self.set_reg(rb, *offset);
+        match amod {
+            AddrMode::IA => base,
+            AddrMode::IB => base + 4,
+            AddrMode::DA => base - 4 * (n - 1) as u32,
+            AddrMode::DB => base - 4 * n as u32,
         }
     }
 
-    fn load_reg(
-        &mut self,
-        rd: usize,
-        rb: usize,
-        effect: AddrMode,
-        offset: &mut u32,
-        wb: bool,
-        usr: bool,
-    ) {
-        if matches!(effect, AddrMode::IB | AddrMode::DB) {
-            self.update_offset(offset, effect);
-        }
+    fn write_base_address(&mut self, rb: usize, n: u8, amod: AddrMode) {
+        let base = self.get_reg(rb);
 
-        let value = self.bus.read_word(*offset);
-
-        if matches!(effect, AddrMode::IA | AddrMode::DA) {
-            self.update_offset(offset, effect);
-        }
-
-        if usr {
-            self.reg[rd] = value
-        } else {
-            self.set_reg(rd, value)
+        let value = match amod {
+            AddrMode::IA | AddrMode::IB if n == 0 => base + 64,
+            AddrMode::DA | AddrMode::DB if n == 0 => base - 64,
+            AddrMode::IA | AddrMode::IB => base + 4 * n as u32,
+            AddrMode::DA | AddrMode::DB => base - 4 * n as u32,
         };
 
-        if wb {
-            self.set_reg(rb, *offset);
-        }
+        self.set_reg(rb, value);
     }
 
-    fn get_reg<I: Into<usize>>(&self, index: I) -> u32 {
+    fn store_reg(&mut self, rs: usize, addr: &mut u32, usr: bool) {
+        let value = if usr { self.reg[rs] } else { self.get_reg(rs) };
+
+        self.bus.write_word(*addr, value);
+        *addr += 4;
+    }
+
+    fn load_reg(&mut self, rd: usize, offset: &mut u32, usr: bool) {
+        let value = self.bus.read_word(*offset);
+        *offset += 4;
+
+        if usr {
+            self.reg[rd] = value;
+        } else {
+            self.set_reg(rd, value);
+        };
+    }
+
+    pub fn get_reg<I: Into<usize>>(&self, index: I) -> u32 {
         let index = index.into();
         let mode = self.cpsr.operating_mode();
 
@@ -194,13 +186,6 @@ impl Arm7tdmi {
     #[inline(always)]
     fn set_reg<I: Into<usize>>(&mut self, index: I, value: u32) {
         *self.get_reg_mut(index) = value;
-    }
-
-    fn update_offset(&mut self, offset: &mut u32, amod: AddrMode) {
-        match amod {
-            AddrMode::IB | AddrMode::IA => *offset += 4,
-            AddrMode::DB | AddrMode::DA => *offset -= 4,
-        }
     }
 
     fn get_base_operand(&self, operand: &Operand) -> u32 {

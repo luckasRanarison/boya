@@ -136,9 +136,15 @@ impl Arm7tdmi {
     #[inline(always)]
     pub fn bx_op(&mut self, rs: u8) -> Cycle {
         let value = self.get_reg(rs);
+        let prev_mode = self.cpsr.thumb();
 
         self.cpsr.update(Psr::T, value.has(0));
         self.set_pc(value);
+
+        if prev_mode != self.cpsr.thumb() {
+            self.align_pc();
+            self.pipeline.flush();
+        }
 
         Cycle { i: 0, s: 2, n: 1 }
     }
@@ -225,19 +231,13 @@ impl Arm7tdmi {
 
         let value = match kind {
             DataType::HWord if signed => {
-                self.bus
-                    .read_hword(addr & !1)
-                    .cast_signed()
-                    .rotate_right((addr & 1) * 8) as i32 as u32
+                (self.bus.read_hword(addr & !1) as i16 >> (addr & 1) * 8) as i32 as u32
             }
-
             DataType::Byte if signed => self.bus.read_byte(addr) as i8 as i32 as u32,
             DataType::Byte => self.bus.read_byte(addr).into(),
-            DataType::HWord => self.bus.read_hword(addr & !1).rotate_right((addr & 1) * 8) as u32,
+            DataType::HWord => (self.bus.read_hword(addr & !1) as u32).rotate_right((addr & 1) * 8),
             DataType::Word => self.bus.read_word(addr & !3).rotate_right((addr & 3) * 8),
         };
-
-        println!("addr: {addr}, hword: {}", self.bus.read_hword(addr));
 
         match offset.amod {
             AddrMode::IA => self.set_reg(rn, base.wrapping_add(offset.value)),
@@ -290,22 +290,46 @@ impl Arm7tdmi {
         wb: bool,
         usr: bool,
     ) -> Cycle {
-        let mut s = 0;
-        let mut offset = self.get_reg(rb);
+        let n = self.count_rlist(rlist, rn);
+        let low_addr = self.get_lowest_address(rb, n, amod);
+        let mut offset = low_addr;
+        let mut pre_write = false;
+
+        // https://github.com/jsmolka/gba-tests/issues/2
+        if n == 0 {
+            let base = self.get_reg(rb);
+            let offset = match amod {
+                AddrMode::DA => -0x3C,
+                AddrMode::DB => -0x40,
+                AddrMode::IA => 0x00,
+                AddrMode::IB => 0x04,
+            };
+            let addr = base.wrapping_add_signed(offset);
+            let pc = self.pipeline.curr_pc + self.instr_size() as u32 * 2; // FIXME: self.pc() ???
+
+            self.bus.write_word(addr, pc);
+        }
 
         for (idx, bit) in rlist.iter_lsb() {
             if bit == 1 {
-                self.store_reg(idx, rb, amod, &mut offset, wb, usr);
-                s += 1;
+                if idx == rb && low_addr != offset {
+                    self.write_base_address(rb, n, amod);
+                    pre_write = true;
+                }
+
+                self.store_reg(idx, &mut offset, usr);
             }
         }
 
         if let Some(rn) = rn {
-            self.store_reg(rn, rb, amod, &mut offset, wb, usr);
-            s += 1;
+            self.store_reg(rn, &mut offset, usr);
         }
 
-        Cycle { i: 1, s, n: 1 }
+        if wb && !pre_write {
+            self.write_base_address(rb, n, amod);
+        }
+
+        Cycle { i: 1, s: n, n: 1 }
     }
 
     #[inline(always)]
@@ -318,26 +342,31 @@ impl Arm7tdmi {
         wb: bool,
         usr: bool,
     ) -> Cycle {
-        let mut s = 0;
-        let mut offset = self.get_reg(rb);
+        let n = self.count_rlist(rlist, rn);
+        let s = n.saturating_sub(1);
+
+        // https://github.com/jsmolka/gba-tests/issues/12
+        if n == 0 {
+            self.set_pc(self.bus.read_word(self.get_reg(rb)));
+        }
+
+        let mut offset = self.get_lowest_address(rb, n, amod);
 
         for (idx, bit) in rlist.iter_lsb() {
             if bit == 1 {
-                self.load_reg(idx, rb, amod, &mut offset, wb, usr);
-                s += 1;
+                self.load_reg(idx, &mut offset, usr);
             }
         }
 
         if let Some(rn) = rn {
-            self.load_reg(rn, rb, amod, &mut offset, wb, usr);
-            s += 1;
+            self.load_reg(rn, &mut offset, usr);
         }
 
-        Cycle {
-            i: 0,
-            s: s - 1,
-            n: 2,
+        if wb {
+            self.write_base_address(rb, n, amod);
         }
+
+        Cycle { i: 0, s, n: 2 }
     }
 
     #[inline(always)]
