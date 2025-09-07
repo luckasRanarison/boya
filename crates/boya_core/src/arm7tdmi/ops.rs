@@ -208,7 +208,7 @@ impl Arm7tdmi {
         offset: RegisterOffset,
     ) -> Cycle {
         let (base, s, n) = match rn.reg().is_pc() {
-            true if self.cpsr.thumb() => (self.pc() & !2, 1, 1),
+            true if self.cpsr.thumb() => (self.pc() & !2, 1, 1), // thumb 6 special case
             true => (self.pc(), 2, 2),
             false => (self.get_reg(rn), 1, 1),
         };
@@ -225,10 +225,10 @@ impl Arm7tdmi {
 
         let value = match kind {
             DataType::Byte if signed => self.bus.read_byte(addr) as i8 as i32 as u32,
-            DataType::HWord if signed => self.bus.read_hword(addr) as i16 as i32 as u32,
+            DataType::HWord if signed => self.bus.read_hword(addr & !0b01) as i16 as i32 as u32,
             DataType::Byte => self.bus.read_byte(addr).into(),
-            DataType::HWord => self.bus.read_hword(addr).into(),
-            DataType::Word => self.bus.read_word(addr),
+            DataType::HWord => self.bus.read_hword(addr & !0b01).into(),
+            DataType::Word => self.bus.read_word(addr & !0b11),
         };
 
         match offset.amod {
