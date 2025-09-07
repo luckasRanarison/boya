@@ -207,8 +207,11 @@ impl Arm7tdmi {
         signed: bool,
         offset: RegisterOffset,
     ) -> Cycle {
-        let base = self.get_reg(rn);
-        let (s, n) = if rn.reg().is_pc() { (2, 2) } else { (1, 1) };
+        let (base, s, n) = match rn.reg().is_pc() {
+            true if self.cpsr.thumb() => (self.pc() & !2, 1, 1),
+            true => (self.pc(), 2, 2),
+            false => (self.get_reg(rn), 1, 1),
+        };
 
         let addr = match offset.amod {
             AddrMode::IB => base.wrapping_add(offset.value),
