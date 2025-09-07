@@ -17,7 +17,7 @@ use prelude::*;
 
 use crate::{
     arm7tdmi::{arm::ArmInstr, thumb::ThumbInstr},
-    utils::{bitflags::BitIter, ops::ExtendedOps},
+    utils::bitflags::BitIter,
 };
 
 pub enum Instruction {

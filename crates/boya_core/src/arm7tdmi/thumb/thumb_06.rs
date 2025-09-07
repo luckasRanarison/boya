@@ -44,7 +44,6 @@ mod tests {
     fn test_ldr_pc_offset() {
         let asm = r"
             ldr r1, [PC, #4]
-            nop
             dw  0x0000_0000
             dw  0x0000_0005
         ";

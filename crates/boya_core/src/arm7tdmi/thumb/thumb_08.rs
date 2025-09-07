@@ -41,6 +41,7 @@ impl From<u16> for Instruction {
 enum Opcode {
     STRH,
     LDSB,
+    LDRH,
     LDSH,
 }
 
@@ -49,7 +50,8 @@ impl From<u8> for Opcode {
         match value {
             0 => Self::STRH,
             1 => Self::LDSB,
-            2 | 3 => Self::LDSH,
+            2 => Self::LDRH,
+            3 => Self::LDSH,
             _ => unreachable!("invalid thumb 8 opcode: {value:b}"),
         }
     }
@@ -63,6 +65,7 @@ impl Executable for Instruction {
         match self.op {
             Opcode::STRH => cpu.strh(self.rd, self.rb, offset),
             Opcode::LDSB => cpu.ldsb(self.rd, self.rb, offset),
+            Opcode::LDRH => cpu.ldrh(self.rd, self.rb, offset),
             Opcode::LDSH => cpu.ldsh(self.rd, self.rb, offset),
         }
     }

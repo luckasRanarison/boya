@@ -101,7 +101,7 @@ where
     }
 }
 
-pub trait BitIter {
+pub trait BitIter: Copy {
     fn iter_lsb(self) -> impl Iterator<Item = (usize, u8)>;
     fn iter_msb(self) -> impl Iterator<Item = (usize, u8)>;
 }

@@ -169,7 +169,10 @@ mod tests {
                 cpu.pipeline.flush();
                 cpu.load_pipeline();
             })
-            .assert_reg(TEST_REG, 0)
-            .run_while(|cpu| cpu.pc() < TEST_END || cpu.reg[TEST_REG] == 0);
+            .assert_fn(|cpu| {
+                let test = cpu.get_reg(TEST_REG);
+                assert_eq!(test, 0, "test t{test} failed");
+            })
+            .run_while(|cpu| cpu.pc() < TEST_END);
     }
 }
