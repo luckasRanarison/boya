@@ -186,8 +186,8 @@ pub struct Operand {
 impl Debug for Operand {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let lhs = match self.kind {
-            OperandKind::Imm if self.negate => format!("-{:X}", self.value),
-            OperandKind::Imm => format!("{:#X}", self.value),
+            OperandKind::Imm if self.negate => format!("#-{}", self.value),
+            OperandKind::Imm => format!("#{}", self.value),
             OperandKind::Reg => format!("R{}", self.value),
         };
 

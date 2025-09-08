@@ -197,16 +197,20 @@ impl Arm7tdmi {
         }
     }
 
-    fn get_operand(&mut self, operand: Operand, update: bool) -> u32 {
+    fn get_operand_with_shift(&mut self, operand: Operand, update: bool) -> u32 {
         let value = match operand.shift.clone() {
-            Some(shift) => self.get_shited_operand(&operand, shift, update),
+            Some(shift) => self.apply_operand_shift(&operand, shift, update),
             None => self.get_base_operand(&operand),
         };
 
         if operand.negate { !value } else { value }
     }
 
-    fn get_shited_operand(&mut self, operand: &Operand, shift: Shift, update: bool) -> u32 {
+    fn get_operand(&mut self, operand: Operand) -> u32 {
+        self.get_operand_with_shift(operand, false)
+    }
+
+    fn apply_operand_shift(&mut self, operand: &Operand, shift: Shift, update: bool) -> u32 {
         let lhs = match operand.is_pc() && shift.register {
             true => self.pc() + 4,
             false => self.get_base_operand(operand),
