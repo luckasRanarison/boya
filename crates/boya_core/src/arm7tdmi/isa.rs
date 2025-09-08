@@ -15,10 +15,7 @@ use std::ops::{BitAnd, BitOr, BitXor};
 
 use prelude::*;
 
-use crate::{
-    arm7tdmi::{arm::ArmInstr, thumb::ThumbInstr},
-    utils::bitflags::BitIter,
-};
+use crate::arm7tdmi::{arm::ArmInstr, thumb::ThumbInstr};
 
 pub enum Instruction {
     Arm(ArmInstr),
@@ -197,20 +194,20 @@ impl Arm7tdmi {
 
     #[rustfmt::skip]
     pub fn push(&mut self, rlist: u8, lr: bool) -> Cycle {
-        self.stm_op(Self::SP, rlist, lr.then_some(Self::LR), AddrMode::DB, true, false)
+        self.stm_op(Self::SP, rlist as u16 | ((lr as u16) << 14), AddrMode::DB, true, false)
     }
 
     #[rustfmt::skip]
     pub fn pop(&mut self, rlist: u8, pc: bool) -> Cycle {
-        self.ldm_op(Self::SP, rlist, pc.then_some(Self::PC), AddrMode::IA, true, false)
+        self.ldm_op(Self::SP, rlist as u16 | ((pc as u16) << 15), AddrMode::IA, true, false)
     }
 
-    pub fn stm<I: BitIter>(&mut self, rl: I, rb: u8, amod: AddrMode, wb: bool, usr: bool) -> Cycle {
-        self.stm_op(rb.into(), rl, None, amod, wb, usr)
+    pub fn stm(&mut self, rl: u16, rb: u8, amod: AddrMode, wb: bool, usr: bool) -> Cycle {
+        self.stm_op(rb.into(), rl, amod, wb, usr)
     }
 
-    pub fn ldm<I: BitIter>(&mut self, rl: I, rb: u8, amod: AddrMode, wb: bool, usr: bool) -> Cycle {
-        self.ldm_op(rb.into(), rl, None, amod, wb, usr)
+    pub fn ldm(&mut self, rl: u16, rb: u8, amod: AddrMode, wb: bool, usr: bool) -> Cycle {
+        self.ldm_op(rb.into(), rl, amod, wb, usr)
     }
 
     pub fn beq(&mut self, offset: i16) -> Cycle {

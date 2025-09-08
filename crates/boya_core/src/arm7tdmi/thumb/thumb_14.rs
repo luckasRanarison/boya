@@ -19,7 +19,7 @@ impl Debug for Instruction {
             Opcode::POP => format_rlist(self.rlist, self.lrpc.then_some(NamedRegister::PC)),
         };
 
-        write!(f, "{:?} {{{rlist}}}", self.op)
+        write!(f, "{:?} {rlist}", self.op)
     }
 }
 

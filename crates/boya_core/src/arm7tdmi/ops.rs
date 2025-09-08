@@ -263,16 +263,8 @@ impl Arm7tdmi {
     }
 
     #[inline(always)]
-    pub fn stm_op<I: BitIter>(
-        &mut self,
-        rb: usize,
-        rlist: I,
-        rn: Option<usize>,
-        amod: AddrMode,
-        wb: bool,
-        usr: bool,
-    ) -> Cycle {
-        let n = self.count_rlist(rlist, rn);
+    pub fn stm_op(&mut self, rb: usize, rlist: u16, amod: AddrMode, wb: bool, usr: bool) -> Cycle {
+        let n = self.count_rlist(rlist);
         let low_addr = self.get_lowest_address(rb, n, amod);
         let mut offset = low_addr;
         let mut pre_write = false;
@@ -303,10 +295,6 @@ impl Arm7tdmi {
             }
         }
 
-        if let Some(rn) = rn {
-            self.store_reg(rn, &mut offset, usr);
-        }
-
         if wb && !pre_write {
             self.write_base_address(rb, n, amod);
         }
@@ -315,16 +303,8 @@ impl Arm7tdmi {
     }
 
     #[inline(always)]
-    pub fn ldm_op<I: BitIter>(
-        &mut self,
-        rb: usize,
-        rlist: I,
-        rn: Option<usize>,
-        amod: AddrMode,
-        wb: bool,
-        usr: bool,
-    ) -> Cycle {
-        let n = self.count_rlist(rlist, rn);
+    pub fn ldm_op(&mut self, rb: usize, rlist: u16, amod: AddrMode, wb: bool, usr: bool) -> Cycle {
+        let n = self.count_rlist(rlist);
         let s = n.saturating_sub(1);
         let mut skip_write = false;
 
@@ -343,10 +323,6 @@ impl Arm7tdmi {
 
                 self.load_reg(idx, &mut offset, usr);
             }
-        }
-
-        if let Some(rn) = rn {
-            self.load_reg(rn, &mut offset, usr);
         }
 
         if wb && !skip_write {

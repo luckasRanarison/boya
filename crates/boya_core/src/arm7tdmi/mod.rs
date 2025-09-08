@@ -116,8 +116,8 @@ impl Arm7tdmi {
         if self.cpsr.thumb() { 2 } else { 4 }
     }
 
-    fn count_rlist<I: BitIter>(&self, rlist: I, rn: Option<usize>) -> u8 {
-        rlist.iter_lsb().filter(|(_, b)| *b == 1).count() as u8 + rn.is_some() as u8
+    fn count_rlist(&self, rlist: u16) -> u8 {
+        rlist.iter_lsb().filter(|(_, bit)| *bit == 1).count() as u8
     }
 
     fn get_lowest_address(&self, rb: usize, n: u8, amod: AddrMode) -> u32 {
