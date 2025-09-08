@@ -24,13 +24,12 @@ impl Debug for Instruction {
         let rd = self.rd.reg();
         let rn = self.rn.reg();
 
-        if matches!(
-            self.op,
-            Opcode::TST | Opcode::TEQ | Opcode::CMP | Opcode::CMN | Opcode::MOV | Opcode::MVN
-        ) {
-            write!(f, "{op:?}{cd:?}{s} {rd:?}, {op2:?}")
-        } else {
-            write!(f, "{op:?}{cd:?}{s} {rd:?}, {rn:?}, {op2:?}")
+        match self.op {
+            Opcode::TST | Opcode::TEQ | Opcode::CMP | Opcode::CMN => {
+                write!(f, "{op:?}{cd:?}{s} {rn:?}, {op2:?}")
+            }
+            Opcode::MOV | Opcode::MVN => write!(f, "{op:?}{cd:?}{s} {rd:?}, {op2:?}"),
+            _ => write!(f, "{op:?}{cd:?}{s} {rd:?}, {rn:?}, {op2:?}"),
         }
     }
 }
@@ -44,10 +43,13 @@ impl From<u32> for Instruction {
         let rd = value.get_bits_u8(12, 15);
 
         let op2 = if value.has(25) {
-            let shift = value.get_bits(8, 11) << 1;
-            let nn = value.get_bits(0, 7);
+            let shift = value.get_bits_u8(8, 11) << 1;
+            let nn = value.get_bits(0, 7).imm();
 
-            nn.rotate_right(shift).imm()
+            match shift {
+                0 => nn,
+                _ => nn.shift(Shift::imm(shift, ShiftKind::ROR)),
+            }
         } else {
             let sk = ShiftKind::from(value.get_bits_u8(5, 6));
             let rm = value.get_bits_u8(0, 3).reg();
@@ -220,28 +222,26 @@ mod tests {
     fn test_special_lsr_shift() {
         let asm = r"
             MVN    R0, #0
-            MOV    R1, #8
-            ADD    R2, R1, R0, LSR #32 ; op2 = 0
+            MOVS   R1, R0, LSR #32 ; op2 = 0
         ";
 
         AsmTestBuilder::new()
             .asm(asm)
-            .assert_reg(2, 8)
+            .assert_reg(1, 0)
             .assert_flag(Psr::C, true)
-            .run(3);
+            .run(2);
     }
 
     #[test]
     fn test_special_asr_shift() {
         let asm = r"
             MVN    R0, #0
-            MOV    R1, #0
-            ADD    R2, R1, R0, ASR #32 ; op2 = 0xFFFF_FFFF
+            MOVS   R1, R0, ASR #32 ; op2 = 0xFFFF_FFFF
         ";
 
         AsmTestBuilder::new()
             .asm(asm)
-            .assert_reg(2, 0xFFFF_FFFF)
+            .assert_reg(1, 0xFFFF_FFFF)
             .assert_flag(Psr::C, true)
             .run(3);
     }

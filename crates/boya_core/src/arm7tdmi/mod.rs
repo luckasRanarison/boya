@@ -14,14 +14,11 @@ use psr::Psr;
 
 use crate::{
     arm7tdmi::{
-        common::{Cycle, Exception, Shift, ShiftKind},
+        common::{Cycle, Exception, NamedRegister, Shift},
         isa::Instruction,
     },
     bus::{Bus, GbaBus},
-    utils::{
-        bitflags::{BitIter, Bitflag},
-        ops::ExtendedOps,
-    },
+    utils::bitflags::BitIter,
 };
 
 pub struct Arm7tdmi {
@@ -129,7 +126,7 @@ impl Arm7tdmi {
         match amod {
             AddrMode::IA => base,
             AddrMode::IB => base + 4,
-            AddrMode::DA => base - 4 * (n - 1) as u32,
+            AddrMode::DA => base - 4 * n.saturating_sub(1) as u32,
             AddrMode::DB => base - 4 * n as u32,
         }
     }
@@ -148,7 +145,11 @@ impl Arm7tdmi {
     }
 
     fn store_reg(&mut self, rs: usize, addr: &mut u32, usr: bool) {
-        let value = if usr { self.reg[rs] } else { self.get_reg(rs) };
+        let value = match rs == NamedRegister::PC as usize {
+            true => self.pc() + 4, // arm 11
+            false if usr => self.reg[rs],
+            _ => self.get_reg(rs),
+        };
 
         self.bus.write_word(*addr, value);
         *addr += 4;
@@ -156,13 +157,14 @@ impl Arm7tdmi {
 
     fn load_reg(&mut self, rd: usize, offset: &mut u32, usr: bool) {
         let value = self.bus.read_word(*offset);
-        *offset += 4;
 
         if usr {
-            self.reg[rd] = value;
+            self.reg[rd] = value
         } else {
             self.set_reg(rd, value);
-        };
+        }
+
+        *offset += 4;
     }
 
     pub fn get_reg<I: Into<usize>>(&self, index: I) -> u32 {
@@ -195,16 +197,16 @@ impl Arm7tdmi {
         }
     }
 
-    fn get_operand(&mut self, operand: Operand) -> u32 {
+    fn get_operand(&mut self, operand: Operand, update: bool) -> u32 {
         let value = match operand.shift.clone() {
-            Some(shift) => self.apply_shift(&operand, shift),
+            Some(shift) => self.get_shited_operand(&operand, shift, update),
             None => self.get_base_operand(&operand),
         };
 
         if operand.negate { !value } else { value }
     }
 
-    fn apply_shift(&mut self, operand: &Operand, shift: Shift) -> u32 {
+    fn get_shited_operand(&mut self, operand: &Operand, shift: Shift, update: bool) -> u32 {
         let lhs = match operand.is_pc() && shift.register {
             true => self.pc() + 4,
             false => self.get_base_operand(operand),
@@ -215,23 +217,7 @@ impl Arm7tdmi {
             false => shift.value.into(),
         };
 
-        match (shift.kind, rhs) {
-            (ShiftKind::LSR, 0) if !shift.register => {
-                self.cpsr.update(Psr::C, lhs.has(31));
-                0 // lhs >> 32
-            }
-            (ShiftKind::ASR, 0) if !shift.register => {
-                self.cpsr.update(Psr::C, lhs.has(31));
-                lhs.extended_asr(32)
-            }
-            (ShiftKind::ROR, 0) if !shift.register => {
-                lhs.rotate_right(1) | (self.cpsr.get(Psr::C) << 31)
-            }
-            (ShiftKind::LSL, _) => lhs.wrapping_shl(rhs),
-            (ShiftKind::LSR, _) => lhs.wrapping_shr(rhs),
-            (ShiftKind::ASR, _) => lhs.extended_asr(rhs),
-            (ShiftKind::ROR, _) => lhs.rotate_right(rhs),
-        }
+        self.apply_shift(lhs, rhs, shift.kind, !shift.register, update)
     }
 
     fn restore_cpsr(&mut self) {

@@ -81,7 +81,7 @@ mod tests {
             mov r0, #3
             mov r1, #2
             lsl r1, r1, #24 ; 0x0200_0000
-            mov r2, #6
+            mov r2, #8
             str r0, [r1, r2]
             ldr r3, [r1, r2]
         ";
@@ -89,7 +89,7 @@ mod tests {
         AsmTestBuilder::new()
             .thumb()
             .asm(asm)
-            .assert_word(0x0200_0006, 3)
+            .assert_word(0x0200_0008, 3)
             .assert_reg(3, 3)
             .run(6);
     }

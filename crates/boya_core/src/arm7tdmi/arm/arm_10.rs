@@ -38,7 +38,7 @@ impl From<u32> for Instruction {
         let cd = value.get_bits_u8(28, 31).into();
         let p = value.get_u8(24);
         let u = value.get_u8(23);
-        let wb = value.has(22) || p == 0;
+        let wb = value.has(21) || p == 0;
         let rn = value.get_bits_u8(16, 19);
         let rd = value.get_bits_u8(12, 15);
         let op = value.into();
@@ -87,7 +87,7 @@ impl Executable for Instruction {
     }
 
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
-        let value = cpu.get_operand(self.of);
+        let value = cpu.get_operand(self.of, false);
         let offset = RegisterOffset::new(value, self.amod, self.wb);
 
         match self.op {

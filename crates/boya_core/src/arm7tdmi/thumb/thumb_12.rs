@@ -7,28 +7,22 @@ use crate::arm7tdmi::isa::prelude::*;
 /// |  1 |  0 |  1 |  0 | Op |      Rd      |                Offset8                |
 /// +-------------------------------------------------------------------------------+
 pub struct Instruction {
-    rs: Operand,
+    rs: NamedRegister,
     nn: u16, // 0-1020, steps 4
     rd: u8,
 }
 
 impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "ADD {:?}, {:?}, {:?}",
-            self.rd.reg(),
-            self.rs,
-            self.nn.imm()
-        )
+        write!(f, "ADD {:?}, {:?}, {:?}", self.rd, self.rs, self.nn.imm())
     }
 }
 
 impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         let rs = match value.get(11) {
-            0 => Operand::pc(),
-            _ => Operand::sp(),
+            0 => NamedRegister::PC,
+            _ => NamedRegister::SP,
         };
 
         let rd = value.get_bits_u8(8, 10);
@@ -40,7 +34,7 @@ impl From<u16> for Instruction {
 
 impl Executable for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
-        cpu.add(self.rd, self.rs.value as u8, self.nn.imm(), false)
+        cpu.add(self.rd, self.rs as u8, self.nn.imm(), false)
     }
 }
 

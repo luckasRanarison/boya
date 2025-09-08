@@ -76,7 +76,7 @@ impl Bus for GbaBus {
             0x0700_0000..=0x0700_03FF => 0x0, // OAM
             0x0800_0000..=0x0DFF_FFFF => self.read_rom(address),
             0x0E00_0000..=0x0E00_FFFF => self.sram[address - 0x0E00_0000],
-            _ => panic!("invalid read address: {address:#010X}"),
+            _ => 0x0, // open bus
         }
     }
 

@@ -32,5 +32,5 @@ jobs:
       - name: Test
         run: cargo test --workspace --lib --verbose
 
-      # - name: Lint
-      #   run: cargo clippy -- -D warnings
+      - name: Lint
+        run: cargo clippy -- -D warnings

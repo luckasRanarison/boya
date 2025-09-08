@@ -99,7 +99,6 @@ mod tests {
 
     #[test]
     fn test_block_data_transfer() {
-        // TODO: Cover edge cases
         let asm = r"
             MOV     R0, #1 ; 0
             MOV     R1, #2 ; 4
@@ -110,7 +109,7 @@ mod tests {
             .asm(asm)
             .assert_word(SP_START, 1)
             .assert_word(SP_START + 4, 2)
-            .assert_word(SP_START + 8, ARM_MAIN_START + 16)
+            .assert_word(SP_START + 8, ARM_MAIN_START + 20) // 8 + 12
             .assert_reg(13, SP_START + 12)
             .run(3)
     }

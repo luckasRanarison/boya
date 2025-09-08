@@ -90,7 +90,7 @@ impl Executable for Instruction {
     }
 
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
-        let value = cpu.get_operand(self.of);
+        let value = cpu.get_operand(self.of, false);
         let offset = RegisterOffset::new(value, self.amod, self.wb);
 
         match self.op {

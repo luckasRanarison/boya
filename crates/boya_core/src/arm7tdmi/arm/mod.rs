@@ -70,10 +70,10 @@ impl Arm7tdmi {
             [1, 0, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Arm04(word.into()),
             [1, 0, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Arm11(word.into()),
             [0, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Arm09(word.into()),
+            [0, 0, 0, 0, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, 1, 0, 0, 1] => ArmInstr::Arm08(word.into()),
             [0, 0, 0, _, _, _, _, 0, _, _, _, _, _, _, _, _, _, _, _, _, 1, 0, 1, 1] |
             [0, 0, 0, _, _, _, _, 1, _, _, _, _, _, _, _, _, _, _, _, _, 1, _, _, 1] => ArmInstr::Arm10(word.into()),
             [0, 0, 0, 1, 0, _, 0, 0, _, _, _, _, _, _, _, _, 0, 0, 0, 0, 1, 0, 0, 1] => ArmInstr::Arm12(word.into()),
-            [0, 0, 0, 0, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, 1, 0, 0, 1] => ArmInstr::Arm08(word.into()),
             [0, 0, 0, 0, 0, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, 1, 0, 0, 1] => ArmInstr::Arm07(word.into()),
             [0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1] => ArmInstr::Arm03(word.into()),
             [0, 0, _, 1, 0, _, _, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Arm06(word.into()),
@@ -97,5 +97,32 @@ impl Arm7tdmi {
             ArmInstr::Arm13(op) => op.dispatch_checked(self),
             ArmInstr::Undefined(_) => self.handle_exception(Exception::Undefined),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const TEST_REG: usize = 12;
+    const TEST_START: u32 = 0x0800_00F4;
+    const TEST_END: u32 = 0x0800_1D4C;
+
+    const TEST_FILE: &[u8] = include_bytes!("../../../../../submodules/gba-tests/arm/arm.gba");
+
+    #[test]
+    fn test_arm_suite() {
+        AsmTestBuilder::new()
+            .bytes(TEST_FILE)
+            .setup(|cpu| {
+                cpu.set_pc(TEST_START);
+                cpu.pipeline.flush();
+                cpu.load_pipeline();
+            })
+            .assert_fn(|cpu| {
+                let test = cpu.get_reg(TEST_REG);
+                assert_eq!(test, 0, "test t{test} failed");
+            })
+            .run_while(|cpu| cpu.pc() <= TEST_END);
     }
 }

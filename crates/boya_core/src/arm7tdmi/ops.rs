@@ -24,12 +24,12 @@ impl Arm7tdmi {
         update: bool,
     ) -> Cycle {
         let cycle = self.get_variable_cycle(dst, &rhs);
-        let imm = rhs.is_imm();
-        let rhs = self.get_operand(rhs);
+        let reg_shift = rhs.shift.as_ref().filter(|s| s.register).is_some();
 
-        let lhs = match lhs.is_pc() && self.cpsr.thumb() && imm {
-            false => self.get_operand(lhs),
-            true => self.pc() & !2, // special case for thumb 12
+        let lhs = match lhs.is_pc() {
+            true if self.cpsr.thumb() && rhs.is_imm() => self.pc() & !2, // thumb 12
+            true if !self.cpsr.thumb() && reg_shift => self.pc() + 4,    // arm 5
+            _ => self.get_operand(lhs, update),
         };
 
         let carry = match carry {
@@ -38,6 +38,7 @@ impl Arm7tdmi {
             Carry::Flag => self.cpsr.get(Psr::C),
         };
 
+        let rhs = self.get_operand(rhs, false);
         let (res1, ov1) = lhs.overflowing_add(rhs);
         let (res2, ov2) = res1.overflowing_add(carry);
         let overflow = ((res2 ^ lhs) & (res2 ^ rhs)).has(31);
@@ -60,32 +61,10 @@ impl Arm7tdmi {
         let i = if rhs.kind == OperandKind::Reg { 1 } else { 0 };
         let imm = rhs.is_imm();
         let lhs = self.get_reg(lhs);
-        let rhs = self.get_operand(rhs) & 0xFF;
-
-        let (result, carry) = match (shift, rhs) {
-            (ShiftKind::LSL, 0) if imm => (lhs, CarryUpdate::Unchanged),
-            (ShiftKind::LSR, 0) if imm => (0, CarryUpdate::Bit(31)),
-            (ShiftKind::ASR, 0) if imm => (lhs.extended_asr(31), CarryUpdate::Bit(31)),
-            (ShiftKind::LSL, 32) => (0, CarryUpdate::Bit(0)),
-            (ShiftKind::LSR, 32) => (0, CarryUpdate::Bit(31)),
-            (ShiftKind::ASR, 32) => (lhs.extended_asr(rhs), CarryUpdate::Bit(31)),
-            (ShiftKind::LSL, 33..) => (0, CarryUpdate::Clear),
-            (ShiftKind::LSR, 33..) => (0, CarryUpdate::Clear),
-            (ShiftKind::LSL, 1..) => (lhs.wrapping_shl(rhs), CarryUpdate::Bit(32 - rhs)),
-            (ShiftKind::LSR, 1..) => (lhs.wrapping_shr(rhs), CarryUpdate::Bit(rhs - 1)),
-            (ShiftKind::ASR, 1..) => (lhs.extended_asr(rhs), CarryUpdate::Bit(rhs - 1)),
-            (ShiftKind::ROR, 1..) => (lhs.rotate_right(rhs), CarryUpdate::Bit((rhs - 1) % 32)),
-            (_, 0) => (lhs, CarryUpdate::Unchanged),
-        };
+        let rhs = self.get_operand(rhs, false) & 0xFF;
+        let result = self.apply_shift(lhs, rhs, shift, imm, true);
 
         self.cpsr.update_zn(result);
-
-        match carry {
-            CarryUpdate::Clear => self.cpsr.update(Psr::C, false),
-            CarryUpdate::Bit(bit) => self.cpsr.update(Psr::C, lhs.has(bit)),
-            CarryUpdate::Unchanged => {}
-        }
-
         self.set_reg(dst, result);
 
         Cycle { i, s: 1, n: 0 }
@@ -105,7 +84,7 @@ impl Arm7tdmi {
     {
         let cycle = self.get_variable_cycle(dst, &rhs);
         let lhs = self.get_reg(lhs);
-        let rhs = self.get_operand(rhs);
+        let rhs = self.get_operand(rhs, update);
         let result = func(lhs, rhs);
 
         if update {
@@ -122,7 +101,7 @@ impl Arm7tdmi {
     #[inline(always)]
     pub fn mov_op(&mut self, rd: u8, operand: Operand, update: bool) -> Cycle {
         let cycle = self.get_variable_cycle(rd.into(), &operand);
-        let value = self.get_operand(operand);
+        let value = self.get_operand(operand, update);
 
         if update {
             self.cpsr.update_zn(value);
@@ -214,7 +193,7 @@ impl Arm7tdmi {
         offset: RegisterOffset,
     ) -> Cycle {
         let (base, s, n) = match rn.reg().is_pc() {
-            true if self.cpsr.thumb() => (self.pc() & !2, 1, 1), // thumb 6 special case
+            true if self.cpsr.thumb() => (self.pc() & !2, 1, 1), // thumb 6
             true => (self.pc(), 2, 2),
             false => (self.get_reg(rn), 1, 1),
         };
@@ -231,7 +210,7 @@ impl Arm7tdmi {
 
         let value = match kind {
             DataType::HWord if signed => {
-                (self.bus.read_hword(addr & !1) as i16 >> (addr & 1) * 8) as i32 as u32
+                (self.bus.read_hword(addr & !1) as i16 >> ((addr & 1) * 8)) as i32 as u32
             }
             DataType::Byte if signed => self.bus.read_byte(addr) as i8 as i32 as u32,
             DataType::Byte => self.bus.read_byte(addr).into(),
@@ -253,7 +232,11 @@ impl Arm7tdmi {
     #[inline(always)]
     pub fn str_op(&mut self, rs: u8, rn: u8, kind: DataType, offset: RegisterOffset) -> Cycle {
         let base = self.get_reg(rn);
-        let value = self.get_reg(rs);
+
+        let value = match rs.reg().is_pc() {
+            true if !self.cpsr.thumb() => self.pc() + 4, // arm 10
+            _ => self.get_reg(rs),
+        };
 
         let addr = match offset.amod {
             AddrMode::IB => base.wrapping_add(offset.value),
@@ -267,8 +250,8 @@ impl Arm7tdmi {
 
         match kind {
             DataType::Byte => self.bus.write_byte(addr, (value & 0xFF) as u8),
-            DataType::HWord => self.bus.write_hword(addr, (value & 0xFFFF) as u16),
-            DataType::Word => self.bus.write_word(addr, value),
+            DataType::HWord => self.bus.write_hword(addr & !1, (value & 0xFFFF) as u16),
+            DataType::Word => self.bus.write_word(addr & !3, value),
         }
 
         match offset.amod {
@@ -344,6 +327,7 @@ impl Arm7tdmi {
     ) -> Cycle {
         let n = self.count_rlist(rlist, rn);
         let s = n.saturating_sub(1);
+        let mut skip_write = false;
 
         // https://github.com/jsmolka/gba-tests/issues/12
         if n == 0 {
@@ -354,6 +338,10 @@ impl Arm7tdmi {
 
         for (idx, bit) in rlist.iter_lsb() {
             if bit == 1 {
+                if idx == rb {
+                    skip_write = true;
+                }
+
                 self.load_reg(idx, &mut offset, usr);
             }
         }
@@ -362,7 +350,7 @@ impl Arm7tdmi {
             self.load_reg(rn, &mut offset, usr);
         }
 
-        if wb {
+        if wb && !skip_write {
             self.write_base_address(rb, n, amod);
         }
 
@@ -444,7 +432,7 @@ impl Arm7tdmi {
 
     #[inline(always)]
     pub fn update_psr_op(&mut self, op: Operand, mask: u32, kind: PsrKind) -> Cycle {
-        let value = self.get_operand(op) & mask;
+        let value = self.get_operand(op, false) & mask;
         let op_mode = self.cpsr.operating_mode();
 
         match kind {
@@ -463,11 +451,53 @@ impl Arm7tdmi {
             self.set_reg(rd, self.bus.read_byte(addr).into());
             self.bus.write_byte(addr, self.get_reg(rm) as u8);
         } else {
-            self.set_reg(rd, self.bus.read_word(addr));
-            self.bus.write_word(addr, self.get_reg(rm));
+            let value = self.bus.read_word(addr & !3);
+
+            self.bus.write_word(addr & !3, self.get_reg(rm));
+            self.set_reg(rd, value.rotate_right((addr & 3) * 8));
         }
 
         Cycle { i: 1, s: 1, n: 2 }
+    }
+
+    pub fn apply_shift(
+        &mut self,
+        lhs: u32,
+        rhs: u32,
+        shift: ShiftKind,
+        imm: bool,
+        update: bool,
+    ) -> u32 {
+        let (result, carry) = match (shift, rhs) {
+            (ShiftKind::LSL, 33..) if update => (0, CarryUpdate::Clear),
+            (ShiftKind::LSR, 33..) if update => (0, CarryUpdate::Clear),
+
+            (ShiftKind::LSL, 32) => (0, CarryUpdate::Bit(0)),
+            (ShiftKind::LSR, 32) => (0, CarryUpdate::Bit(31)),
+            (ShiftKind::ASR, 32) => (lhs.extended_asr(rhs), CarryUpdate::Bit(31)),
+            (ShiftKind::LSL, 1..) => (lhs.wrapping_shl(rhs), CarryUpdate::Bit(32 - (rhs & 31))),
+            (ShiftKind::LSR, 1..) => (lhs.wrapping_shr(rhs), CarryUpdate::Bit(rhs - 1)),
+            (ShiftKind::ASR, 1..) => (lhs.extended_asr(rhs), CarryUpdate::Bit(rhs - 1)),
+            (ShiftKind::ROR, 1..) => (lhs.rotate_right(rhs), CarryUpdate::Bit(rhs - 1)),
+
+            (ShiftKind::LSL, 0) if imm => (lhs, CarryUpdate::Unchanged),
+            (ShiftKind::LSR, 0) if imm => (0, CarryUpdate::Bit(31)),
+            (ShiftKind::ASR, 0) if imm => (lhs.extended_asr(31), CarryUpdate::Bit(31)),
+            (ShiftKind::ROR, 0) if imm => (
+                (self.cpsr.get(Psr::C) << 31) | (lhs >> 1),
+                CarryUpdate::Bit(0),
+            ),
+
+            (_, 0) => (lhs, CarryUpdate::Unchanged),
+        };
+
+        match carry {
+            CarryUpdate::Clear if update => self.cpsr.update(Psr::C, false),
+            CarryUpdate::Bit(bit) if update => self.cpsr.update(Psr::C, lhs.has(bit & 31)),
+            _ => {}
+        }
+
+        result
     }
 
     fn get_variable_cycle(&self, dst: Option<u8>, operand: &Operand) -> Cycle {

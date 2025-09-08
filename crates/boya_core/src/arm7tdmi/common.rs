@@ -17,6 +17,7 @@ pub enum NamedRegister {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[allow(unused)]
 pub enum MemoryAccess {
     Seq,
     NonSeq,
@@ -185,10 +186,8 @@ pub struct Operand {
 impl Debug for Operand {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let lhs = match self.kind {
-            OperandKind::SP => "SP".to_string(),
-            OperandKind::PC => "PC".to_string(),
-            OperandKind::Imm if self.negate => format!("#-{}", self.value),
-            OperandKind::Imm => format!("#{}", self.value),
+            OperandKind::Imm if self.negate => format!("-{:X}", self.value),
+            OperandKind::Imm => format!("{:#X}", self.value),
             OperandKind::Reg => format!("R{}", self.value),
         };
 
@@ -217,26 +216,8 @@ impl Operand {
         self
     }
 
-    pub fn pc() -> Self {
-        Operand {
-            kind: OperandKind::PC,
-            value: 15,
-            negate: false,
-            shift: None,
-        }
-    }
-
-    pub fn sp() -> Self {
-        Operand {
-            kind: OperandKind::SP,
-            value: 13,
-            negate: false,
-            shift: None,
-        }
-    }
-
     pub fn is_pc(&self) -> bool {
-        matches!(self.kind, OperandKind::PC | OperandKind::Reg if self.value == 15)
+        matches!(self.kind,  OperandKind::Reg if self.value == 15)
     }
 
     pub fn is_imm(&self) -> bool {
@@ -250,8 +231,6 @@ impl Operand {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OperandKind {
-    SP,
-    PC,
     Imm,
     Reg,
 }
