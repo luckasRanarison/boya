@@ -1,6 +1,7 @@
 use crate::{
     arm7tdmi::{common::*, psr::PsrKind},
     bus::Bus,
+    common::types::DataType,
     utils::{
         bitflags::{BitIter, Bitflag},
         ops::ExtendedOps,
@@ -9,7 +10,7 @@ use crate::{
 
 use super::{
     Arm7tdmi,
-    common::{AddrMode, Carry, DataType, Operand},
+    common::{AddrMode, Carry, Operand},
     psr::Psr,
 };
 
@@ -25,10 +26,11 @@ impl Arm7tdmi {
     ) -> Cycle {
         let cycle = self.get_variable_cycle(dst, &rhs);
         let reg_shift = rhs.shift.as_ref().filter(|s| s.register).is_some();
+        let thumb = self.cpsr.thumb();
 
         let lhs = match lhs.is_pc() {
-            true if self.cpsr.thumb() && rhs.is_imm() => self.pc() & !2, // thumb 12
-            true if !self.cpsr.thumb() && reg_shift => self.pc() + 4,    // arm 5
+            true if !thumb && reg_shift => self.pc() + 4, // arm 5
+            true if thumb && rhs.is_imm() => self.pc() & !2, // thumb 12
             _ => self.get_operand_with_shift(lhs, update),
         };
 
@@ -271,13 +273,14 @@ impl Arm7tdmi {
 
         // https://github.com/jsmolka/gba-tests/issues/2
         if n == 0 {
-            let base = self.get_reg(rb);
             let offset = match amod {
                 AddrMode::DA => -0x3C,
                 AddrMode::DB => -0x40,
                 AddrMode::IA => 0x00,
                 AddrMode::IB => 0x04,
             };
+
+            let base = self.get_reg(rb);
             let addr = base.wrapping_add_signed(offset);
             let pc = self.pipeline.curr_pc + self.instr_size() as u32 * 2; // FIXME: self.pc() ???
 
@@ -310,7 +313,10 @@ impl Arm7tdmi {
 
         // https://github.com/jsmolka/gba-tests/issues/12
         if n == 0 {
-            self.set_pc(self.bus.read_word(self.get_reg(rb)));
+            let addr = self.get_reg(rb);
+            let value = self.bus.read_word(addr);
+
+            self.set_pc(value);
         }
 
         let mut offset = self.get_lowest_address(rb, n, amod);
@@ -423,7 +429,8 @@ impl Arm7tdmi {
         let addr = self.get_reg(rn);
 
         if byte {
-            self.set_reg(rd, self.bus.read_byte(addr).into());
+            let byte = self.bus.read_byte(addr).into();
+            self.set_reg(rd, byte);
             self.bus.write_byte(addr, self.get_reg(rm) as u8);
         } else {
             let value = self.bus.read_word(addr & !3);

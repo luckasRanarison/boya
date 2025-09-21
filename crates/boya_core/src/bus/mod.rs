@@ -1,6 +1,9 @@
 mod register;
 
-use crate::bus::register::SystemControl;
+use crate::{
+    bus::register::SystemControl,
+    common::types::{DataType, MemoryAccess},
+};
 
 pub const BIOS_SIZE: usize = 0x04000;
 pub const IWRAM_SIZE: usize = 0x08000;
@@ -14,6 +17,7 @@ pub struct GbaBus {
     rom: Vec<u8>,
     sram: [u8; SRAM_SIZE],
     sys_ctrl: SystemControl,
+    last_addr: usize,
 }
 
 impl Default for GbaBus {
@@ -25,6 +29,7 @@ impl Default for GbaBus {
             rom: Vec::new(),
             sram: [0; SRAM_SIZE],
             sys_ctrl: SystemControl::default(),
+            last_addr: 0,
         }
     }
 }
@@ -60,11 +65,28 @@ impl GbaBus {
             _ => panic!("invalid I/O register write address: {address:#010X}"),
         }
     }
+
+    fn get_rw_cycle(&self, address: u32, dt: DataType, access: MemoryAccess) -> u8 {
+        match (address, dt, access) {
+            (0x0000_0000..=0x0000_3FFF, _, _) => 1, // BIOS
+            (0x0200_0000..=0x0203_FFFF, _, _) => 0, // EWRAM
+            (0x0300_0000..=0x0300_7FFF, _, _) => 1, // IWRAM
+            (0x0400_0000..=0x0400_03FE, _, _) => 1, // IO registers
+            (0x0500_0000..=0x0500_03FF, _, _) => 0, // BG/OBJ Palette RAM
+            (0x0600_0000..=0x0617_FFFF, _, _) => 0, // VRAM
+            (0x0700_0000..=0x0700_03FF, _, _) => 1, // OAM, FIXME: +1 extra cycle when rendering
+            (0x0800_0000..=0x0DFF_FFFF, _, _) => 0, // Gamepak ROM
+            (0x0E00_0000..=0x0E00_FFFF, _, _) => 0, // Gamepak SRAM
+            _ => 1,
+        }
+    }
 }
 
 impl Bus for GbaBus {
-    fn read_byte(&self, address: u32) -> u8 {
+    fn read_byte(&mut self, address: u32) -> u8 {
         let address = address as usize;
+
+        self.last_addr = address;
 
         match address {
             0x0000_0000..=0x0000_3FFF => self.bios[address],
@@ -83,6 +105,8 @@ impl Bus for GbaBus {
     fn write_byte(&mut self, address: u32, value: u8) {
         let address = address as usize;
 
+        self.last_addr = address;
+
         match address {
             0x0200_0000..=0x0203_FFFF => self.ewram[address - 0x0200_0000] = value,
             0x0300_0000..=0x0300_7FFF => self.iwram[address - 0x0300_0000] = value,
@@ -97,10 +121,10 @@ impl Bus for GbaBus {
 }
 
 pub trait Bus {
-    fn read_byte(&self, address: u32) -> u8;
+    fn read_byte(&mut self, address: u32) -> u8;
     fn write_byte(&mut self, address: u32, value: u8);
 
-    fn read_hword(&self, address: u32) -> u16 {
+    fn read_hword(&mut self, address: u32) -> u16 {
         let b1 = self.read_byte(address);
         let b2 = self.read_byte(address + 1);
         u16::from_le_bytes([b1, b2])
@@ -112,7 +136,7 @@ pub trait Bus {
         self.write_byte(address + 1, b2);
     }
 
-    fn read_word(&self, address: u32) -> u32 {
+    fn read_word(&mut self, address: u32) -> u32 {
         let b1 = self.read_byte(address);
         let b2 = self.read_byte(address + 1);
         let b3 = self.read_byte(address + 2);

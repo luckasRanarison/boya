@@ -12,6 +12,8 @@ use common::{AddrMode, Operand, OperandKind};
 use pipeline::Pipeline;
 use psr::Psr;
 
+#[cfg(test)]
+use crate::common::types::DataType;
 use crate::{
     arm7tdmi::{
         common::{Cycle, Exception, NamedRegister, Shift},
@@ -239,12 +241,12 @@ impl Arm7tdmi {
         *self.get_reg_mut(Self::SP) = value;
     }
 
-    pub fn assert_mem(&self, assertions: Vec<(u32, u32, common::DataType)>) {
+    pub fn assert_mem(&mut self, assertions: Vec<(u32, u32, DataType)>) {
         for (address, expected, data_type) in assertions {
             let value = match data_type {
-                common::DataType::Byte => self.bus.read_byte(address).into(),
-                common::DataType::HWord => self.bus.read_hword(address).into(),
-                common::DataType::Word => self.bus.read_word(address),
+                DataType::Byte => self.bus.read_byte(address).into(),
+                DataType::HWord => self.bus.read_hword(address).into(),
+                DataType::Word => self.bus.read_word(address),
             };
 
             assert_eq!(
@@ -284,5 +286,5 @@ impl Arm7tdmi {
 pub mod test {
     use super::*;
 
-    pub use common::{DataType, OperatingMode};
+    pub use common::OperatingMode;
 }

@@ -2,8 +2,9 @@ mod asm;
 use asm::{format_bin_bytes, format_hex_bytes};
 
 use crate::{
-    arm7tdmi::{Arm7tdmi, test::DataType},
+    arm7tdmi::Arm7tdmi,
     bus::{BIOS_SIZE, GbaBus},
+    common::types::DataType,
     test::asm::FAKE_BIOS,
 };
 

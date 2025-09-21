@@ -1,3 +1,16 @@
+#[derive(Debug)]
+pub enum DataType {
+    Byte,
+    HWord,
+    Word,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum MemoryAccess {
+    Seq,
+    NonSeq,
+}
+
 pub trait Register {
     fn read(&self, address: usize) -> u8;
     fn write(&mut self, address: usize, value: u8);
