@@ -377,12 +377,13 @@ impl Arm7tdmi {
         let irq = exception.disable_irq() || self.cpsr.has(Psr::I);
         let fiq = exception.disable_fiq() || self.cpsr.has(Psr::F);
 
+        self.cpsr.set_operating_mode(op_mode);
+        self.bank.set_spsr(op_mode, self.cpsr);
+
         if let Some(next_addr) = self.next_instr_addr() {
             self.set_reg(Self::LR, next_addr);
         }
 
-        self.bank.set_spsr(op_mode, self.cpsr);
-        self.cpsr.set_operating_mode(op_mode);
         self.cpsr.update(Psr::T, false);
         self.cpsr.update(Psr::I, irq);
         self.cpsr.update(Psr::F, fiq);
