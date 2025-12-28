@@ -1,11 +1,11 @@
 pub mod register;
 
-use crate::bus::register::IORegister;
+use crate::{bus::register::IORegister, ppu::Ppu};
 
-pub const BIOS_SIZE: usize = 0x04000;
-pub const IWRAM_SIZE: usize = 0x08000;
-pub const EWRAM_SIZE: usize = 0x40000;
-pub const SRAM_SIZE: usize = 0x10000;
+pub const BIOS_SIZE: usize = 0x04000; // 16kb
+pub const IWRAM_SIZE: usize = 0x08000; // 32kb
+pub const EWRAM_SIZE: usize = 0x40000; // 256kb
+pub const SRAM_SIZE: usize = 0x10000; // 512kb
 
 pub struct GbaBus {
     bios: [u8; BIOS_SIZE],
@@ -14,6 +14,7 @@ pub struct GbaBus {
     rom: Vec<u8>,
     sram: [u8; SRAM_SIZE],
     registers: IORegister,
+    ppu: Ppu,
 }
 
 impl Default for GbaBus {
@@ -25,6 +26,7 @@ impl Default for GbaBus {
             rom: Vec::new(),
             sram: [0; SRAM_SIZE],
             registers: IORegister::default(),
+            ppu: Ppu::default(),
         }
     }
 }

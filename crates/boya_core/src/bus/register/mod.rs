@@ -30,6 +30,22 @@ pub struct IORegister {
     pub bg2cnt: Bgcnt,
     /// 0x00E: Background 3 Control (R/W)
     pub bg3cnt: Bgcnt,
+    /// 0x010: Background 0 X-Offset (W)
+    pub bg0hofs: u16,
+    /// 0x012: Background 0 Y-Offset (W)
+    pub bg0vofs: u16,
+    /// 0x014: Background 1 X-Offset (W)
+    pub bg1hofs: u16,
+    /// 0x016: Background 1 Y-Offset (W)
+    pub bg1vofs: u16,
+    /// 0x018: Background 2 X-Offset (W)
+    pub bg2hofs: u16,
+    /// 0x01A: Background 2 Y-Offset (W)
+    pub bg2vofs: u16,
+    /// 0x01C: Background 3 X-Offset (W)
+    pub bg3hofs: u16,
+    /// 0x01E: Background 3 Y-Offset (W)
+    pub bg3vofs: u16,
     /// 0x0B0: DMA 0 Source Address (W), Destination Address (W), Word Count (W), Control (R/W)
     pub dma0: Dma,
     /// 0x0BC: DMA 1 Source Address (W), Destination Address (W), Word Count (W), Control (R/W)
@@ -90,6 +106,13 @@ impl Bus for IORegister {
             0x0400_000A..=0x0400_000B => self.bg1cnt.value.write_byte(address, value),
             0x0400_000C..=0x0400_000D => self.bg2cnt.value.write_byte(address, value),
             0x0400_000E..=0x0400_000F => self.bg3cnt.value.write_byte(address, value),
+            0x0400_0010..=0x0400_0011 => self.bg0hofs.write_byte(address, value),
+            0x0400_0012..=0x0400_0013 => self.bg0vofs.write_byte(address, value),
+            0x0400_0014..=0x0400_0015 => self.bg1hofs.write_byte(address, value),
+            0x0400_0016..=0x0400_0017 => self.bg1vofs.write_byte(address, value),
+            0x0400_0018..=0x0400_0019 => self.bg2hofs.write_byte(address, value),
+            0x0400_001A..=0x0400_001B => self.bg2vofs.write_byte(address, value),
+            0x0400_001C..=0x0400_001D => self.bg3hofs.write_byte(address, value),
             0x0400_00B0..=0x0400_00BB => self.dma0.write_byte(address, value),
             0x0400_00BC..=0x0400_00C7 => self.dma1.write_byte(address, value),
             0x0400_00C8..=0x0400_00D3 => self.dma2.write_byte(address, value),
