@@ -1,5 +1,4 @@
 mod asm;
-use asm::{format_bin_bytes, format_hex_bytes};
 
 use crate::{
     arm7tdmi::{Arm7tdmi, test::DataType},
@@ -7,7 +6,7 @@ use crate::{
     test::asm::FAKE_BIOS,
 };
 
-pub use asm::compile_asm;
+use asm::{compile_asm, format_bin_bytes, format_hex_bytes};
 
 pub const SP_START: u32 = 0x0300_7F00;
 pub const ARM_MAIN_START: u32 = 0x0800_0000;

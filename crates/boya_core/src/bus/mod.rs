@@ -1,6 +1,6 @@
-pub mod register;
+pub mod registers;
 
-use crate::{bus::register::IORegister, ppu::Ppu};
+use crate::{bus::registers::IORegister, ppu::Ppu};
 
 pub const BIOS_SIZE: usize = 0x04000; // 16kb
 pub const IWRAM_SIZE: usize = 0x08000; // 32kb
@@ -54,10 +54,11 @@ impl Bus for GbaBus {
             0x0000_0000..=0x0000_3FFF => self.bios[address as usize],
             0x0200_0000..=0x0203_FFFF => self.ewram[address as usize - 0x0200_0000],
             0x0300_0000..=0x0300_7FFF => self.iwram[address as usize - 0x0300_0000],
-            0x0400_0000..=0x0400_03FE => self.registers.read_byte(address),
-            0x0500_0000..=0x0500_03FF => 0x0, // BG/OBJ Palette RAM
-            0x0600_0000..=0x0617_FFFF => 0x0, // VRAM
-            0x0700_0000..=0x0700_03FF => 0x0, // OAM
+            0x0400_0000..=0x0400_005F => self.ppu.registers.read_byte(address),
+            0x0400_00B0..=0x0400_03FE => self.registers.read_byte(address),
+            0x0500_0000..=0x0500_03FF => self.ppu.palette[address as usize - 0x0500_0000],
+            0x0600_0000..=0x0617_FFFF => self.ppu.vram[address as usize - 0x0600_0000],
+            0x0700_0000..=0x0700_03FF => self.ppu.oam[address as usize - 0x0700_0000],
             0x0800_0000..=0x0DFF_FFFF => self.read_rom(address),
             0x0E00_0000..=0x0E00_FFFF => self.sram[address as usize - 0x0E00_0000],
             _ => 0x0, // open bus
@@ -68,12 +69,13 @@ impl Bus for GbaBus {
         match address {
             0x0200_0000..=0x0203_FFFF => self.ewram[address as usize - 0x0200_0000] = value,
             0x0300_0000..=0x0300_7FFF => self.iwram[address as usize - 0x0300_0000] = value,
-            0x0400_0000..=0x0400_03EE => self.registers.write_byte(address, value),
-            0x0500_0000..=0x0500_03FF => {} // BG/OBJ Palette RAM
-            0x0600_0000..=0x0617_FFFF => {} // VRAM
-            0x0700_0000..=0x0700_03FF => {} // OAM
+            0x0400_0000..=0x0400_005F => self.ppu.registers.write_byte(address, value),
+            0x0400_00B0..=0x0400_03FE => self.registers.write_byte(address, value),
+            0x0500_0000..=0x0500_03FF => self.ppu.palette[address as usize - 0x0500_0000] = value,
+            0x0600_0000..=0x0617_FFFF => self.ppu.vram[address as usize - 0x0600_0000] = value,
+            0x0700_0000..=0x0700_03FF => self.ppu.oam[address as usize - 0x0700_0000] = value,
             0x0E00_0000..=0x0E00_FFFF => self.sram[address as usize - 0x0E00_0000] = value,
-            _ => panic!("invalid write address: {address:#010X}"),
+            _ => {}
         };
     }
 }
