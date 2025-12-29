@@ -15,7 +15,10 @@ use std::ops::{BitAnd, BitOr, BitXor};
 
 use prelude::*;
 
-use crate::arm7tdmi::{arm::ArmInstr, thumb::ThumbInstr};
+use crate::{
+    arm7tdmi::{arm::ArmInstr, thumb::ThumbInstr},
+    bus::DataType,
+};
 
 pub enum Instruction {
     Arm(ArmInstr),

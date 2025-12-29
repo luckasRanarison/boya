@@ -234,17 +234,20 @@ impl Arm7tdmi {
 }
 
 #[cfg(test)]
+use crate::bus::DataType;
+
+#[cfg(test)]
 impl Arm7tdmi {
     pub fn set_sp(&mut self, value: u32) {
         *self.get_reg_mut(Self::SP) = value;
     }
 
-    pub fn assert_mem(&self, assertions: Vec<(u32, u32, common::DataType)>) {
+    pub fn assert_mem(&self, assertions: Vec<(u32, u32, DataType)>) {
         for (address, expected, data_type) in assertions {
             let value = match data_type {
-                common::DataType::Byte => self.bus.read_byte(address).into(),
-                common::DataType::HWord => self.bus.read_hword(address).into(),
-                common::DataType::Word => self.bus.read_word(address),
+                DataType::Byte => self.bus.read_byte(address).into(),
+                DataType::HWord => self.bus.read_hword(address).into(),
+                DataType::Word => self.bus.read_word(address),
             };
 
             assert_eq!(
@@ -278,11 +281,4 @@ impl Arm7tdmi {
             )
         }
     }
-}
-
-#[cfg(test)]
-pub mod test {
-    use super::*;
-
-    pub use common::{DataType, OperatingMode};
 }

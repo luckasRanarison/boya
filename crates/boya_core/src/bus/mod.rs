@@ -5,8 +5,22 @@ use crate::{bus::registers::IORegister, ppu::Ppu};
 pub const BIOS_SIZE: usize = 0x04000; // 16kb
 pub const IWRAM_SIZE: usize = 0x08000; // 32kb
 pub const EWRAM_SIZE: usize = 0x40000; // 256kb
-pub const SRAM_SIZE: usize = 0x10000; // 512kb
+pub const SRAM_SIZE: usize = 0x10000; // 64kb
 
+#[derive(Debug)]
+pub enum DataType {
+    Byte,
+    HWord,
+    Word,
+}
+
+#[derive(Debug, Default)]
+pub struct WaitState {
+    pub n: u8,
+    pub s: u8,
+}
+
+#[derive(Debug)]
 pub struct GbaBus {
     bios: [u8; BIOS_SIZE],
     iwram: [u8; IWRAM_SIZE],
@@ -38,6 +52,23 @@ impl GbaBus {
 
     pub fn load_rom(&mut self, rom: &[u8]) {
         self.rom = rom.to_vec();
+    }
+
+    pub fn get_waitstate(&self, address: u32) -> WaitState {
+        match address {
+            0x0000_0000..=0x0000_3FFF => WaitState::default(), // BIOS
+            0x0200_0000..=0x0203_FFFF => WaitState { n: 2, s: 2 }, // EWRAM
+            0x0300_0000..=0x0300_7FFF => WaitState::default(), // IWRAM
+            0x0400_0000..=0x0400_03FE => WaitState::default(), // I/O
+            0x0500_0000..=0x0500_03FF => WaitState::default(), // PALETTE >
+            0x0600_0000..=0x0617_FFFF => WaitState::default(), // VRAM    >
+            0x0700_0000..=0x0700_03FF => WaitState::default(), // OAM     > FIXME: +1 during rendering
+            0x0800_0000..=0x09FF_FFFF => self.registers.waitcnt.wait_state0(),
+            0x0A00_0000..=0x0BFF_FFFF => self.registers.waitcnt.wait_state1(),
+            0x0C00_0000..=0x0DFF_FFFF => self.registers.waitcnt.wait_state2(),
+            0x0E00_0000..=0x0E00_FFFF => self.registers.waitcnt.sram_wait(), // FIXME: Detect save type SRAM/FLASH/EEPROM
+            _ => unreachable!("invalid read/write address access: {address:08X}"),
+        }
     }
 
     fn read_rom(&self, address: u32) -> u8 {

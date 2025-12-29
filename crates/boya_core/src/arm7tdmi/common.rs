@@ -2,25 +2,11 @@ use std::fmt::Debug;
 
 use crate::utils::bitflags::BitIter;
 
-#[derive(Debug)]
-pub enum DataType {
-    Byte,
-    HWord,
-    Word,
-}
-
 #[derive(Debug, Clone, Copy)]
 pub enum NamedRegister {
     LR = 14,
     SP = 13,
     PC = 15,
-}
-
-#[derive(Debug, Clone, Copy)]
-#[allow(unused)]
-pub enum MemoryAccess {
-    Seq,
-    NonSeq,
 }
 
 #[derive(Debug, Clone, Copy)]

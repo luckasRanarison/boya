@@ -1,6 +1,6 @@
 use crate::{
     arm7tdmi::{common::*, psr::PsrKind},
-    bus::Bus,
+    bus::{Bus, DataType},
     utils::{
         bitflags::{BitIter, Bitflag},
         ops::ExtendedOps,
@@ -9,7 +9,7 @@ use crate::{
 
 use super::{
     Arm7tdmi,
-    common::{AddrMode, Carry, DataType, Operand},
+    common::{AddrMode, Carry, Operand},
     psr::Psr,
 };
 
