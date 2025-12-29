@@ -12,7 +12,7 @@ pub struct GbaBus {
     iwram: [u8; IWRAM_SIZE],
     ewram: Box<[u8; EWRAM_SIZE]>,
     rom: Vec<u8>,
-    sram: [u8; SRAM_SIZE],
+    sram: Box<[u8; SRAM_SIZE]>,
     registers: IORegister,
     ppu: Ppu,
 }
@@ -24,7 +24,7 @@ impl Default for GbaBus {
             iwram: [0; IWRAM_SIZE],
             ewram: Box::new([0; EWRAM_SIZE]),
             rom: Vec::new(),
-            sram: [0; SRAM_SIZE],
+            sram: Box::new([0; SRAM_SIZE]),
             registers: IORegister::default(),
             ppu: Ppu::default(),
         }
@@ -110,5 +110,39 @@ pub trait Bus {
         self.write_byte(address + 1, b2);
         self.write_byte(address + 2, b3);
         self.write_byte(address + 3, b4);
+    }
+}
+
+impl Bus for u16 {
+    fn read_byte(&self, address: u32) -> u8 {
+        let index = address % 2;
+        let bytes = self.to_le_bytes();
+
+        bytes[index as usize]
+    }
+
+    fn write_byte(&mut self, address: u32, value: u8) {
+        let index = address % 2;
+        let mut bytes = self.to_le_bytes();
+
+        bytes[index as usize] = value;
+        *self = u16::from_le_bytes(bytes);
+    }
+}
+
+impl Bus for u32 {
+    fn read_byte(&self, address: u32) -> u8 {
+        let index = address % 4;
+        let bytes = self.to_le_bytes();
+
+        bytes[index as usize]
+    }
+
+    fn write_byte(&mut self, address: u32, value: u8) {
+        let index = address % 4;
+        let mut bytes = self.to_le_bytes();
+
+        bytes[index as usize] = value;
+        *self = u32::from_le_bytes(bytes);
     }
 }

@@ -60,7 +60,7 @@ impl Bus for Dma {
     fn read_byte(&self, address: u32) -> u8 {
         match address % 12 {
             10..=11 => self.cnt_h.read_byte(address),
-            _ => unreachable!("invalid DMA register read"),
+            _ => 0, // write-only
         }
     }
 

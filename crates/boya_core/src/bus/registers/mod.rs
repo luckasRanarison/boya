@@ -72,37 +72,3 @@ impl Bus for IORegister {
         }
     }
 }
-
-impl Bus for u16 {
-    fn read_byte(&self, address: u32) -> u8 {
-        let index = address % 2;
-        let bytes = self.to_le_bytes();
-
-        bytes[index as usize]
-    }
-
-    fn write_byte(&mut self, address: u32, value: u8) {
-        let index = address % 2;
-        let mut bytes = self.to_le_bytes();
-
-        bytes[index as usize] = value;
-        *self = u16::from_le_bytes(bytes);
-    }
-}
-
-impl Bus for u32 {
-    fn read_byte(&self, address: u32) -> u8 {
-        let index = address % 4;
-        let bytes = self.to_le_bytes();
-
-        bytes[index as usize]
-    }
-
-    fn write_byte(&mut self, address: u32, value: u8) {
-        let index = address % 4;
-        let mut bytes = self.to_le_bytes();
-
-        bytes[index as usize] = value;
-        *self = u32::from_le_bytes(bytes);
-    }
-}
