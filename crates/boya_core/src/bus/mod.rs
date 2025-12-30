@@ -3,10 +3,11 @@ pub mod types;
 
 use crate::{
     bus::{
-        registers::IORegister,
+        registers::{IORegister, interrupt::Interrupt},
         types::{DataType, MemoryRegion, WaitState},
     },
     ppu::Ppu,
+    utils::bitflags::Bitflag,
 };
 
 pub const BIOS_SIZE: usize = 0x04000; // 16kb
@@ -33,7 +34,7 @@ impl Default for GbaBus {
             ewram: Box::new([0; EWRAM_SIZE]),
             rom: Vec::new(),
             sram: Box::new([0; SRAM_SIZE]),
-            registers: IORegister::default(),
+            registers: IORegister::new(),
             ppu: Ppu::default(),
         }
     }
@@ -46,6 +47,16 @@ impl GbaBus {
 
     pub fn load_rom(&mut self, rom: &[u8]) {
         self.rom = rom.to_vec();
+    }
+
+    pub fn poll_interrupt(&self) -> bool {
+        self.registers.irf.value != 0
+    }
+
+    pub fn set_interrupt(&mut self, interrupt: Interrupt) {
+        if self.registers.ime != 0 && self.registers.ie.has(interrupt as u16) {
+            self.registers.irf.value.set(interrupt as u16);
+        }
     }
 
     pub fn get_region_data(&self, address: u32) -> MemoryRegion {

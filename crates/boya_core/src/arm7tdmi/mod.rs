@@ -53,9 +53,19 @@ impl Arm7tdmi {
         self.handle_exception(Exception::Reset);
     }
 
-    pub fn step(&mut self) -> u8 {
+    pub fn tick(&mut self) {
+        let cycles = self.step();
+
+        self.cycles += cycles.count() as u64;
+    }
+
+    pub fn step(&mut self) -> Cycle {
+        if !self.cpsr.has(Psr::I) && self.bus.poll_interrupt() {
+            return self.handle_exception(Exception::NormalInterrupt);
+        }
+
         let instruction = self.pipeline.take();
-        let cycles = self.exec(instruction).count();
+        let cycles = self.exec(instruction);
 
         if self.pipeline.last_pc() != self.pc() {
             self.align_pc();
@@ -63,7 +73,6 @@ impl Arm7tdmi {
         }
 
         self.load_pipeline();
-        self.cycles += cycles as u64;
 
         cycles
     }

@@ -1,6 +1,8 @@
 use crate::bus::{
     Bus,
-    registers::{dma::Dma, keyinput::KeyInput, timer::Timer, waitcnt::WaitCnt},
+    registers::{
+        dma::Dma, interrupt::IrqRequestFlag, keyinput::KeyInput, timer::Timer, waitcnt::WaitCnt,
+    },
 };
 
 pub mod dma;
@@ -32,11 +34,20 @@ pub struct IORegister {
     /// 0x200: Interrupt Enable (R/W)
     pub ie: u16,
     /// 0x202: Interrupt Request Flags (R/W)
-    pub irf: u16,
+    pub irf: IrqRequestFlag,
     /// 0x204: Waitstate Control (R/W)
     pub waitcnt: WaitCnt,
     /// 0x208: Interrupt Master Enable (R/W)
     pub ime: u16,
+}
+
+impl IORegister {
+    pub fn new() -> Self {
+        Self {
+            dma3: Dma::channel3(),
+            ..Default::default()
+        }
+    }
 }
 
 impl Bus for IORegister {
@@ -52,7 +63,7 @@ impl Bus for IORegister {
             0x10C..=0x10F => self.timer3.read_byte(address),
             0x130..=0x131 => self.keyinput.value.read_byte(address),
             0x200..=0x201 => self.ie.read_byte(address),
-            0x202..=0x203 => self.irf.read_byte(address),
+            0x202..=0x203 => self.irf.value.read_byte(address),
             0x204..=0x205 => self.waitcnt.value.read_byte(address),
             0x0400_0208..=0x0400_0209 => self.ime.read_byte(address),
             _ => 0, // open bus
@@ -70,7 +81,7 @@ impl Bus for IORegister {
             0x108..=0x10B => self.timer2.write_byte(address, value),
             0x10C..=0x10F => self.timer3.write_byte(address, value),
             0x200..=0x201 => self.ie.write_byte(address, value),
-            0x202..=0x203 => self.irf.write_byte(address, value),
+            0x202..=0x203 => self.irf.value.write_byte(address, value),
             0x204..=0x205 => self.waitcnt.value.write_byte(address, value),
             0x208..=0x209 => self.ime.write_byte(address, value),
             _ => {}

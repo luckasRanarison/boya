@@ -174,7 +174,8 @@ impl AsmTestBuilder {
 
             if let Some(expected_cycles) = self.cycle_assertions.pop_front() {
                 assert_eq!(
-                    cycles, expected_cycles,
+                    cycles.count(),
+                    expected_cycles,
                     "instruction cycle mismatch, expected: {expected_cycles}"
                 )
             }

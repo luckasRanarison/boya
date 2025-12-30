@@ -6,9 +6,17 @@ pub struct Dma {
     pub dad: u32,
     pub cnt_l: u16,
     pub cnt_h: u16,
+    pub max_len: Option<usize>,
 }
 
 impl Dma {
+    pub fn channel3() -> Self {
+        Self {
+            max_len: Some(0x10000),
+            ..Default::default()
+        }
+    }
+
     pub fn dst_addr_control(&self) -> DmaAddressControl {
         match self.cnt_h.get_bits(5, 6) {
             0 => DmaAddressControl::Increment,
@@ -53,6 +61,13 @@ impl Dma {
 
     pub fn dma_enable(&self) -> bool {
         self.cnt_h.has(15)
+    }
+
+    pub fn transfer_len(&self) -> usize {
+        match self.cnt_l {
+            0 => self.max_len.unwrap_or(0x4000),
+            _ => self.cnt_l as usize,
+        }
     }
 }
 
