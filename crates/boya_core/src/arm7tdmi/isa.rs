@@ -17,7 +17,7 @@ use prelude::*;
 
 use crate::{
     arm7tdmi::{arm::ArmInstr, thumb::ThumbInstr},
-    bus::{DataType, MemoryAccess},
+    bus::types::{DataType, MemoryAccess},
 };
 
 pub enum Instruction {

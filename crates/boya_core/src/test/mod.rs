@@ -2,7 +2,7 @@ mod asm;
 
 use crate::{
     arm7tdmi::Arm7tdmi,
-    bus::{BIOS_SIZE, DataType, GbaBus},
+    bus::{BIOS_SIZE, GbaBus, types::DataType},
     test::asm::FAKE_BIOS,
 };
 

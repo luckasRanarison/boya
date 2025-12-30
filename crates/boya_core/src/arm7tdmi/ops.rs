@@ -1,6 +1,9 @@
 use crate::{
     arm7tdmi::{common::*, psr::PsrKind},
-    bus::{Bus, DataType, MemoryAccess},
+    bus::{
+        Bus,
+        types::{DataType, MemoryAccess},
+    },
     utils::{
         bitflags::{BitIter, Bitflag},
         ops::ExtendedOps,
@@ -229,7 +232,7 @@ impl Arm7tdmi {
             _ => {}
         };
 
-        let read_cycle = self.get_rw_cycle(addr, kind, false);
+        let read_cycle = self.get_rw_cycle(addr, kind, MemoryAccess::NonSeq);
         let internal_cycle = Cycle::internal(1);
         let pre_fetch_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
 
@@ -270,7 +273,7 @@ impl Arm7tdmi {
         };
 
         let fetch_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
-        let write_cycle = self.get_rw_cycle(addr, kind, false);
+        let write_cycle = self.get_rw_cycle(addr, kind, MemoryAccess::NonSeq);
 
         fetch_cycle + write_cycle
     }
@@ -307,7 +310,12 @@ impl Arm7tdmi {
                     pre_write = true;
                 }
 
-                write_cycle += self.get_rw_cycle(offset, DataType::Word, idx != n as usize - 1);
+                let access = match idx as u8 != n - 1 {
+                    true => MemoryAccess::Seq,
+                    false => MemoryAccess::NonSeq,
+                };
+
+                write_cycle += self.get_rw_cycle(offset, DataType::Word, access);
                 self.store_reg(idx, &mut offset, usr);
             }
         }
@@ -340,7 +348,7 @@ impl Arm7tdmi {
                     skip_write = true;
                 }
 
-                read_cycle += self.get_rw_cycle(offset, DataType::Word, true);
+                read_cycle += self.get_rw_cycle(offset, DataType::Word, MemoryAccess::Seq);
                 self.load_reg(idx, &mut offset, usr);
             }
         }
@@ -465,11 +473,11 @@ impl Arm7tdmi {
         }
 
         let dt = if byte { DataType::Byte } else { DataType::Word };
-        let rw_cycle = self.get_rw_cycle(addr, dt, false).repeat(2);
+        let rw_cycle = self.get_rw_cycle(addr, dt, MemoryAccess::NonSeq);
         let internal_cycle = Cycle::internal(1);
         let fetch_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
 
-        rw_cycle + internal_cycle + fetch_cycle
+        rw_cycle.repeat(2) + internal_cycle + fetch_cycle
     }
 
     pub fn apply_shift(

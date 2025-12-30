@@ -17,7 +17,10 @@ use crate::{
         common::{Cycle, Exception, NamedRegister, Shift},
         isa::Instruction,
     },
-    bus::{Bus, DataType, GbaBus, MemoryAccess},
+    bus::{
+        Bus, GbaBus,
+        types::{DataType, MemoryAccess},
+    },
     utils::bitflags::BitIter,
 };
 
@@ -111,27 +114,23 @@ impl Arm7tdmi {
         self.set_pc(value);
     }
 
-    fn pre_fetch_cycle(&self, access_kind: MemoryAccess) -> Cycle {
-        let region = self.bus.get_region_data(self.pc());
-        let access = self.instr_size() / region.width as u8;
-
-        let (s, n) = match access_kind {
-            MemoryAccess::Seq => (access, 0),
-            MemoryAccess::NonSeq => (0, access),
-        };
-
-        Cycle::new(0, s, n, region.waitstate)
-    }
-
-    fn get_rw_cycle(&self, addr: u32, dt: DataType, sequential: bool) -> Cycle {
+    fn get_rw_cycle(&self, addr: u32, dt: DataType, access_kind: MemoryAccess) -> Cycle {
         let region = self.bus.get_region_data(addr);
         let access = u8::max(dt as u8 / region.width as u8, 1);
 
-        if sequential {
-            Cycle::new(0, access, 0, region.waitstate)
-        } else {
-            Cycle::new(0, access - 1, access, region.waitstate)
+        match access_kind {
+            MemoryAccess::Seq => Cycle::new(0, access, 0, region.waitstate),
+            MemoryAccess::NonSeq => Cycle::new(0, access - 1, 1, region.waitstate),
         }
+    }
+
+    fn pre_fetch_cycle(&self, access_kind: MemoryAccess) -> Cycle {
+        let dt = match self.cpsr.thumb() {
+            true => DataType::HWord,
+            false => DataType::Word,
+        };
+
+        self.get_rw_cycle(self.pc(), dt, access_kind)
     }
 
     #[inline(always)]

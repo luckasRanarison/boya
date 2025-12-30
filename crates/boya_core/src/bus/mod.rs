@@ -1,36 +1,18 @@
 pub mod registers;
+pub mod types;
 
-use crate::{bus::registers::IORegister, ppu::Ppu};
+use crate::{
+    bus::{
+        registers::IORegister,
+        types::{DataType, MemoryRegion, WaitState},
+    },
+    ppu::Ppu,
+};
 
 pub const BIOS_SIZE: usize = 0x04000; // 16kb
 pub const IWRAM_SIZE: usize = 0x08000; // 32kb
 pub const EWRAM_SIZE: usize = 0x40000; // 256kb
 pub const SRAM_SIZE: usize = 0x10000; // 64kb
-
-#[derive(Debug, Clone, Copy)]
-pub enum DataType {
-    Byte = 1,
-    HWord = 2,
-    Word = 4,
-}
-
-#[derive(Debug)]
-pub enum MemoryAccess {
-    Seq,
-    NonSeq,
-}
-
-#[derive(Debug)]
-pub struct MemoryRegion {
-    pub width: DataType,
-    pub waitstate: WaitState,
-}
-
-#[derive(Debug, Default)]
-pub struct WaitState {
-    pub n: u8,
-    pub s: u8,
-}
 
 #[derive(Debug)]
 pub struct GbaBus {

@@ -3,7 +3,7 @@ use std::{
     ops::{Add, AddAssign},
 };
 
-use crate::{bus::WaitState, utils::bitflags::BitIter};
+use crate::{bus::types::WaitState, utils::bitflags::BitIter};
 
 #[derive(Debug, Clone, Copy)]
 pub enum NamedRegister {
