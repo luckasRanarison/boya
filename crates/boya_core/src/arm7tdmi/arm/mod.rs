@@ -114,11 +114,7 @@ mod tests {
     fn test_arm_suite() {
         AsmTestBuilder::new()
             .bytes(TEST_FILE)
-            .setup(|cpu| {
-                cpu.set_pc(TEST_START);
-                cpu.pipeline.flush();
-                cpu.load_pipeline();
-            })
+            .pc(TEST_START)
             .assert_fn(|cpu| {
                 let test = cpu.get_reg(TEST_REG);
                 assert_eq!(test, 0, "test t{test} failed");

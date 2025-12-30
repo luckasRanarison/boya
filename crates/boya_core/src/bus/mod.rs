@@ -57,9 +57,9 @@ impl GbaBus {
             0x0500_0000..=0x0500_03FF => (DataType::HWord, WaitState::default()), // PALETTE >
             0x0600_0000..=0x0617_FFFF => (DataType::HWord, WaitState::default()), // VRAM    >
             0x0700_0000..=0x0700_03FF => (DataType::Word, WaitState::default()), //  OAM     > FIXME: +1 during rendering
-            0x0800_0000..=0x09FF_FFFF => (DataType::Word, self.registers.waitcnt.wait_state0()),
-            0x0A00_0000..=0x0BFF_FFFF => (DataType::Word, self.registers.waitcnt.wait_state1()),
-            0x0C00_0000..=0x0DFF_FFFF => (DataType::Word, self.registers.waitcnt.wait_state2()),
+            0x0800_0000..=0x09FF_FFFF => (DataType::HWord, self.registers.waitcnt.wait_state0()),
+            0x0A00_0000..=0x0BFF_FFFF => (DataType::HWord, self.registers.waitcnt.wait_state1()),
+            0x0C00_0000..=0x0DFF_FFFF => (DataType::HWord, self.registers.waitcnt.wait_state2()),
             0x0E00_0000..=0x0E00_FFFF => (DataType::HWord, self.registers.waitcnt.sram_wait()), // FIXME: Detect save type SRAM/FLASH/EEPROM
             _ => (DataType::Word, WaitState::default()), // out of bounds!
         };
@@ -171,5 +171,45 @@ impl Bus for u32 {
 
         bytes[index as usize] = value;
         *self = u32::from_le_bytes(bytes);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::test::AsmTestBuilder;
+
+    #[test]
+    fn test_bios_cycle_count() {
+        // vectors:
+        //     B       reset_handler        ; 2S + 1N (3)
+        // reset_handler:
+        //     MOV     SP, 0x0300_0000      ; 1S (1)
+        //     ADD     SP, SP, 0x0000_7F00  ; 1S (1)
+        //     MOV     PC, 0x0800_0000      ; 2S + 1N (13)
+
+        // NOTE: Because Gamepak has 16bit bus width, S is divided into 2 accesses, so it becomes 4(S + waitstate) + 1N
+
+        AsmTestBuilder::new()
+            .pc(0x00)
+            .assert_cycles([3, 1, 1, 13])
+            .run(4);
+    }
+
+    #[test]
+    fn test_waitstate() {
+        let asm = r"
+            ; set waitstate 0 to 3,1
+            MOV     R0, #10100b      ; 1S (6)
+            MOV     R1, #0x0400_0000 ; 1S (6)
+            MOV     R2, #0x0000_0200 ; 1S (6)
+            ADD     R3, R1, R2       ; 1S (6)
+            STR     R0, [R3, #4]     ; 2N (9) (N + 4 + S + 2) + N
+            MOV     R4, R0           ; 1S (4)
+        ";
+
+        AsmTestBuilder::new()
+            .asm(asm)
+            .assert_cycles([6, 6, 6, 6, 9, 4])
+            .run(6);
     }
 }

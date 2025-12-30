@@ -55,7 +55,7 @@ impl Arm7tdmi {
 
     pub fn step(&mut self) -> u8 {
         let instruction = self.pipeline.take();
-        let cycle = self.exec(instruction);
+        let cycles = self.exec(instruction).count();
 
         if self.pipeline.last_pc() != self.pc() {
             self.align_pc();
@@ -63,7 +63,9 @@ impl Arm7tdmi {
         }
 
         self.load_pipeline();
-        cycle.count()
+        self.cycles += cycles as u64;
+
+        cycles
     }
 
     #[inline(always)]
@@ -93,13 +95,13 @@ impl Arm7tdmi {
     }
 
     #[inline(always)]
-    fn pc(&self) -> u32 {
-        self.reg[Self::PC]
+    fn set_pc(&mut self, value: u32) {
+        self.reg[Self::PC] = value;
     }
 
     #[inline(always)]
-    fn set_pc(&mut self, value: u32) {
-        self.reg[Self::PC] = value;
+    fn pc(&self) -> u32 {
+        self.reg[Self::PC]
     }
 
     #[inline(always)]
@@ -257,8 +259,10 @@ impl Arm7tdmi {
 
 #[cfg(test)]
 impl Arm7tdmi {
-    pub fn set_sp(&mut self, value: u32) {
-        *self.get_reg_mut(Self::SP) = value;
+    pub fn override_pc(&mut self, value: u32) {
+        self.set_pc(value);
+        self.pipeline.flush();
+        self.load_pipeline();
     }
 
     pub fn assert_mem(&self, assertions: Vec<(u32, u32, DataType)>) {

@@ -1,5 +1,7 @@
 mod asm;
 
+use std::collections::VecDeque;
+
 use crate::{
     arm7tdmi::Arm7tdmi,
     bus::{BIOS_SIZE, GbaBus, types::DataType},
@@ -19,11 +21,13 @@ pub struct AsmTestBuilder {
     code: String,
     bytes: Vec<u8>,
     setup: Option<Box<dyn Fn(&mut Arm7tdmi)>>,
+    pc: Option<u32>,
 
     flag_assertions: Vec<(u32, bool)>,
     reg_assertions: Vec<(usize, u32)>,
     mem_assertions: Vec<(u32, u32, DataType)>,
     func_assertion: Option<Box<dyn Fn(&Arm7tdmi)>>,
+    cycle_assertions: VecDeque<u8>,
 }
 
 impl AsmTestBuilder {
@@ -59,6 +63,11 @@ impl AsmTestBuilder {
         self
     }
 
+    pub fn pc(mut self, value: u32) -> Self {
+        self.pc = Some(value);
+        self
+    }
+
     pub fn assert_byte(mut self, addr: u32, expected: u32) -> Self {
         self.mem_assertions.push((addr, expected, DataType::Byte));
         self
@@ -89,6 +98,11 @@ impl AsmTestBuilder {
         F: Fn(&Arm7tdmi) + 'static,
     {
         self.func_assertion = Some(Box::new(func));
+        self
+    }
+
+    pub fn assert_cycles<I: IntoIterator<Item = u8>>(mut self, cycles: I) -> Self {
+        self.cycle_assertions = cycles.into_iter().collect();
         self
     }
 
@@ -134,14 +148,18 @@ impl AsmTestBuilder {
 
         cpu.reset();
 
-        let extra_cycle = if self.thumb { 9 } else { 4 };
+        let extra_steps = if self.thumb { 9 } else { 4 };
 
-        for _ in 0..extra_cycle {
+        for _ in 0..extra_steps {
             cpu.step();
         }
 
         if let Some(setup) = self.setup {
             setup(&mut cpu);
+        }
+
+        if let Some(pc) = self.pc {
+            cpu.override_pc(pc);
         }
 
         while func(&cpu) {
@@ -152,7 +170,14 @@ impl AsmTestBuilder {
                 cpu.pipeline.curr_instr.as_ref().unwrap(),
             );
 
-            cpu.step();
+            let cycles = cpu.step();
+
+            if let Some(expected_cycles) = self.cycle_assertions.pop_front() {
+                assert_eq!(
+                    cycles, expected_cycles,
+                    "instruction cycle mismatch, expected: {expected_cycles}"
+                )
+            }
         }
 
         if let Some(assert) = self.func_assertion {

@@ -165,9 +165,7 @@ mod tests {
             .bytes(TEST_FILE)
             .setup(|cpu| {
                 cpu.cpsr.update(Psr::T, true);
-                cpu.set_pc(TEST_START);
-                cpu.pipeline.flush();
-                cpu.load_pipeline();
+                cpu.override_pc(TEST_START);
             })
             .assert_fn(|cpu| {
                 let test = cpu.get_reg(TEST_REG);

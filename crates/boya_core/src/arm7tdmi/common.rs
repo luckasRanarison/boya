@@ -57,10 +57,7 @@ pub struct Cycle(u8);
 impl Cycle {
     #[inline(always)]
     pub fn new(i: u8, s: u8, n: u8, ws: WaitState) -> Self {
-        let s = if s > 0 { ws.s + s } else { 0 };
-        let n = if n > 0 { ws.n + n } else { 0 };
-
-        Self(i + s + n)
+        Self(i + ws.s * s + s + ws.n * n + n)
     }
 
     #[inline(always)]
