@@ -1,6 +1,9 @@
-use std::fmt::Debug;
+use std::{
+    fmt::Debug,
+    ops::{Add, AddAssign},
+};
 
-use crate::utils::bitflags::BitIter;
+use crate::{bus::WaitState, utils::bitflags::BitIter};
 
 #[derive(Debug, Clone, Copy)]
 pub enum NamedRegister {
@@ -48,16 +51,45 @@ pub enum Carry {
     Flag,
 }
 
-#[derive(Debug)]
-pub struct Cycle {
-    pub i: u8,
-    pub s: u8,
-    pub n: u8,
-}
+#[derive(Debug, Default, Clone, Copy)]
+pub struct Cycle(u8);
 
 impl Cycle {
+    #[inline(always)]
+    pub fn new(i: u8, s: u8, n: u8, ws: WaitState) -> Self {
+        let s = if s > 0 { ws.s + s } else { 0 };
+        let n = if n > 0 { ws.n + n } else { 0 };
+
+        Self(i + s + n)
+    }
+
+    #[inline(always)]
+    pub fn internal(n: u8) -> Self {
+        Self(n)
+    }
+
+    #[inline(always)]
+    pub fn repeat(self, n: u8) -> Self {
+        Self(self.0 * n)
+    }
+
+    #[inline(always)]
     pub fn count(self) -> u8 {
-        self.i + self.s + self.n
+        self.0
+    }
+}
+
+impl Add<Self> for Cycle {
+    type Output = Self;
+
+    fn add(self, rhs: Cycle) -> Self::Output {
+        Self(self.0 + rhs.0)
+    }
+}
+
+impl AddAssign<Self> for Cycle {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs
     }
 }
 

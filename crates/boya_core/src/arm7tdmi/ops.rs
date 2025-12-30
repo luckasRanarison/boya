@@ -1,6 +1,6 @@
 use crate::{
     arm7tdmi::{common::*, psr::PsrKind},
-    bus::{Bus, DataType},
+    bus::{Bus, DataType, MemoryAccess},
     utils::{
         bitflags::{BitIter, Bitflag},
         ops::ExtendedOps,
@@ -23,7 +23,7 @@ impl Arm7tdmi {
         carry: Carry,
         update: bool,
     ) -> Cycle {
-        let cycle = self.get_variable_cycle(dst, &rhs);
+        let cycle = self.get_data_op_cycle(dst, &rhs);
         let reg_shift = rhs.shift.as_ref().filter(|s| s.register).is_some();
 
         let lhs = match lhs.is_pc() {
@@ -53,12 +53,12 @@ impl Arm7tdmi {
             self.set_reg(rd, res2);
         }
 
-        cycle
+        cycle + self.get_extra_fetch_cycle()
     }
 
     #[inline(always)]
     pub fn shift_op(&mut self, dst: u8, lhs: u8, rhs: Operand, shift: ShiftKind) -> Cycle {
-        let i = if rhs.kind == OperandKind::Reg { 1 } else { 0 };
+        let cycle = self.get_data_op_cycle(dst.into(), &rhs);
         let imm = rhs.is_imm();
         let lhs = self.get_reg(lhs);
         let rhs = self.get_operand(rhs) & 0xFF;
@@ -67,7 +67,7 @@ impl Arm7tdmi {
         self.cpsr.update_zn(result);
         self.set_reg(dst, result);
 
-        Cycle { i, s: 1, n: 0 }
+        cycle + self.get_extra_fetch_cycle()
     }
 
     #[inline(always)]
@@ -82,7 +82,7 @@ impl Arm7tdmi {
     where
         F: Fn(u32, u32) -> u32,
     {
-        let cycle = self.get_variable_cycle(dst, &rhs);
+        let cycle = self.get_data_op_cycle(dst, &rhs);
         let lhs = self.get_reg(lhs);
         let rhs = self.get_operand_with_shift(rhs, update);
         let result = func(lhs, rhs);
@@ -95,12 +95,12 @@ impl Arm7tdmi {
             self.set_reg(rd, result);
         }
 
-        cycle
+        cycle + self.get_extra_fetch_cycle()
     }
 
     #[inline(always)]
     pub fn mov_op(&mut self, rd: u8, operand: Operand, update: bool) -> Cycle {
-        let cycle = self.get_variable_cycle(rd.into(), &operand);
+        let cycle = self.get_data_op_cycle(rd.into(), &operand);
         let value = self.get_operand_with_shift(operand, update);
 
         if update {
@@ -109,13 +109,14 @@ impl Arm7tdmi {
 
         self.set_reg(rd, value);
 
-        cycle
+        cycle + self.get_extra_fetch_cycle()
     }
 
     #[inline(always)]
     pub fn bx_op(&mut self, rs: u8) -> Cycle {
         let value = self.get_reg(rs);
         let prev_mode = self.cpsr.thumb();
+        let first_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
 
         self.cpsr.update(Psr::T, value.has(0));
         self.set_pc(value);
@@ -124,7 +125,9 @@ impl Arm7tdmi {
             self.pipeline.flush();
         }
 
-        Cycle { i: 0, s: 2, n: 1 }
+        let fetch_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
+
+        first_cycle + fetch_cycle.repeat(2)
     }
 
     #[inline(always)]
@@ -179,7 +182,10 @@ impl Arm7tdmi {
 
         self.set_reg(dst.lo, res_lo);
 
-        Cycle { i, s: 1, n: 0 }
+        let pre_fetch_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
+        let internal_cycle = Cycle::internal(i);
+
+        pre_fetch_cycle + internal_cycle
     }
 
     #[inline(always)]
@@ -191,10 +197,10 @@ impl Arm7tdmi {
         signed: bool,
         offset: RegisterOffset,
     ) -> Cycle {
-        let (base, s, n) = match rn.reg().is_pc() {
-            true if self.cpsr.thumb() => (self.pc() & !2, 1, 1), // thumb 6
-            true => (self.pc(), 2, 2),
-            false => (self.get_reg(rn), 1, 1),
+        let base = match rn.reg().is_pc() {
+            true if self.cpsr.thumb() => self.pc() & !2, // thumb 6
+            true => self.pc(),
+            false => self.get_reg(rn),
         };
 
         let addr = match offset.amod {
@@ -223,9 +229,13 @@ impl Arm7tdmi {
             _ => {}
         };
 
+        let read_cycle = self.get_rw_cycle(addr, kind, false);
+        let internal_cycle = Cycle::internal(1);
+        let pre_fetch_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
+
         self.set_reg(rd, value);
 
-        Cycle { i: 1, s, n }
+        read_cycle + internal_cycle + pre_fetch_cycle + self.get_extra_fetch_cycle()
     }
 
     #[inline(always)]
@@ -259,15 +269,21 @@ impl Arm7tdmi {
             _ => {}
         };
 
-        Cycle { i: 0, s: 0, n: 2 }
+        let fetch_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
+        let write_cycle = self.get_rw_cycle(addr, kind, false);
+
+        fetch_cycle + write_cycle
     }
 
     #[inline(always)]
     pub fn stm_op(&mut self, rb: usize, rlist: u16, amod: AddrMode, wb: bool, usr: bool) -> Cycle {
         let n = self.count_rlist(rlist);
         let low_addr = self.get_lowest_address(rb, n, amod);
+        let pre_fetch_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
+
         let mut offset = low_addr;
         let mut pre_write = false;
+        let mut write_cycle = Cycle::default();
 
         // https://github.com/jsmolka/gba-tests/issues/2
         if n == 0 {
@@ -291,6 +307,7 @@ impl Arm7tdmi {
                     pre_write = true;
                 }
 
+                write_cycle += self.get_rw_cycle(offset, DataType::Word, idx != n as usize - 1);
                 self.store_reg(idx, &mut offset, usr);
             }
         }
@@ -299,14 +316,16 @@ impl Arm7tdmi {
             self.write_base_address(rb, n, amod);
         }
 
-        Cycle { i: 1, s: n, n: 1 }
+        pre_fetch_cycle + write_cycle
     }
 
     #[inline(always)]
     pub fn ldm_op(&mut self, rb: usize, rlist: u16, amod: AddrMode, wb: bool, usr: bool) -> Cycle {
         let n = self.count_rlist(rlist);
-        let s = n.saturating_sub(1);
+        let pre_fetch_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
+
         let mut skip_write = false;
+        let mut read_cycle = Cycle::default();
 
         // https://github.com/jsmolka/gba-tests/issues/12
         if n == 0 {
@@ -321,21 +340,27 @@ impl Arm7tdmi {
                     skip_write = true;
                 }
 
+                read_cycle += self.get_rw_cycle(offset, DataType::Word, true);
                 self.load_reg(idx, &mut offset, usr);
             }
         }
+
+        let internal_cycle = Cycle::internal(1);
 
         if wb && !skip_write {
             self.write_base_address(rb, n, amod);
         }
 
-        Cycle { i: 0, s, n: 2 }
+        // FIXME: not quite accurate
+        pre_fetch_cycle + read_cycle + internal_cycle + self.get_extra_fetch_cycle()
     }
 
     #[inline(always)]
     pub fn branch_op(&mut self, cond: Condition, offset: i32) -> Cycle {
+        let first_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
+
         if !self.cpsr.matches(cond) {
-            return Cycle { i: 0, s: 1, n: 0 };
+            return first_cycle;
         }
 
         if offset != 0 {
@@ -344,7 +369,9 @@ impl Arm7tdmi {
             self.pipeline.flush();
         }
 
-        Cycle { i: 0, s: 2, n: 1 }
+        let extra_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
+
+        first_cycle + extra_cycle.repeat(2)
     }
 
     pub fn branch_long_first_op(&mut self, nn: u16) -> Cycle {
@@ -353,8 +380,7 @@ impl Arm7tdmi {
         let result = self.pc().wrapping_add(upper);
 
         self.set_reg(Self::LR, result);
-
-        Cycle { i: 0, s: 1, n: 0 }
+        self.pre_fetch_cycle(MemoryAccess::Seq)
     }
 
     pub fn branch_long_second_op(&mut self, nn: u16) -> Cycle {
@@ -362,13 +388,16 @@ impl Arm7tdmi {
         let lr = self.get_reg(Self::LR) as i32;
         let offset = lr.wrapping_add(lower as i32);
         let lr = self.next_instr_addr().unwrap_or_default() | 1;
+        let first_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
 
         self.set_pc(offset as u32);
         self.set_reg(Self::LR, lr);
 
         self.pipeline.flush();
 
-        Cycle { i: 0, s: 2, n: 1 }
+        let extra_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
+
+        first_cycle + extra_cycle.repeat(2)
     }
 
     pub fn handle_exception(&mut self, exception: Exception) -> Cycle {
@@ -376,6 +405,7 @@ impl Arm7tdmi {
         let op_mode = exception.operating_mode();
         let irq = exception.disable_irq() || self.cpsr.has(Psr::I);
         let fiq = exception.disable_fiq() || self.cpsr.has(Psr::F);
+        let first_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
 
         self.cpsr.set_operating_mode(op_mode);
         self.bank.set_spsr(op_mode, self.cpsr);
@@ -391,7 +421,9 @@ impl Arm7tdmi {
         self.set_pc(vector);
         self.load_pipeline();
 
-        Cycle { i: 0, s: 2, n: 1 }
+        let extra_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
+
+        first_cycle + extra_cycle.repeat(2)
     }
 
     #[inline(always)]
@@ -402,8 +434,7 @@ impl Arm7tdmi {
         };
 
         self.set_reg(rd, psr.value());
-
-        Cycle { i: 0, s: 1, n: 0 }
+        self.pre_fetch_cycle(MemoryAccess::Seq)
     }
 
     #[inline(always)]
@@ -416,7 +447,7 @@ impl Arm7tdmi {
             PsrKind::SPSR => self.bank.update_spsr(op_mode, value, mask),
         }
 
-        Cycle { i: 0, s: 1, n: 0 }
+        self.pre_fetch_cycle(MemoryAccess::Seq)
     }
 
     #[inline(always)]
@@ -433,7 +464,12 @@ impl Arm7tdmi {
             self.set_reg(rd, value.rotate_right((addr & 3) * 8));
         }
 
-        Cycle { i: 1, s: 1, n: 2 }
+        let dt = if byte { DataType::Byte } else { DataType::Word };
+        let rw_cycle = self.get_rw_cycle(addr, dt, false).repeat(2);
+        let internal_cycle = Cycle::internal(1);
+        let fetch_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
+
+        rw_cycle + internal_cycle + fetch_cycle
     }
 
     pub fn apply_shift(
@@ -479,16 +515,23 @@ impl Arm7tdmi {
         result
     }
 
-    fn get_variable_cycle(&self, dst: Option<u8>, operand: &Operand) -> Cycle {
+    fn get_data_op_cycle(&self, dst: Option<u8>, operand: &Operand) -> Cycle {
         let reg_shift = operand.shift.as_ref().filter(|s| s.register).is_some();
-        let pc_operand = dst.filter(|r| *r == NamedRegister::PC as u8).is_some();
-        let r = if operand.is_reg() && reg_shift { 1 } else { 0 };
-        let p = if pc_operand { 1 } else { 0 };
+        let pc_dst = dst.filter(|r| *r == NamedRegister::PC as u8).is_some();
 
-        Cycle {
-            i: r,
-            s: 1 + p,
-            n: p,
+        match (pc_dst, reg_shift) {
+            (true, true) => self.pre_fetch_cycle(MemoryAccess::NonSeq) + Cycle::internal(1),
+            (false, true) => self.pre_fetch_cycle(MemoryAccess::Seq) + Cycle::internal(1),
+            (true, false) => self.pre_fetch_cycle(MemoryAccess::NonSeq),
+            (false, false) => self.pre_fetch_cycle(MemoryAccess::Seq),
+        }
+    }
+
+    fn get_extra_fetch_cycle(&self) -> Cycle {
+        if self.pipeline.last_pc() != self.pc() {
+            self.pre_fetch_cycle(MemoryAccess::Seq).repeat(2)
+        } else {
+            Cycle::default()
         }
     }
 }

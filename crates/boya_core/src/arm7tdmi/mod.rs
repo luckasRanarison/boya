@@ -17,7 +17,7 @@ use crate::{
         common::{Cycle, Exception, NamedRegister, Shift},
         isa::Instruction,
     },
-    bus::{Bus, GbaBus},
+    bus::{Bus, DataType, GbaBus, MemoryAccess},
     utils::bitflags::BitIter,
 };
 
@@ -109,6 +109,29 @@ impl Arm7tdmi {
         let value = self.pc() & mask;
 
         self.set_pc(value);
+    }
+
+    fn pre_fetch_cycle(&self, access_kind: MemoryAccess) -> Cycle {
+        let region = self.bus.get_region_data(self.pc());
+        let access = self.instr_size() / region.width as u8;
+
+        let (s, n) = match access_kind {
+            MemoryAccess::Seq => (access, 0),
+            MemoryAccess::NonSeq => (0, access),
+        };
+
+        Cycle::new(0, s, n, region.waitstate)
+    }
+
+    fn get_rw_cycle(&self, addr: u32, dt: DataType, sequential: bool) -> Cycle {
+        let region = self.bus.get_region_data(addr);
+        let access = u8::max(dt as u8 / region.width as u8, 1);
+
+        if sequential {
+            Cycle::new(0, access, 0, region.waitstate)
+        } else {
+            Cycle::new(0, access - 1, access, region.waitstate)
+        }
     }
 
     #[inline(always)]
@@ -232,9 +255,6 @@ impl Arm7tdmi {
         }
     }
 }
-
-#[cfg(test)]
-use crate::bus::DataType;
 
 #[cfg(test)]
 impl Arm7tdmi {

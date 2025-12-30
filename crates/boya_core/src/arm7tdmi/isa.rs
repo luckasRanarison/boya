@@ -17,7 +17,7 @@ use prelude::*;
 
 use crate::{
     arm7tdmi::{arm::ArmInstr, thumb::ThumbInstr},
-    bus::DataType,
+    bus::{DataType, MemoryAccess},
 };
 
 pub enum Instruction {
@@ -45,7 +45,7 @@ pub trait Executable: Sized {
         if cpu.cpsr.matches(self.condition()) {
             self.dispatch(cpu)
         } else {
-            Cycle { i: 0, s: 1, n: 0 }
+            cpu.pre_fetch_cycle(MemoryAccess::Seq)
         }
     }
 }
