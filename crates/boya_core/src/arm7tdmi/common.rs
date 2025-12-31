@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, ops::Neg};
 
 use crate::utils::bitflags::BitIter;
 
@@ -178,12 +178,16 @@ impl Debug for Operand {
     }
 }
 
-impl Operand {
-    pub fn not(mut self) -> Self {
+impl Neg for Operand {
+    type Output = Self;
+
+    fn neg(mut self) -> Self::Output {
         self.negate = true;
         self
     }
+}
 
+impl Operand {
     pub fn shift(mut self, shift: Shift) -> Self {
         self.shift = Some(shift);
         self

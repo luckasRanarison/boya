@@ -22,7 +22,7 @@ impl From<u16> for Instruction {
 
         let nn = match value.get(7) {
             0 => nn.imm(),
-            _ => nn.imm().not(),
+            _ => -nn.imm(),
         };
 
         Self { nn }

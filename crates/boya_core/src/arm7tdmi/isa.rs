@@ -77,23 +77,23 @@ impl Arm7tdmi {
     }
 
     pub fn sub(&mut self, dst: u8, lhs: u8, rhs: Operand, update: bool) -> Cycle {
-        self.add_sub_op(dst.into(), lhs.reg(), rhs.not(), Carry::One, update)
+        self.add_sub_op(dst.into(), lhs.reg(), -rhs, Carry::One, update)
     }
 
     pub fn rsb(&mut self, dst: u8, lhs: u8, rhs: Operand, update: bool) -> Cycle {
-        self.add_sub_op(dst.into(), rhs, lhs.reg().not(), Carry::One, update)
+        self.add_sub_op(dst.into(), rhs, -lhs.reg(), Carry::One, update)
     }
 
     pub fn sbc(&mut self, dst: u8, lhs: u8, rhs: Operand, update: bool) -> Cycle {
-        self.add_sub_op(dst.into(), lhs.reg(), rhs.not(), Carry::Flag, update)
+        self.add_sub_op(dst.into(), lhs.reg(), -rhs, Carry::Flag, update)
     }
 
     pub fn rsc(&mut self, dst: u8, lhs: u8, rhs: Operand, update: bool) -> Cycle {
-        self.add_sub_op(dst.into(), rhs, lhs.reg().not(), Carry::Flag, update)
+        self.add_sub_op(dst.into(), rhs, -lhs.reg(), Carry::Flag, update)
     }
 
     pub fn cmp(&mut self, lhs: u8, rhs: Operand, update: bool) -> Cycle {
-        self.add_sub_op(None, lhs.reg(), rhs.not(), Carry::One, update)
+        self.add_sub_op(None, lhs.reg(), -rhs, Carry::One, update)
     }
 
     pub fn cmn(&mut self, lhs: u8, rhs: Operand, update: bool) -> Cycle {
@@ -101,7 +101,7 @@ impl Arm7tdmi {
     }
 
     pub fn neg(&mut self, rd: u8, rs: u8) -> Cycle {
-        self.add_sub_op(rd.into(), 0_u32.imm(), rs.reg().not(), Carry::One, true)
+        self.add_sub_op(rd.into(), 0_u32.imm(), -rs.reg(), Carry::One, true)
     }
 
     pub fn and(&mut self, dst: u8, lhs: u8, rhs: Operand, update: bool) -> Cycle {
@@ -125,7 +125,7 @@ impl Arm7tdmi {
     }
 
     pub fn bic(&mut self, dst: u8, lhs: u8, rhs: Operand, update: bool) -> Cycle {
-        self.logical_op(u32::bitand, dst.into(), lhs, rhs.not(), update)
+        self.logical_op(u32::bitand, dst.into(), lhs, -rhs, update)
     }
 
     pub fn ldrb(&mut self, rd: u8, base: u8, offset: RegisterOffset) -> Cycle {
@@ -161,7 +161,7 @@ impl Arm7tdmi {
     }
 
     pub fn mvn(&mut self, rd: u8, op: Operand, update: bool) -> Cycle {
-        self.mov_op(rd, op.not(), update)
+        self.mov_op(rd, -op, update)
     }
 
     pub fn mov(&mut self, rd: u8, op: Operand, update: bool) -> Cycle {
