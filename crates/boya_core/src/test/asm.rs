@@ -17,6 +17,10 @@ pub fn compile_asm(code: &str) -> io::Result<Vec<u8>> {
 
     let output = child.wait_with_output()?;
 
+    if !output.stderr.is_empty() {
+        return Err(io::Error::other(String::from_utf8_lossy(&output.stderr)));
+    }
+
     if output.stdout.is_empty() {
         return Err(io::Error::other("empty stream"));
     }

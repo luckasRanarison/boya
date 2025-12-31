@@ -71,9 +71,11 @@ impl Dma {
     }
 
     pub fn transfer_len(&self) -> u32 {
-        match self.cnt_l {
-            0 => self.channel.max_transfer_len(),
-            _ => self.cnt_l.into(),
+        match (self.cnt_l, self.channel) {
+            (0, DmaChannel::DMA3) => 0x10000,
+            (_, DmaChannel::DMA3) => self.cnt_l as u32,
+            (0, _) => 0x4000,
+            (_, _) => self.cnt_l as u32 & 0x3FFF,
         }
     }
 
@@ -94,7 +96,7 @@ impl Bus for Dma {
         match address % 12 {
             0..=3 => self.sad.write_byte(address, value),
             4..=7 => self.dad.write_byte(address, value),
-            8..=10 => self.cnt_l.write_byte(address, value),
+            8..=9 => self.cnt_l.write_byte(address, value),
             _ => self.cnt_h.write_byte(address, value),
         }
     }
@@ -116,13 +118,6 @@ impl DmaChannel {
             DmaChannel::DMA1 => DmaSpecialTiming::FifoA,
             DmaChannel::DMA2 => DmaSpecialTiming::FifoB,
             DmaChannel::DMA3 => DmaSpecialTiming::VideoCapture,
-        }
-    }
-
-    pub fn max_transfer_len(self) -> u32 {
-        match self {
-            DmaChannel::DMA3 => 0x10000,
-            _ => 0x4000,
         }
     }
 }
