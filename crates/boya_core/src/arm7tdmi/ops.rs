@@ -2,7 +2,7 @@ use crate::{
     arm7tdmi::{common::*, psr::PsrKind},
     bus::{
         Bus,
-        types::{DataType, MemoryAccess},
+        types::{Cycle, DataType, MemoryAccess},
     },
     utils::{
         bitflags::{BitIter, Bitflag},

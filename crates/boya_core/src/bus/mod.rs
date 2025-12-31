@@ -3,8 +3,12 @@ pub mod types;
 
 use crate::{
     bus::{
-        registers::{IORegister, interrupt::Interrupt},
-        types::{DataType, MemoryRegion, WaitState},
+        registers::{
+            IORegister,
+            dma::{Dma, DmaAddressControl},
+            interrupt::Interrupt,
+        },
+        types::{Cycle, DataType, MemoryRegion, ReadableMemory, WaitState, WritableMemory},
     },
     ppu::Ppu,
     utils::bitflags::Bitflag,
@@ -76,6 +80,37 @@ impl GbaBus {
         };
 
         MemoryRegion { width, waitstate }
+    }
+
+    pub fn start_dma(&mut self) -> Option<Cycle> {
+        if let Some(dma) = self.get_active_dma() {
+            let src_addr = dma.sad;
+            let dst_addr = dma.dad;
+            let copy_len = dma.transfer_len();
+            let src_region = self.get_region_data(src_addr);
+            let dst_region = self.get_region_data(dst_addr);
+
+            // let target_slice = match dma.dst_addr_control() {
+            //     DmaAddressControl::Increment => todo!(),
+            //     DmaAddressControl::Decrement => todo!(),
+            //     DmaAddressControl::Fixed => todo!(),
+            //     DmaAddressControl::IncrementReload => todo!(),
+            // };
+
+            todo!()
+        } else {
+            None
+        }
+    }
+
+    fn get_active_dma(&mut self) -> Option<&mut Dma> {
+        match true {
+            _ if self.registers.dma0.dma_enable() => Some(&mut self.registers.dma0),
+            _ if self.registers.dma1.dma_enable() => Some(&mut self.registers.dma1),
+            _ if self.registers.dma2.dma_enable() => Some(&mut self.registers.dma2),
+            _ if self.registers.dma3.dma_enable() => Some(&mut self.registers.dma3),
+            _ => None,
+        }
     }
 
     fn read_rom(&self, address: u32) -> u8 {

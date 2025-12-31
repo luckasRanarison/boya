@@ -14,12 +14,12 @@ use psr::Psr;
 
 use crate::{
     arm7tdmi::{
-        common::{Cycle, Exception, NamedRegister, Shift},
+        common::{Exception, NamedRegister, Shift},
         isa::Instruction,
     },
     bus::{
         Bus, GbaBus,
-        types::{DataType, MemoryAccess},
+        types::{Cycle, DataType, MemoryAccess},
     },
     utils::bitflags::BitIter,
 };

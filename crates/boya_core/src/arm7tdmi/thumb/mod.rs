@@ -18,7 +18,7 @@ mod thumb_17;
 mod thumb_18;
 mod thumb_19;
 
-use crate::{arm7tdmi::common::Cycle, utils::bitflags::BitArray};
+use crate::utils::bitflags::BitArray;
 
 use super::isa::prelude::*;
 

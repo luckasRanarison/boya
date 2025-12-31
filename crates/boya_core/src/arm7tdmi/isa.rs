@@ -5,6 +5,7 @@ pub mod prelude {
     pub use crate::arm7tdmi::common::*;
     pub use crate::arm7tdmi::isa::Executable;
     pub use crate::arm7tdmi::psr::*;
+    pub use crate::bus::types::Cycle;
     pub use crate::utils::bitflags::Bitflag;
 
     #[cfg(test)]

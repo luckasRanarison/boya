@@ -51,45 +51,6 @@ pub enum Carry {
     Flag,
 }
 
-#[derive(Debug, Default, Clone, Copy)]
-pub struct Cycle(u8);
-
-impl Cycle {
-    #[inline(always)]
-    pub fn new(i: u8, s: u8, n: u8, ws: WaitState) -> Self {
-        Self(i + ws.s * s + s + ws.n * n + n)
-    }
-
-    #[inline(always)]
-    pub fn internal(n: u8) -> Self {
-        Self(n)
-    }
-
-    #[inline(always)]
-    pub fn repeat(self, n: u8) -> Self {
-        Self(self.0 * n)
-    }
-
-    #[inline(always)]
-    pub fn count(self) -> u8 {
-        self.0
-    }
-}
-
-impl Add<Self> for Cycle {
-    type Output = Self;
-
-    fn add(self, rhs: Cycle) -> Self::Output {
-        Self(self.0 + rhs.0)
-    }
-}
-
-impl AddAssign<Self> for Cycle {
-    fn add_assign(&mut self, rhs: Self) {
-        *self = *self + rhs
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OperatingMode {
     USR = 0b10000,

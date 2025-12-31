@@ -27,7 +27,7 @@ impl Dma {
     }
 
     pub fn src_addr_control(&self) -> DmaAddressControl {
-        match self.cnt_h.get_bits(5, 6) {
+        match self.cnt_h.get_bits(7, 8) {
             0 => DmaAddressControl::Increment,
             1 => DmaAddressControl::Decrement,
             2 => DmaAddressControl::Fixed,
