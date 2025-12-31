@@ -96,8 +96,8 @@ pub struct Cycle(u32);
 
 impl Cycle {
     #[inline(always)]
-    pub fn new(i: u8, s: u8, n: u8, ws: WaitState) -> Self {
-        Self(i as u32 + ws.s as u32 * s as u32 + s as u32 + ws.n as u32 * n as u32 + n as u32)
+    pub fn new(i: u32, s: u32, n: u32, ws: WaitState) -> Self {
+        Self(i + ws.s as u32 * s + s + ws.n as u32 * n + n)
     }
 
     #[inline(always)]

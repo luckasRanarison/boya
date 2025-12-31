@@ -1,8 +1,9 @@
 mod asm;
 
 use crate::{
-    arm7tdmi::Arm7tdmi,
-    bus::{BIOS_SIZE, GbaBus, types::DataType},
+    Gba,
+    arm7tdmi::{Arm7tdmi, psr::Psr},
+    bus::{BIOS_SIZE, Bus, GbaBus, types::DataType},
     test::asm::FAKE_BIOS,
 };
 
@@ -126,18 +127,18 @@ impl AsmTestBuilder {
     {
         self.debug_run();
 
-        let mut cpu = self.init_cpu();
+        let mut gba = self.init_gba();
         let mut cycles = Vec::new();
 
-        while func(&cpu) {
-            self.debug_instruction(&cpu);
+        while func(&gba.cpu) {
+            self.debug_instruction(&gba.cpu);
 
-            let cycle = cpu.step();
+            let cycle = gba.step();
 
             cycles.push(cycle.count());
         }
 
-        self.run_assertions(&cpu, cycles.as_slice());
+        self.run_assertions(&gba, cycles.as_slice());
     }
 
     fn debug_run(&self) {
@@ -158,18 +159,18 @@ impl AsmTestBuilder {
         // println!("{:?}", cpu.cpsr);
     }
 
-    fn run_assertions(&self, cpu: &Arm7tdmi, cycles: &[u32]) {
+    fn run_assertions(&self, gba: &Gba, cycles: &[u32]) {
         if !self.cycle_assertions.is_empty() {
             assert_eq!(&self.cycle_assertions, cycles);
         }
 
         if let Some(assert) = &self.func_assertion {
-            assert(&cpu);
+            assert(&gba.cpu);
         }
 
-        cpu.assert_mem(&self.mem_assertions);
-        cpu.assert_reg(&self.reg_assertions);
-        cpu.assert_flag(&self.flag_assertions);
+        self.assert_mem(&gba.cpu, &self.mem_assertions);
+        self.assert_reg_impl(&gba.cpu, &self.reg_assertions);
+        self.assert_flag_impl(&gba.cpu, &self.flag_assertions);
     }
 
     fn init_bios(&self) -> [u8; BIOS_SIZE] {
@@ -205,7 +206,7 @@ impl AsmTestBuilder {
         bus
     }
 
-    fn init_cpu(&self) -> Arm7tdmi {
+    fn init_gba(&self) -> Gba {
         let bus = self.init_bus();
         let mut cpu = Arm7tdmi::new(bus);
 
@@ -225,7 +226,7 @@ impl AsmTestBuilder {
             cpu.override_pc(pc);
         }
 
-        cpu
+        Gba { cpu }
     }
 
     fn make_thumb_code(&self, code: &str) -> String {
@@ -243,5 +244,45 @@ impl AsmTestBuilder {
                 {code}
             "
         )
+    }
+
+    pub fn assert_mem(&self, cpu: &Arm7tdmi, assertions: &[(u32, u32, DataType)]) {
+        for (address, expected, data_type) in assertions {
+            let value = match data_type {
+                DataType::Byte => cpu.bus.read_byte(*address).into(),
+                DataType::HWord => cpu.bus.read_hword(*address).into(),
+                DataType::Word => cpu.bus.read_word(*address),
+            };
+
+            assert_eq!(
+                value, *expected,
+                "expected {expected:#x} at {address:#x}, got {value:#x}"
+            )
+        }
+    }
+
+    pub fn assert_reg_impl(&self, cpu: &Arm7tdmi, assertions: &[(usize, u32)]) {
+        for (index, expected) in assertions {
+            let value = cpu.get_reg(*index);
+
+            assert_eq!(
+                value, *expected,
+                "expected {expected:#x} at R{index}, got {value:#x}"
+            )
+        }
+    }
+
+    pub fn assert_flag_impl(&self, cpu: &Arm7tdmi, assertions: &[(u32, bool)]) {
+        for (flag, expected) in assertions {
+            let value = cpu.cpsr.has(*flag);
+            let name = Psr::format_flag(*flag);
+            let status = if *expected { "set" } else { "cleared" };
+
+            assert_eq!(
+                value, *expected,
+                "expected flag {name} to be {status}, flags: {:?}",
+                cpu.cpsr
+            )
+        }
     }
 }

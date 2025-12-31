@@ -42,6 +42,10 @@ impl Default for GbaBus {
 }
 
 impl GbaBus {
+    pub fn tick(&mut self, cycles: u32) {
+        self.ppu.tick(cycles);
+    }
+
     pub fn load_bios(&mut self, bios: &[u8; BIOS_SIZE]) {
         self.bios = *bios;
     }
@@ -63,7 +67,7 @@ impl GbaBus {
     pub fn get_rw_cycle(&self, addr: u32, dt: DataType, access_kind: MemoryAccess) -> Cycle {
         let region = MemoryRegion::from_address(addr);
         let data = self.get_region_data(region);
-        let access = u8::max(dt.size() / data.width.size(), 1);
+        let access = u8::max(dt.size() / data.width.size(), 1) as u32;
 
         match access_kind {
             MemoryAccess::Seq => Cycle::new(0, access, 0, data.waitstate),

@@ -1,11 +1,11 @@
-mod arm;
-mod bank;
-mod common;
-mod isa;
-mod ops;
-mod pipeline;
-mod psr;
-mod thumb;
+pub mod arm;
+pub mod bank;
+pub mod common;
+pub mod isa;
+pub mod ops;
+pub mod pipeline;
+pub mod psr;
+pub mod thumb;
 
 use bank::Bank;
 use common::{AddrMode, Operand, OperandKind};
@@ -53,21 +53,7 @@ impl Arm7tdmi {
         self.handle_exception(Exception::Reset);
     }
 
-    pub fn tick(&mut self) {
-        let cycles = self.step();
-
-        self.cycles += cycles.count() as u64;
-    }
-
     pub fn step(&mut self) -> Cycle {
-        if !self.cpsr.has(Psr::I) && self.bus.poll_interrupt() {
-            return self.handle_exception(Exception::NormalInterrupt);
-        }
-
-        if let Some(cycles) = self.bus.start_dma() {
-            return cycles;
-        }
-
         let instruction = self.pipeline.take();
         let cycles = self.exec(instruction);
 
@@ -266,45 +252,5 @@ impl Arm7tdmi {
         self.set_pc(value);
         self.pipeline.flush();
         self.load_pipeline();
-    }
-
-    pub fn assert_mem(&self, assertions: &[(u32, u32, DataType)]) {
-        for (address, expected, data_type) in assertions {
-            let value = match data_type {
-                DataType::Byte => self.bus.read_byte(*address).into(),
-                DataType::HWord => self.bus.read_hword(*address).into(),
-                DataType::Word => self.bus.read_word(*address),
-            };
-
-            assert_eq!(
-                value, *expected,
-                "expected {expected:#x} at {address:#x}, got {value:#x}"
-            )
-        }
-    }
-
-    pub fn assert_reg(&self, assertions: &[(usize, u32)]) {
-        for (index, expected) in assertions {
-            let value = self.get_reg(*index);
-
-            assert_eq!(
-                value, *expected,
-                "expected {expected:#x} at R{index}, got {value:#x}"
-            )
-        }
-    }
-
-    pub fn assert_flag(&self, assertions: &[(u32, bool)]) {
-        for (flag, expected) in assertions {
-            let value = self.cpsr.has(*flag);
-            let name = Psr::format_flag(*flag);
-            let status = if *expected { "set" } else { "cleared" };
-
-            assert_eq!(
-                value, *expected,
-                "expected flag {name} to be {status}, flags: {:?}",
-                self.cpsr
-            )
-        }
     }
 }
