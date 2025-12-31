@@ -168,7 +168,7 @@ impl AsmTestBuilder {
             assert(&gba.cpu);
         }
 
-        self.assert_mem(&gba.cpu, &self.mem_assertions);
+        self.assert_mem_impl(&gba.cpu, &self.mem_assertions);
         self.assert_reg_impl(&gba.cpu, &self.reg_assertions);
         self.assert_flag_impl(&gba.cpu, &self.flag_assertions);
     }
@@ -246,7 +246,7 @@ impl AsmTestBuilder {
         )
     }
 
-    pub fn assert_mem(&self, cpu: &Arm7tdmi, assertions: &[(u32, u32, DataType)]) {
+    fn assert_mem_impl(&self, cpu: &Arm7tdmi, assertions: &[(u32, u32, DataType)]) {
         for (address, expected, data_type) in assertions {
             let value = match data_type {
                 DataType::Byte => cpu.bus.read_byte(*address).into(),
@@ -261,7 +261,7 @@ impl AsmTestBuilder {
         }
     }
 
-    pub fn assert_reg_impl(&self, cpu: &Arm7tdmi, assertions: &[(usize, u32)]) {
+    fn assert_reg_impl(&self, cpu: &Arm7tdmi, assertions: &[(usize, u32)]) {
         for (index, expected) in assertions {
             let value = cpu.get_reg(*index);
 
@@ -272,7 +272,7 @@ impl AsmTestBuilder {
         }
     }
 
-    pub fn assert_flag_impl(&self, cpu: &Arm7tdmi, assertions: &[(u32, bool)]) {
+    fn assert_flag_impl(&self, cpu: &Arm7tdmi, assertions: &[(u32, bool)]) {
         for (flag, expected) in assertions {
             let value = cpu.cpsr.has(*flag);
             let name = Psr::format_flag(*flag);

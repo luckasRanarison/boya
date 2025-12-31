@@ -3,10 +3,13 @@ pub mod types;
 use crate::{
     bus::types::{Cycle, DataType, MemoryAccess, MemoryRegion, MemoryRegionData, WaitState},
     ppu::Ppu,
-    registers::io::{
-        IORegister,
-        dma::{Dma, DmaAddressControl, DmaSpecialTiming, DmaStartTiming},
-        interrupt::Interrupt,
+    registers::{
+        io::{
+            IORegister,
+            dma::{Dma, DmaAddressControl, DmaSpecialTiming, DmaStartTiming},
+            interrupt::Interrupt,
+        },
+        ppu::dispstat::Dispstat,
     },
     utils::bitflags::Bitflag,
 };
@@ -44,6 +47,10 @@ impl Default for GbaBus {
 impl GbaBus {
     pub fn tick(&mut self, cycles: u32) {
         self.ppu.tick(cycles);
+
+        if let Some(interrupt) = self.ppu.poll_irq() {
+            self.set_interrupt(interrupt);
+        }
     }
 
     pub fn load_bios(&mut self, bios: &[u8; BIOS_SIZE]) {
@@ -186,8 +193,8 @@ impl GbaBus {
 
         match dma.start_timing() {
             DmaStartTiming::Immediate => true, // FIXME: should wait 2 cycles?
-            DmaStartTiming::VBlank => self.ppu.registers.dispstat.vblank(),
-            DmaStartTiming::HBlank => self.ppu.registers.dispstat.hblank(),
+            DmaStartTiming::VBlank => self.ppu.registers.dispstat.has(Dispstat::VBLANK),
+            DmaStartTiming::HBlank => self.ppu.registers.dispstat.has(Dispstat::HBLANK),
 
             DmaStartTiming::Special => match dma.get_special_timing() {
                 DmaSpecialTiming::None => true, // immediate

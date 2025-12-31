@@ -1,4 +1,7 @@
-use crate::registers::ppu::PpuRegister;
+use crate::registers::{
+    io::interrupt::Interrupt,
+    ppu::{PpuRegister, dispstat::Dispstat},
+};
 
 pub const PALETTE_RAM_SIZE: usize = 0x400; // 1kb
 pub const OAM_SIZE: usize = 0x400; // 1kb
@@ -10,9 +13,11 @@ pub struct Ppu {
     pub oam: [u8; OAM_SIZE],
     pub vram: Box<[u8; VRAM_SIZE]>,
     pub registers: PpuRegister,
-    pub dot: u16,
-    pub scanline: u16,
-    pub divider: u32,
+
+    dot: u16,
+    scanline: u16,
+    divider: u32,
+    pending_irq: Option<Interrupt>,
 }
 
 impl Default for Ppu {
@@ -22,9 +27,10 @@ impl Default for Ppu {
             oam: [0; OAM_SIZE],
             vram: Box::new([0; VRAM_SIZE]),
             registers: PpuRegister::default(),
-            dot: 0,
-            scanline: 0,
+            dot: 1,
+            scanline: 1,
             divider: 0,
+            pending_irq: None,
         }
     }
 }
@@ -39,7 +45,44 @@ impl Ppu {
         }
     }
 
+    pub fn poll_irq(&mut self) -> Option<Interrupt> {
+        self.pending_irq.take()
+    }
+
     pub fn step(&mut self) {
-        //
+        let dispstat = &mut self.registers.dispstat;
+
+        match self.dot {
+            1 => {
+                dispstat.clear(Dispstat::HBLANK);
+            }
+            240 => {
+                dispstat.set(Dispstat::HBLANK);
+
+                if dispstat.has(Dispstat::HBLANK_IRQ) {
+                    self.pending_irq = Some(Interrupt::HBlank);
+                }
+            }
+            308 => {
+                self.scanline += 1;
+                self.dot = 1;
+            }
+            _ => {}
+        }
+
+        match self.scanline {
+            160 if self.dot == 1 => {
+                dispstat.set(Dispstat::VBLANK);
+            }
+            229 => {
+                dispstat.clear(Dispstat::VBLANK);
+                self.scanline = 1;
+
+                if dispstat.has(Dispstat::VBLANK_IRQ) {
+                    self.pending_irq = Some(Interrupt::VBlank);
+                }
+            }
+            _ => {}
+        }
     }
 }
