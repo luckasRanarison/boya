@@ -240,7 +240,7 @@ impl Arm7tdmi {
             _ => {}
         };
 
-        let read_cycle = self.get_rw_cycle(addr, kind, MemoryAccess::NonSeq);
+        let read_cycle = self.bus.get_rw_cycle(addr, kind, MemoryAccess::NonSeq);
         let internal_cycle = Cycle::internal(1);
         let pre_fetch_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
 
@@ -283,7 +283,7 @@ impl Arm7tdmi {
             _ => {}
         };
 
-        let write_cycle = self.get_rw_cycle(addr, kind, MemoryAccess::NonSeq);
+        let write_cycle = self.bus.get_rw_cycle(addr, kind, MemoryAccess::NonSeq);
 
         fetch_cycle + write_cycle
     }
@@ -325,7 +325,7 @@ impl Arm7tdmi {
                     false => MemoryAccess::NonSeq,
                 };
 
-                write_cycle += self.get_rw_cycle(offset, DataType::Word, access);
+                write_cycle += self.bus.get_rw_cycle(offset, DataType::Word, access);
 
                 self.store_reg(idx, &mut offset, usr);
             }
@@ -364,7 +364,9 @@ impl Arm7tdmi {
                     pc_dst = true;
                 }
 
-                read_cycle += self.get_rw_cycle(offset, DataType::Word, MemoryAccess::Seq);
+                read_cycle += self
+                    .bus
+                    .get_rw_cycle(offset, DataType::Word, MemoryAccess::Seq);
 
                 self.load_reg(idx, &mut offset, usr);
             }
@@ -492,7 +494,7 @@ impl Arm7tdmi {
         }
 
         let dt = if byte { DataType::Byte } else { DataType::Word };
-        let rw_cycle = self.get_rw_cycle(addr, dt, MemoryAccess::NonSeq);
+        let rw_cycle = self.bus.get_rw_cycle(addr, dt, MemoryAccess::NonSeq);
         let internal_cycle = Cycle::internal(1);
         let fetch_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
 

@@ -1,11 +1,11 @@
 pub mod types;
 
 use crate::{
-    bus::types::{Cycle, DataType, MemoryRegionData, WaitState},
+    bus::types::{Cycle, DataType, MemoryAccess, MemoryRegion, MemoryRegionData, WaitState},
     ppu::Ppu,
     registers::io::{
         IORegister,
-        dma::{Dma, DmaSpecialTiming, DmaStartTiming},
+        dma::{Dma, DmaAddressControl, DmaSpecialTiming, DmaStartTiming},
         interrupt::Interrupt,
     },
     utils::bitflags::Bitflag,
@@ -60,36 +60,99 @@ impl GbaBus {
         }
     }
 
-    pub fn get_region_data(&self, address: u32) -> MemoryRegionData {
-        let (width, waitstate) = match address {
-            0x0000_0000..=0x0000_3FFF => (DataType::Word, WaitState::default()), // BIOS
-            0x0200_0000..=0x0203_FFFF => (DataType::HWord, WaitState { n: 2, s: 2 }), // EWRAM
-            0x0300_0000..=0x0300_7FFF => (DataType::Word, WaitState::default()), // IWRAM
-            0x0400_0000..=0x0400_03FE => (DataType::Word, WaitState::default()), // I/O
-            0x0500_0000..=0x0500_03FF => (DataType::HWord, WaitState::default()), // PALETTE >
-            0x0600_0000..=0x0617_FFFF => (DataType::HWord, WaitState::default()), // VRAM    >
-            0x0700_0000..=0x0700_03FF => (DataType::Word, WaitState::default()), //  OAM     > FIXME: +1 during rendering
-            0x0800_0000..=0x09FF_FFFF => (DataType::HWord, self.registers.waitcnt.wait_state0()),
-            0x0A00_0000..=0x0BFF_FFFF => (DataType::HWord, self.registers.waitcnt.wait_state1()),
-            0x0C00_0000..=0x0DFF_FFFF => (DataType::HWord, self.registers.waitcnt.wait_state2()),
-            0x0E00_0000..=0x0E00_FFFF => (DataType::HWord, self.registers.waitcnt.sram_wait()), // FIXME: Detect save type SRAM/FLASH/EEPROM
-            _ => (DataType::Word, WaitState::default()), // out of bounds!
+    pub fn get_rw_cycle(&self, addr: u32, dt: DataType, access_kind: MemoryAccess) -> Cycle {
+        let region = MemoryRegion::from_address(addr);
+        let data = self.get_region_data(region);
+        let access = u8::max(dt.size() / data.width.size(), 1);
+
+        match access_kind {
+            MemoryAccess::Seq => Cycle::new(0, access, 0, data.waitstate),
+            MemoryAccess::NonSeq => Cycle::new(0, access - 1, 1, data.waitstate),
+        }
+    }
+
+    pub fn get_region_data(&self, region: MemoryRegion) -> MemoryRegionData {
+        let (width, waitstate) = match region {
+            MemoryRegion::BIOS => (DataType::Word, WaitState::default()),
+            MemoryRegion::EWRAM => (DataType::HWord, WaitState { n: 2, s: 2 }),
+            MemoryRegion::IWRAM => (DataType::Word, WaitState::default()),
+            MemoryRegion::IO => (DataType::Word, WaitState::default()),
+            MemoryRegion::PALETTE => (DataType::HWord, WaitState::default()), // >
+            MemoryRegion::VRAM => (DataType::HWord, WaitState::default()),    // >
+            MemoryRegion::OAM => (DataType::Word, WaitState::default()), //      > FIXME: +1 during rendering
+            MemoryRegion::WAITSTATE0 => (DataType::HWord, self.registers.waitcnt.wait_state0()),
+            MemoryRegion::WAITSTATE1 => (DataType::HWord, self.registers.waitcnt.wait_state1()),
+            MemoryRegion::WAITSTATE2 => (DataType::HWord, self.registers.waitcnt.wait_state2()),
+            MemoryRegion::SRAM => (DataType::HWord, self.registers.waitcnt.sram_wait()), // FIXME: Detect save type SRAM/FLASH/EEPROM
+            _ => (DataType::Word, WaitState::default()),
         };
 
         MemoryRegionData { width, waitstate }
     }
 
+    // FIXME: currently slow, use slice copy to improve performance
     pub fn start_dma(&mut self) -> Option<Cycle> {
-        let _dma = self.get_active_dma()?;
+        let dma = self.get_active_dma()?;
 
-        // let target_slice = match dma.dst_addr_control() {
-        //     DmaAddressControl::Increment => todo!(),
-        //     DmaAddressControl::Decrement => todo!(),
-        //     DmaAddressControl::Fixed => todo!(),
-        //     DmaAddressControl::IncrementReload => todo!(),
-        // };
+        if !dma.repeat() {
+            dma.disable();
+        }
 
-        todo!()
+        let mut src_addr = dma.sad;
+        let mut dst_addr = dma.dad;
+
+        let src_addr_ctrl = dma.src_addr_control();
+        let dst_addr_ctrl = dma.dst_addr_control();
+        let dma_len = dma.transfer_len();
+        let dma_dt = dma.transfer_type();
+
+        let cycles = self.compute_dma_cycles(src_addr, dst_addr, dma_len, dma_dt);
+
+        for _ in 0..dma_len {
+            let byte = self.read_byte(src_addr);
+
+            self.write_byte(dst_addr, byte);
+
+            match dst_addr_ctrl {
+                DmaAddressControl::Increment => dst_addr += 1,
+                DmaAddressControl::Decrement => dst_addr -= 1,
+                _ => {}
+            }
+
+            match src_addr_ctrl {
+                DmaAddressControl::Decrement => src_addr -= 1,
+                DmaAddressControl::Increment | DmaAddressControl::IncrementReload => src_addr += 1,
+                DmaAddressControl::Fixed => {}
+            }
+        }
+
+        Some(cycles)
+    }
+
+    fn compute_dma_cycles(
+        &self,
+        src_addr: u32,
+        dst_addr: u32,
+        dma_len: u32,
+        dma_dt: DataType,
+    ) -> Cycle {
+        let src_region = MemoryRegion::from_address(src_addr);
+        let dst_region = MemoryRegion::from_address(dst_addr);
+
+        let read_cycles_seq = self.get_rw_cycle(src_addr, dma_dt, MemoryAccess::Seq);
+        let write_cycles_seq = self.get_rw_cycle(dst_addr, dma_dt, MemoryAccess::Seq);
+        let read_cycles_non_seq = self.get_rw_cycle(src_addr, dma_dt, MemoryAccess::NonSeq);
+        let write_cycles_non_seq = self.get_rw_cycle(dst_addr, dma_dt, MemoryAccess::NonSeq);
+
+        let read_cycles = read_cycles_non_seq + read_cycles_seq.repeat(dma_len - 1);
+        let write_cycles = write_cycles_non_seq + write_cycles_seq.repeat(dma_len - 1);
+
+        let internal_cycles = match (src_region, dst_region) {
+            _ if src_region.is_gamepak() && dst_region.is_gamepak() => Cycle::internal(4),
+            _ => Cycle::internal(2),
+        };
+
+        read_cycles + write_cycles + internal_cycles // 2N + 2(n-1)S + xI
     }
 
     fn get_active_dma(&mut self) -> Option<&mut Dma> {
@@ -108,7 +171,7 @@ impl GbaBus {
         }
 
         match dma.start_timing() {
-            DmaStartTiming::Immediate => true,
+            DmaStartTiming::Immediate => true, // FIXME: should wait 2 cycles?
             DmaStartTiming::VBlank => self.ppu.registers.dispstat.vblank(),
             DmaStartTiming::HBlank => self.ppu.registers.dispstat.hblank(),
 

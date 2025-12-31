@@ -1,4 +1,7 @@
-use crate::{bus::Bus, utils::bitflags::Bitflag};
+use crate::{
+    bus::{Bus, types::DataType},
+    utils::bitflags::Bitflag,
+};
 
 #[derive(Debug, Default)]
 pub struct Dma {
@@ -35,14 +38,14 @@ impl Dma {
         }
     }
 
-    pub fn dma_repeat(&self) -> bool {
+    pub fn repeat(&self) -> bool {
         self.cnt_h.has(7)
     }
 
-    pub fn transfer_type(&self) -> DmaTransferType {
+    pub fn transfer_type(&self) -> DataType {
         match self.cnt_h.get(10) {
-            0 => DmaTransferType::Dma16,
-            _ => DmaTransferType::Dma32,
+            0 => DataType::HWord,
+            _ => DataType::Word,
         }
     }
 
@@ -67,10 +70,10 @@ impl Dma {
         self.cnt_h.clear(15);
     }
 
-    pub fn transfer_len(&self) -> usize {
+    pub fn transfer_len(&self) -> u32 {
         match self.cnt_l {
             0 => self.channel.max_transfer_len(),
-            _ => self.cnt_l as usize,
+            _ => self.cnt_l.into(),
         }
     }
 
@@ -116,7 +119,7 @@ impl DmaChannel {
         }
     }
 
-    pub fn max_transfer_len(self) -> usize {
+    pub fn max_transfer_len(self) -> u32 {
         match self {
             DmaChannel::DMA3 => 0x10000,
             _ => 0x4000,
@@ -146,10 +149,4 @@ pub enum DmaAddressControl {
     Decrement,
     Fixed,
     IncrementReload,
-}
-
-#[derive(Debug)]
-pub enum DmaTransferType {
-    Dma16,
-    Dma32,
 }

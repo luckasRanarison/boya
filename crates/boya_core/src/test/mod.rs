@@ -24,7 +24,7 @@ pub struct AsmTestBuilder {
     reg_assertions: Vec<(usize, u32)>,
     mem_assertions: Vec<(u32, u32, DataType)>,
     func_assertion: Option<Box<dyn Fn(&Arm7tdmi)>>,
-    cycle_assertions: Vec<u8>,
+    cycle_assertions: Vec<u32>,
 }
 
 impl AsmTestBuilder {
@@ -98,7 +98,7 @@ impl AsmTestBuilder {
         self
     }
 
-    pub fn assert_cycles<I: IntoIterator<Item = u8>>(mut self, cycles: I) -> Self {
+    pub fn assert_cycles<I: IntoIterator<Item = u32>>(mut self, cycles: I) -> Self {
         self.cycle_assertions = cycles.into_iter().collect();
         self
     }
@@ -158,7 +158,7 @@ impl AsmTestBuilder {
         // println!("{:?}", cpu.cpsr);
     }
 
-    fn run_assertions(&self, cpu: &Arm7tdmi, cycles: &[u8]) {
+    fn run_assertions(&self, cpu: &Arm7tdmi, cycles: &[u32]) {
         if !self.cycle_assertions.is_empty() {
             assert_eq!(&self.cycle_assertions, cycles);
         }
