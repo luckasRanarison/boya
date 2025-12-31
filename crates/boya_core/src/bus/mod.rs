@@ -1,16 +1,13 @@
-pub mod registers;
 pub mod types;
 
 use crate::{
-    bus::{
-        registers::{
-            IORegister,
-            dma::{Dma, DmaAddressControl},
-            interrupt::Interrupt,
-        },
-        types::{Cycle, DataType, MemoryRegion, ReadableMemory, WaitState, WritableMemory},
-    },
+    bus::types::{Cycle, DataType, MemoryRegionData, WaitState},
     ppu::Ppu,
+    registers::io::{
+        IORegister,
+        dma::{Dma, DmaSpecialTiming, DmaStartTiming},
+        interrupt::Interrupt,
+    },
     utils::bitflags::Bitflag,
 };
 
@@ -21,13 +18,13 @@ pub const SRAM_SIZE: usize = 0x10000; // 64kb
 
 #[derive(Debug)]
 pub struct GbaBus {
-    bios: [u8; BIOS_SIZE],
-    iwram: [u8; IWRAM_SIZE],
-    ewram: Box<[u8; EWRAM_SIZE]>,
-    rom: Vec<u8>,
-    sram: Box<[u8; SRAM_SIZE]>,
-    registers: IORegister,
-    ppu: Ppu,
+    pub bios: [u8; BIOS_SIZE],
+    pub iwram: [u8; IWRAM_SIZE],
+    pub ewram: Box<[u8; EWRAM_SIZE]>,
+    pub rom: Vec<u8>,
+    pub sram: Box<[u8; SRAM_SIZE]>,
+    pub registers: IORegister,
+    pub ppu: Ppu,
 }
 
 impl Default for GbaBus {
@@ -38,7 +35,7 @@ impl Default for GbaBus {
             ewram: Box::new([0; EWRAM_SIZE]),
             rom: Vec::new(),
             sram: Box::new([0; SRAM_SIZE]),
-            registers: IORegister::new(),
+            registers: IORegister::default(),
             ppu: Ppu::default(),
         }
     }
@@ -63,7 +60,7 @@ impl GbaBus {
         }
     }
 
-    pub fn get_region_data(&self, address: u32) -> MemoryRegion {
+    pub fn get_region_data(&self, address: u32) -> MemoryRegionData {
         let (width, waitstate) = match address {
             0x0000_0000..=0x0000_3FFF => (DataType::Word, WaitState::default()), // BIOS
             0x0200_0000..=0x0203_FFFF => (DataType::HWord, WaitState { n: 2, s: 2 }), // EWRAM
@@ -79,45 +76,49 @@ impl GbaBus {
             _ => (DataType::Word, WaitState::default()), // out of bounds!
         };
 
-        MemoryRegion { width, waitstate }
+        MemoryRegionData { width, waitstate }
     }
 
     pub fn start_dma(&mut self) -> Option<Cycle> {
-        if let Some(dma) = self.get_active_dma() {
-            let src_addr = dma.sad;
-            let dst_addr = dma.dad;
-            let copy_len = dma.transfer_len();
-            let src_region = self.get_region_data(src_addr);
-            let dst_region = self.get_region_data(dst_addr);
+        let _dma = self.get_active_dma()?;
 
-            // let target_slice = match dma.dst_addr_control() {
-            //     DmaAddressControl::Increment => todo!(),
-            //     DmaAddressControl::Decrement => todo!(),
-            //     DmaAddressControl::Fixed => todo!(),
-            //     DmaAddressControl::IncrementReload => todo!(),
-            // };
+        // let target_slice = match dma.dst_addr_control() {
+        //     DmaAddressControl::Increment => todo!(),
+        //     DmaAddressControl::Decrement => todo!(),
+        //     DmaAddressControl::Fixed => todo!(),
+        //     DmaAddressControl::IncrementReload => todo!(),
+        // };
 
-            todo!()
-        } else {
-            None
-        }
+        todo!()
     }
 
     fn get_active_dma(&mut self) -> Option<&mut Dma> {
         match true {
-            _ if self.registers.dma0.dma_enable() => Some(&mut self.registers.dma0),
-            _ if self.registers.dma1.dma_enable() => Some(&mut self.registers.dma1),
-            _ if self.registers.dma2.dma_enable() => Some(&mut self.registers.dma2),
-            _ if self.registers.dma3.dma_enable() => Some(&mut self.registers.dma3),
+            _ if self.should_start_dma(&self.registers.dma0) => Some(&mut self.registers.dma0),
+            _ if self.should_start_dma(&self.registers.dma1) => Some(&mut self.registers.dma1),
+            _ if self.should_start_dma(&self.registers.dma2) => Some(&mut self.registers.dma2),
+            _ if self.should_start_dma(&self.registers.dma3) => Some(&mut self.registers.dma3),
             _ => None,
         }
     }
 
-    fn read_rom(&self, address: u32) -> u8 {
-        self.rom
-            .get(address as usize - 0x0800_0000)
-            .cloned()
-            .unwrap_or_default()
+    fn should_start_dma(&self, dma: &Dma) -> bool {
+        if !dma.dma_enable() {
+            return false;
+        }
+
+        match dma.start_timing() {
+            DmaStartTiming::Immediate => true,
+            DmaStartTiming::VBlank => self.ppu.registers.dispstat.vblank(),
+            DmaStartTiming::HBlank => self.ppu.registers.dispstat.hblank(),
+
+            DmaStartTiming::Special => match dma.get_special_timing() {
+                DmaSpecialTiming::None => true, // immediate
+                DmaSpecialTiming::FifoA => todo!("FIFO_A DMA start"),
+                DmaSpecialTiming::FifoB => todo!("FIFO_B DMA start"),
+                DmaSpecialTiming::VideoCapture => todo!("Video capture DMA start"),
+            },
+        }
     }
 }
 
@@ -132,7 +133,7 @@ impl Bus for GbaBus {
             0x0500_0000..=0x0500_03FF => self.ppu.palette[address as usize - 0x0500_0000],
             0x0600_0000..=0x0617_FFFF => self.ppu.vram[address as usize - 0x0600_0000],
             0x0700_0000..=0x0700_03FF => self.ppu.oam[address as usize - 0x0700_0000],
-            0x0800_0000..=0x0DFF_FFFF => self.read_rom(address),
+            0x0800_0000..=0x0DFF_FFFF => self.rom[address as usize - 0x0800_0000],
             0x0E00_0000..=0x0E00_FFFF => self.sram[address as usize - 0x0E00_0000],
             _ => 0x0, // open bus
         }
@@ -249,7 +250,7 @@ mod tests {
             MOV     R1, #0x0400_0000 ; 1S (6)
             MOV     R2, #0x0000_0200 ; 1S (6)
             ADD     R3, R1, R2       ; 1S (6)
-            STR     R0, [R3, #4]     ; 2N (9) (N + 4 + S + 2) + N
+            STRH    R0, [R3, #4]     ; 2N (9) (N + 4 + S + 2) + N
             MOV     R4, R0           ; 1S (4)
         ";
 

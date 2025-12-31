@@ -1,6 +1,4 @@
-use crate::ppu::registers::PpuRegister;
-
-pub mod registers;
+use crate::registers::ppu::PpuRegister;
 
 pub const PALETTE_RAM_SIZE: usize = 0x400; // 1kb
 pub const OAM_SIZE: usize = 0x400; // 1kb

@@ -274,40 +274,40 @@ impl Arm7tdmi {
         self.load_pipeline();
     }
 
-    pub fn assert_mem(&self, assertions: Vec<(u32, u32, DataType)>) {
+    pub fn assert_mem(&self, assertions: &[(u32, u32, DataType)]) {
         for (address, expected, data_type) in assertions {
             let value = match data_type {
-                DataType::Byte => self.bus.read_byte(address).into(),
-                DataType::HWord => self.bus.read_hword(address).into(),
-                DataType::Word => self.bus.read_word(address),
+                DataType::Byte => self.bus.read_byte(*address).into(),
+                DataType::HWord => self.bus.read_hword(*address).into(),
+                DataType::Word => self.bus.read_word(*address),
             };
 
             assert_eq!(
-                value, expected,
+                value, *expected,
                 "expected {expected:#x} at {address:#x}, got {value:#x}"
             )
         }
     }
 
-    pub fn assert_reg(&self, assertions: Vec<(usize, u32)>) {
+    pub fn assert_reg(&self, assertions: &[(usize, u32)]) {
         for (index, expected) in assertions {
-            let value = self.get_reg(index);
+            let value = self.get_reg(*index);
 
             assert_eq!(
-                value, expected,
+                value, *expected,
                 "expected {expected:#x} at R{index}, got {value:#x}"
             )
         }
     }
 
-    pub fn assert_flag(&self, assertions: Vec<(u32, bool)>) {
+    pub fn assert_flag(&self, assertions: &[(u32, bool)]) {
         for (flag, expected) in assertions {
-            let value = self.cpsr.has(flag);
-            let name = Psr::format_flag(flag);
-            let status = if expected { "set" } else { "cleared" };
+            let value = self.cpsr.has(*flag);
+            let name = Psr::format_flag(*flag);
+            let status = if *expected { "set" } else { "cleared" };
 
             assert_eq!(
-                value, expected,
+                value, *expected,
                 "expected flag {name} to be {status}, flags: {:?}",
                 self.cpsr
             )

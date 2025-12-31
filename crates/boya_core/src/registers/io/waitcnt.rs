@@ -1,4 +1,4 @@
-use crate::{bus::WaitState, utils::bitflags::Bitflag};
+use crate::{bus::types::WaitState, utils::bitflags::Bitflag};
 
 #[derive(Debug, Default)]
 pub struct WaitCnt {

@@ -1,7 +1,5 @@
 mod asm;
 
-use std::collections::VecDeque;
-
 use crate::{
     arm7tdmi::Arm7tdmi,
     bus::{BIOS_SIZE, GbaBus, types::DataType},
@@ -16,7 +14,6 @@ pub const TMB_MAIN_START: u32 = 0x0800_0012;
 
 #[derive(Default)]
 pub struct AsmTestBuilder {
-    bus: GbaBus,
     thumb: bool,
     code: String,
     bytes: Vec<u8>,
@@ -27,7 +24,7 @@ pub struct AsmTestBuilder {
     reg_assertions: Vec<(usize, u32)>,
     mem_assertions: Vec<(u32, u32, DataType)>,
     func_assertion: Option<Box<dyn Fn(&Arm7tdmi)>>,
-    cycle_assertions: VecDeque<u8>,
+    cycle_assertions: Vec<u8>,
 }
 
 impl AsmTestBuilder {
@@ -123,17 +120,59 @@ impl AsmTestBuilder {
         });
     }
 
-    pub fn run_while<F>(mut self, mut func: F)
+    pub fn run_while<F>(&self, mut func: F)
     where
         F: FnMut(&Arm7tdmi) -> bool + 'static,
     {
+        self.debug_run();
+
+        let mut cpu = self.init_cpu();
+        let mut cycles = Vec::new();
+
+        while func(&cpu) {
+            self.debug_instruction(&cpu);
+
+            let cycle = cpu.step();
+
+            cycles.push(cycle.count());
+        }
+
+        self.run_assertions(&cpu, cycles.as_slice());
+    }
+
+    fn debug_run(&self) {
         let formated_bits = format_bin_bytes(&self.bytes);
         let formated_bytes = format_hex_bytes(&self.bytes);
 
         println!("code: {}", self.code);
         println!("hex: {formated_bytes}");
         println!("bin: {formated_bits}\n");
+    }
 
+    fn debug_instruction(&self, cpu: &Arm7tdmi) {
+        println!(
+            "{:#08x}: {:?}",
+            cpu.pipeline.curr_pc,
+            cpu.pipeline.curr_instr.as_ref().unwrap(),
+        );
+        // println!("{:?}", cpu.cpsr);
+    }
+
+    fn run_assertions(&self, cpu: &Arm7tdmi, cycles: &[u8]) {
+        if !self.cycle_assertions.is_empty() {
+            assert_eq!(&self.cycle_assertions, cycles);
+        }
+
+        if let Some(assert) = &self.func_assertion {
+            assert(&cpu);
+        }
+
+        cpu.assert_mem(&self.mem_assertions);
+        cpu.assert_reg(&self.reg_assertions);
+        cpu.assert_flag(&self.flag_assertions);
+    }
+
+    fn init_bios(&self) -> [u8; BIOS_SIZE] {
         let mut bios = [0; BIOS_SIZE];
         let fake_bios = compile_asm(FAKE_BIOS).unwrap();
 
@@ -141,10 +180,34 @@ impl AsmTestBuilder {
             bios[i] = *byte;
         }
 
-        self.bus.load_bios(&bios);
-        self.bus.load_rom(&self.bytes);
+        bios
+    }
 
-        let mut cpu = Arm7tdmi::new(self.bus);
+    fn init_rom(&self) -> Vec<u8> {
+        // Make test ROMs bigger to avoid out of bound indexing
+        let rom_size = usize::max(self.bytes.len(), 1024);
+        let mut rom = vec![0; rom_size];
+        let rom_slice = &mut rom[..self.bytes.len()];
+
+        rom_slice.copy_from_slice(&self.bytes);
+        rom
+    }
+
+    fn init_bus(&self) -> GbaBus {
+        let mut bus = GbaBus::default();
+
+        let rom = self.init_rom();
+        let bios = self.init_bios();
+
+        bus.load_bios(&bios);
+        bus.load_rom(&rom);
+
+        bus
+    }
+
+    fn init_cpu(&self) -> Arm7tdmi {
+        let bus = self.init_bus();
+        let mut cpu = Arm7tdmi::new(bus);
 
         cpu.reset();
 
@@ -154,7 +217,7 @@ impl AsmTestBuilder {
             cpu.step();
         }
 
-        if let Some(setup) = self.setup {
+        if let Some(setup) = &self.setup {
             setup(&mut cpu);
         }
 
@@ -162,32 +225,7 @@ impl AsmTestBuilder {
             cpu.override_pc(pc);
         }
 
-        while func(&cpu) {
-            // println!("{:?}", cpu.cpsr);
-            println!(
-                "{:#08x}: {:?}",
-                cpu.pipeline.curr_pc,
-                cpu.pipeline.curr_instr.as_ref().unwrap(),
-            );
-
-            let cycles = cpu.step();
-
-            if let Some(expected_cycles) = self.cycle_assertions.pop_front() {
-                assert_eq!(
-                    cycles.count(),
-                    expected_cycles,
-                    "instruction cycle mismatch, expected: {expected_cycles}"
-                )
-            }
-        }
-
-        if let Some(assert) = self.func_assertion {
-            assert(&cpu);
-        }
-
-        cpu.assert_mem(self.mem_assertions);
-        cpu.assert_reg(self.reg_assertions);
-        cpu.assert_flag(self.flag_assertions);
+        cpu
     }
 
     fn make_thumb_code(&self, code: &str) -> String {

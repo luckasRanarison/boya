@@ -1,7 +1,11 @@
-use crate::bus::{
-    Bus,
-    registers::{
-        dma::Dma, interrupt::IrqRequestFlag, keyinput::KeyInput, timer::Timer, waitcnt::WaitCnt,
+use crate::{
+    bus::Bus,
+    registers::io::{
+        dma::{Dma, DmaChannel},
+        interrupt::IrqRequestFlag,
+        keyinput::KeyInput,
+        timer::Timer,
+        waitcnt::WaitCnt,
     },
 };
 
@@ -44,7 +48,9 @@ pub struct IORegister {
 impl IORegister {
     pub fn new() -> Self {
         Self {
-            dma3: Dma::channel3(),
+            dma1: Dma::new(DmaChannel::DMA1),
+            dma2: Dma::new(DmaChannel::DMA2),
+            dma3: Dma::new(DmaChannel::DMA3),
             ..Default::default()
         }
     }
@@ -66,7 +72,7 @@ impl Bus for IORegister {
             0x202..=0x203 => self.irf.value.read_byte(address),
             0x204..=0x205 => self.waitcnt.value.read_byte(address),
             0x0400_0208..=0x0400_0209 => self.ime.read_byte(address),
-            _ => 0, // open bus
+            _ => todo!("I/O register read: {address:#08X}"),
         }
     }
 
@@ -84,7 +90,7 @@ impl Bus for IORegister {
             0x202..=0x203 => self.irf.value.write_byte(address, value),
             0x204..=0x205 => self.waitcnt.value.write_byte(address, value),
             0x208..=0x209 => self.ime.write_byte(address, value),
-            _ => {}
+            _ => todo!("I/O register write: {address:#08X}"),
         }
     }
 }

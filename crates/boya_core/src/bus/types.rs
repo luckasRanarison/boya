@@ -1,7 +1,5 @@
 use std::ops::{Add, AddAssign};
 
-use crate::{bus::registers::IORegister, ppu::registers::PpuRegister};
-
 #[derive(Debug, Clone, Copy)]
 pub enum DataType {
     Byte = 1,
@@ -16,7 +14,7 @@ pub enum MemoryAccess {
 }
 
 #[derive(Debug)]
-pub struct MemoryRegion {
+pub struct MemoryRegionData {
     pub width: DataType,
     pub waitstate: WaitState,
 }
@@ -64,20 +62,4 @@ impl AddAssign<Self> for Cycle {
     fn add_assign(&mut self, rhs: Self) {
         *self = *self + rhs
     }
-}
-
-#[derive(Debug)]
-pub enum ReadableMemory<'a> {
-    Slice(&'a [u8]),
-    IoRegister(&'a IORegister),
-    PpuRegister(&'a PpuRegister),
-    OpenBus,
-}
-
-#[derive(Debug)]
-pub enum WritableMemory<'a> {
-    Slice(&'a mut [u8]),
-    IoRegister(&'a IORegister),
-    PpuRegister(&'a PpuRegister),
-    OutOfBounds,
 }

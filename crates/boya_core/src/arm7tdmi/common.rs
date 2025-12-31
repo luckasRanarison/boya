@@ -1,9 +1,6 @@
-use std::{
-    fmt::Debug,
-    ops::{Add, AddAssign},
-};
+use std::fmt::Debug;
 
-use crate::{bus::types::WaitState, utils::bitflags::BitIter};
+use crate::utils::bitflags::BitIter;
 
 #[derive(Debug, Clone, Copy)]
 pub enum NamedRegister {

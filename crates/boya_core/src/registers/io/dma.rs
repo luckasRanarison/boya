@@ -6,13 +6,13 @@ pub struct Dma {
     pub dad: u32,
     pub cnt_l: u16,
     pub cnt_h: u16,
-    pub max_len: Option<usize>,
+    pub channel: DmaChannel,
 }
 
 impl Dma {
-    pub fn channel3() -> Self {
+    pub fn new(channel: DmaChannel) -> Self {
         Self {
-            max_len: Some(0x10000),
+            channel,
             ..Default::default()
         }
     }
@@ -63,11 +63,19 @@ impl Dma {
         self.cnt_h.has(15)
     }
 
+    pub fn disable(&mut self) {
+        self.cnt_h.clear(15);
+    }
+
     pub fn transfer_len(&self) -> usize {
         match self.cnt_l {
-            0 => self.max_len.unwrap_or(0x4000),
+            0 => self.channel.max_transfer_len(),
             _ => self.cnt_l as usize,
         }
+    }
+
+    pub fn get_special_timing(&self) -> DmaSpecialTiming {
+        self.channel.get_special_timing()
     }
 }
 
@@ -89,6 +97,49 @@ impl Bus for Dma {
     }
 }
 
+#[derive(Debug, Default, Clone, Copy)]
+pub enum DmaChannel {
+    #[default]
+    DMA0,
+    DMA1,
+    DMA2,
+    DMA3,
+}
+
+impl DmaChannel {
+    pub fn get_special_timing(self) -> DmaSpecialTiming {
+        match self {
+            DmaChannel::DMA0 => DmaSpecialTiming::None,
+            DmaChannel::DMA1 => DmaSpecialTiming::FifoA,
+            DmaChannel::DMA2 => DmaSpecialTiming::FifoB,
+            DmaChannel::DMA3 => DmaSpecialTiming::VideoCapture,
+        }
+    }
+
+    pub fn max_transfer_len(self) -> usize {
+        match self {
+            DmaChannel::DMA3 => 0x10000,
+            _ => 0x4000,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum DmaSpecialTiming {
+    None,
+    FifoA,
+    FifoB,
+    VideoCapture,
+}
+
+#[derive(Debug)]
+pub enum DmaStartTiming {
+    Immediate,
+    VBlank,
+    HBlank,
+    Special,
+}
+
 #[derive(Debug)]
 pub enum DmaAddressControl {
     Increment,
@@ -101,12 +152,4 @@ pub enum DmaAddressControl {
 pub enum DmaTransferType {
     Dma16,
     Dma32,
-}
-
-#[derive(Debug)]
-pub enum DmaStartTiming {
-    Immediate,
-    VBlank,
-    HBlank,
-    Special,
 }
