@@ -68,3 +68,33 @@ pub enum GamepakType {
     GBA,
     GBC,
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::test::AsmTestBuilder;
+
+    #[test]
+    fn test_waitstate() {
+        let asm = r"
+            ; set waitstate 0 to 3,1
+            MOV     R0, #10100b
+            MOV     R1, #0x0400_0000
+            MOV     R2, #0x0000_0200
+            ADD     R3, R1, R2
+            STRH    R0, [R3, #4]
+            MOV     R4, R0
+        ";
+
+        AsmTestBuilder::new()
+            .asm(asm)
+            .assert_cycles([
+                6, // MOV  (1S)
+                6, // MOV  (1S)
+                6, // MOV  (1S)
+                6, // ADD  (1S)
+                9, // STRH (2N) (N + 4 + S + 2) + N
+                4, // MOV  (1S)
+            ])
+            .run(6);
+    }
+}

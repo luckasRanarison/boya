@@ -1,4 +1,4 @@
-use crate::{registers::io::interrupt::Interrupt, utils::bitflags::Bitflag};
+use crate::{bus::types::Interrupt, utils::bitflags::Bitflag};
 
 #[derive(Debug)]
 pub struct Keypad {
@@ -62,4 +62,45 @@ pub enum Key {
 pub enum KeyIrqCondition {
     Or,
     And,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        bus::types::Interrupt, registers::io::keypad::Key, test::AsmTestBuilder,
+        utils::bitflags::Bitflag,
+    };
+
+    #[test]
+    fn test_keypad() {
+        let asm = r"
+            MOV     R0, #0x0400_0000
+            MOV     R1, #0x130
+            ADD     R1, #0x2
+            MOV     R2, #0x0
+            ORR     R2, #(1 shl 1)    ; set irq trigger B
+            ORR     R2, #(1 shl 7)    ; set irq trigger Down
+            ORR     R2, #(1 shl 14)   ; set irq enable
+            ORR     R2, #(1 shl 15)   ; set irq condition to AND
+            STRH    R2, [R0, R1]
+
+            NOP
+        ";
+
+        AsmTestBuilder::new()
+            .asm(asm)
+            .setup(|cpu| {
+                cpu.bus.registers.ime = 1;
+                cpu.bus.registers.ie.set(Interrupt::Keypad as u16);
+                cpu.bus.registers.keypad.keyinput.clear(Key::Down as u16);
+                cpu.bus.registers.keypad.keyinput.clear(Key::ButtonB as u16);
+            })
+            .assert_fn(|cpu| {
+                assert!(
+                    cpu.bus.registers.irf.has(Interrupt::Keypad as u16),
+                    "keypad pending irq"
+                );
+            })
+            .run(10);
+    }
 }

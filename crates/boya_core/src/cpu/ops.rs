@@ -329,21 +329,23 @@ impl Arm7tdmi {
         }
 
         for (idx, bit) in rlist.iter_lsb() {
-            if bit == 1 {
-                if idx == rb && low_addr != offset {
-                    self.write_base_address(rb, n, amod);
-                    pre_write = true;
-                }
-
-                let access = match idx as u8 != n - 1 {
-                    true => MemoryAccess::Seq,
-                    false => MemoryAccess::NonSeq,
-                };
-
-                write_cycle += self.bus.get_rw_cycle(offset, DataType::Word, access);
-
-                self.store_reg(idx, &mut offset, usr);
+            if bit != 1 {
+                continue;
             }
+
+            if idx == rb && low_addr != offset {
+                self.write_base_address(rb, n, amod);
+                pre_write = true;
+            }
+
+            let access = match idx as u8 != n - 1 {
+                true => MemoryAccess::Seq,
+                false => MemoryAccess::NonSeq,
+            };
+
+            write_cycle += self.bus.get_rw_cycle(offset, DataType::Word, access);
+
+            self.store_reg(idx, &mut offset, usr);
         }
 
         if wb && !pre_write {
@@ -373,21 +375,23 @@ impl Arm7tdmi {
         let mut offset = self.get_lowest_address(rb, n, amod);
 
         for (idx, bit) in rlist.iter_lsb() {
-            if bit == 1 {
-                if idx == rb {
-                    skip_write = true;
-                }
-
-                if idx == NamedRegister::PC as usize {
-                    pc_dst = true;
-                }
-
-                read_cycle += self
-                    .bus
-                    .get_rw_cycle(offset, DataType::Word, MemoryAccess::Seq);
-
-                self.load_reg(idx, &mut offset, usr);
+            if bit != 1 {
+                continue;
             }
+
+            if idx == rb {
+                skip_write = true;
+            }
+
+            if idx == NamedRegister::PC as usize {
+                pc_dst = true;
+            }
+
+            read_cycle += self
+                .bus
+                .get_rw_cycle(offset, DataType::Word, MemoryAccess::Seq);
+
+            self.load_reg(idx, &mut offset, usr);
         }
 
         let internal_cycle = Cycle::internal(1);
@@ -441,7 +445,6 @@ impl Arm7tdmi {
 
         self.set_pc(offset as u32);
         self.registers.set(Self::LR, lr, op_mode);
-
         self.pipeline.flush();
 
         let extra_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
@@ -481,7 +484,7 @@ impl Arm7tdmi {
 
         let psr = match kind {
             PsrKind::CPSR => self.cpsr,
-            PsrKind::SPSR => self.registers.get_spsr_unchecked(self.cpsr.op_mode()),
+            PsrKind::SPSR => self.registers.get_spsr_unchecked(op_mode),
         };
 
         self.registers.set(rd, psr.value(), op_mode);
@@ -490,8 +493,8 @@ impl Arm7tdmi {
 
     #[inline(always)]
     pub fn update_psr_op(&mut self, op: Operand, mask: u32, kind: PsrKind) -> Cycle {
-        let value = self.get_operand(op) & mask;
         let op_mode = self.cpsr.op_mode();
+        let value = self.get_operand(op) & mask;
 
         match kind {
             PsrKind::CPSR => self.cpsr = Psr::from((self.cpsr.value() & !mask) | value),

@@ -2,7 +2,6 @@ use crate::{
     bus::Bus,
     registers::io::{
         dma::{Dma, DmaChannel},
-        interrupt::IrqRequestFlag,
         keypad::Keypad,
         timer::{Timer, TimerUnit},
         waitcnt::WaitCnt,
@@ -10,7 +9,6 @@ use crate::{
 };
 
 pub mod dma;
-pub mod interrupt;
 pub mod keypad;
 pub mod timer;
 pub mod waitcnt;
@@ -38,7 +36,7 @@ pub struct IORegister {
     /// 0x200: Interrupt Enable (R/W)
     pub ie: u16,
     /// 0x202: Interrupt Request Flags (R/W)
-    pub irf: IrqRequestFlag,
+    pub irf: u16,
     /// 0x204: Waitstate Control (R/W)
     pub waitcnt: WaitCnt,
     /// 0x208: Interrupt Master Enable (R/W)
@@ -57,6 +55,10 @@ impl IORegister {
             ..Default::default()
         }
     }
+
+    pub fn has_pending_irq(&self) -> bool {
+        self.irf != 0
+    }
 }
 
 impl Bus for IORegister {
@@ -73,7 +75,7 @@ impl Bus for IORegister {
             0x130..=0x131 => self.keypad.keyinput.read_byte(address),
             0x132..=0x133 => self.keypad.keycnt.read_byte(address),
             0x200..=0x201 => self.ie.read_byte(address),
-            0x202..=0x203 => self.irf.value.read_byte(address),
+            0x202..=0x203 => self.irf.read_byte(address),
             0x204..=0x205 => self.waitcnt.value.read_byte(address),
             0x0400_0208..=0x0400_0209 => self.ime.read_byte(address),
             _ => todo!("I/O register read: {address:#08X}"),
@@ -81,6 +83,7 @@ impl Bus for IORegister {
     }
 
     fn write_byte(&mut self, address: u32, value: u8) {
+        println!("address: {address:#08X}, value: {value}");
         match address % 0x0400_0000 {
             0x0B0..=0x0BB => self.dma0.write_byte(address, value),
             0x0BC..=0x0C7 => self.dma1.write_byte(address, value),
@@ -92,10 +95,43 @@ impl Bus for IORegister {
             0x10C..=0x10F => self.timer3.write_byte(address, value),
             0x132..=0x133 => self.keypad.keycnt.write_byte(address, value),
             0x200..=0x201 => self.ie.write_byte(address, value),
-            0x202..=0x203 => self.irf.value.write_byte(address, value),
+            0x202..=0x203 => self.irf.write_byte(address, value),
             0x204..=0x205 => self.waitcnt.value.write_byte(address, value),
             0x208..=0x209 => self.ime.write_byte(address, value),
             _ => todo!("I/O register write: {address:#08X}"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{bus::types::Interrupt, test::AsmTestBuilder, utils::bitflags::Bitflag};
+
+    #[test]
+    fn test_irq_registers() {
+        let asm = r"
+            MOV     R0, #0x0400_0000
+            MOV     R1, #0x200
+            ADD     R1, #0x8
+            MOV     R2, #0x1
+            STRH    R2, [R0, R1]     ; set IME
+
+            SUB     R1, #0x8
+            MOV     R2, #0x0
+            ORR     R2, #(1 shl 1)   ; set HBlank
+            ORR     R2, #(1 shl 8)   ; set DMA 0
+            STRH    R2, [R0, R1]     ; set IE
+        ";
+
+        AsmTestBuilder::new()
+            .asm(asm)
+            .assert_fn(|cpu| {
+                let registers = &cpu.bus.registers;
+
+                assert!(registers.ime == 1, "IME");
+                assert!(registers.ie.has(Interrupt::HBlank as u16), "HBlank IE");
+                assert!(registers.ie.has(Interrupt::Dma0 as u16), "DMA0 IE");
+            })
+            .run(10);
     }
 }

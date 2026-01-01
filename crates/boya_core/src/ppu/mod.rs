@@ -1,6 +1,6 @@
-use crate::registers::{
-    io::interrupt::Interrupt,
-    ppu::{PpuRegister, dispstat::Dispstat},
+use crate::{
+    bus::types::Interrupt,
+    registers::ppu::{PpuRegister, dispstat::Dispstat},
 };
 
 pub const PALETTE_RAM_SIZE: usize = 0x400; // 1kb
@@ -45,7 +45,7 @@ impl Ppu {
     pub fn tick(&mut self, cycles: u32) {
         self.divider += cycles;
 
-        while self.divider > 4 {
+        while self.divider >= 4 {
             self.step();
             self.divider -= 4;
         }

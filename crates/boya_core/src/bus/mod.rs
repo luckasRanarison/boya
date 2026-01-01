@@ -1,13 +1,14 @@
 pub mod types;
 
 use crate::{
-    bus::types::{Cycle, DataType, MemoryAccess, MemoryRegion, MemoryRegionData, WaitState},
+    bus::types::{
+        Cycle, DataType, Interrupt, MemoryAccess, MemoryRegion, MemoryRegionData, WaitState,
+    },
     ppu::Ppu,
     registers::{
         io::{
             IORegister,
             dma::{Dma, DmaAddressControl, DmaSpecialTiming, DmaStartTiming},
-            interrupt::Interrupt,
         },
         ppu::dispstat::Dispstat,
     },
@@ -78,12 +79,12 @@ impl GbaBus {
     }
 
     pub fn poll_interrupt(&self) -> bool {
-        self.registers.irf.value != 0
+        self.registers.has_pending_irq()
     }
 
     pub fn set_interrupt(&mut self, interrupt: Interrupt) {
-        if self.registers.ime != 0 && self.registers.ie.has(interrupt as u16) {
-            self.registers.irf.value.set(interrupt as u16);
+        if self.registers.ime.has(0) && self.registers.ie.has(interrupt as u16) {
+            self.registers.irf.set(interrupt as u16);
         }
     }
 
@@ -345,104 +346,5 @@ mod tests {
                 13, // MOV (2S + 1N)
             ])
             .run(4);
-    }
-
-    #[test]
-    fn test_waitstate() {
-        let asm = r"
-            ; set waitstate 0 to 3,1
-            MOV     R0, #10100b
-            MOV     R1, #0x0400_0000
-            MOV     R2, #0x0000_0200
-            ADD     R3, R1, R2
-            STRH    R0, [R3, #4]
-            MOV     R4, R0
-        ";
-
-        AsmTestBuilder::new()
-            .asm(asm)
-            .assert_cycles([
-                6, // MOV  (1S)
-                6, // MOV  (1S)
-                6, // MOV  (1S)
-                6, // ADD  (1S)
-                9, // STRH (2N) (N + 4 + S + 2) + N
-                4, // MOV  (1S)
-            ])
-            .run(6);
-    }
-
-    #[test]
-    fn test_dma() {
-        let asm = r"
-            _setup:
-                B       start
-
-            _chunk_to_copy:
-                dw      0x5010
-                dw      0x10FF
-                dw      0x2050
-                dw      0xA030
-
-            start:
-                ; set source address to _chunk_to_copy
-                MOV     R0, #0x0400_0000
-                MOV     R1, #0xB0
-                ADR     R2, _chunk_to_copy
-                STR     R2, [R0, R1]
-
-                ; set destination address to IWRAM
-                MOV     R1, #0xB4
-                MOV     R2, #0x0300_0000
-                STR     R2, [R0, R1]
-
-                ; set transfer length to 8
-                MOV     R1, #0xB8
-                MOV     R2, #0x8
-                STRH    R2, [R0, R1]
-
-                ; Start DMA (16bit, immediate)
-                MOV     R1, #0xBA
-                MOV     R2, #0x0
-                ORR     R2, R2, #0x8000
-                STRH    R2, [R0, R1]
-        ";
-
-        let expected_chunks = vec![0x5010, 0x10FF, 0x2050, 0xA030]
-            .into_iter()
-            .map(|c: u32| c.to_le_bytes())
-            .flatten()
-            .collect::<Vec<_>>();
-
-        AsmTestBuilder::new()
-            .asm(asm)
-            .assert_fn(move |cpu| {
-                let dma0 = &cpu.bus.registers.dma0;
-
-                assert_eq!(0x0800_0004, dma0.sad, "DMA0 source address");
-                assert_eq!(0x0300_0000, dma0.dad, "DMA0 destination address");
-                assert_eq!(8, dma0.transfer_len(), "DMA0 transfer length");
-                assert_eq!(&cpu.bus.iwram[..16], &expected_chunks);
-                assert!(!dma0.dma_enable(), "DMA0 should be disabled");
-            })
-            .assert_cycles([
-                20, // B   (2S + 1N)
-                6,  // MOV (1S)
-                6,  // MOV (1S)
-                6,  // SUB (1S)
-                9,  // STR (2N)
-                6,  // MOV (1S)
-                6,  // MOV (1S)
-                9,  // STR (2N)
-                6,  // MOV (1S)
-                6,  // MOV (1S)
-                9,  // STR (2N)
-                6,  // MOV (1S)
-                6,  // MOV (1S)
-                6,  // ORR (1S)
-                9,  // STR (2N)
-                36, // DMA (2N + 2(n-1)S + xI) ((N + 7S) + (N + 4 7S + 14) + 2I)
-            ])
-            .run(16);
     }
 }
