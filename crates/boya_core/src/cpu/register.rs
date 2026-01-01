@@ -16,22 +16,26 @@ impl Register {
     pub fn get<I: Into<usize>>(&self, index: I, op_mode: OperatingMode) -> u32 {
         let index = index.into();
 
-        self.get_bank(op_mode)
-            .filter(|(_, offset)| index >= *offset && index <= 14)
-            .map(|(slice, offset)| slice[index - offset])
-            .unwrap_or_else(|| self.main[index])
+        match (op_mode, index) {
+            (OperatingMode::FIQ, 8..=14) => self.fiq[index - 8],
+            (OperatingMode::SVC, 13..=14) => self.svc[index - 13],
+            (OperatingMode::ABT, 13..=14) => self.abt[index - 13],
+            (OperatingMode::IRQ, 13..=14) => self.irq[index - 13],
+            (OperatingMode::UND, 13..=14) => self.und[index - 13],
+            _ => self.main[index],
+        }
     }
 
     pub fn set<I: Into<usize>>(&mut self, index: I, value: u32, op_mode: OperatingMode) {
         let index = index.into();
 
-        let bank = self
-            .get_bank_mut(op_mode)
-            .filter(|(_, offset)| index >= *offset && index <= 14);
-
-        match bank {
-            Some((slice, offset)) => slice[index - offset] = value,
-            None => self.main[index] = value,
+        match (op_mode, index) {
+            (OperatingMode::FIQ, 8..=14) => self.fiq[index - 8] = value,
+            (OperatingMode::SVC, 13..=14) => self.svc[index - 13] = value,
+            (OperatingMode::ABT, 13..=14) => self.abt[index - 13] = value,
+            (OperatingMode::IRQ, 13..=14) => self.irq[index - 13] = value,
+            (OperatingMode::UND, 13..=14) => self.und[index - 13] = value,
+            _ => self.main[index] = value,
         }
     }
 
@@ -57,28 +61,6 @@ impl Register {
             let value = (psr.value() & !mask) | fields;
 
             self.psr[index] = Psr::from(value);
-        }
-    }
-
-    fn get_bank(&self, op_mode: OperatingMode) -> Option<(&[u32], usize)> {
-        match op_mode {
-            OperatingMode::FIQ => Some((&self.fiq, 8)),
-            OperatingMode::SVC => Some((&self.svc, 13)),
-            OperatingMode::ABT => Some((&self.abt, 13)),
-            OperatingMode::IRQ => Some((&self.irq, 13)),
-            OperatingMode::UND => Some((&self.und, 13)),
-            _ => None,
-        }
-    }
-
-    fn get_bank_mut(&mut self, op_mode: OperatingMode) -> Option<(&mut [u32], usize)> {
-        match op_mode {
-            OperatingMode::FIQ => Some((&mut self.fiq, 8)),
-            OperatingMode::SVC => Some((&mut self.svc, 13)),
-            OperatingMode::ABT => Some((&mut self.abt, 13)),
-            OperatingMode::IRQ => Some((&mut self.irq, 13)),
-            OperatingMode::UND => Some((&mut self.und, 13)),
-            _ => None,
         }
     }
 

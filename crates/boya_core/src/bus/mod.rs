@@ -1,17 +1,17 @@
+pub mod registers;
 pub mod types;
 
 use crate::{
-    bus::types::{
-        Cycle, DataType, Interrupt, MemoryAccess, MemoryRegion, MemoryRegionData, WaitState,
-    },
-    ppu::Ppu,
-    registers::{
-        io::{
+    bus::{
+        registers::{
             IORegister,
             dma::{Dma, DmaAddressControl, DmaSpecialTiming, DmaStartTiming},
         },
-        ppu::dispstat::Dispstat,
+        types::{
+            Cycle, DataType, Interrupt, MemoryAccess, MemoryRegion, MemoryRegionData, WaitState,
+        },
     },
+    ppu::{Ppu, registers::dispstat::Dispstat},
     utils::bitflags::Bitflag,
 };
 

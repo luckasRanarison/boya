@@ -3,7 +3,6 @@ use crate::{bus::types::Cycle, cpu::Arm7tdmi};
 pub mod bus;
 pub mod cpu;
 pub mod ppu;
-pub mod registers;
 pub mod utils;
 
 #[cfg(test)]

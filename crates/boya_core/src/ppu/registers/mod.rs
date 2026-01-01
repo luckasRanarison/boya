@@ -1,6 +1,6 @@
 use crate::{
     bus::Bus,
-    registers::ppu::{bgcnt::BgCnt, dispcnt::Dispcnt, dispstat::Dispstat},
+    ppu::registers::{bgcnt::BgCnt, dispcnt::Dispcnt, dispstat::Dispstat},
 };
 
 pub mod bgcnt;

@@ -1,6 +1,8 @@
+pub mod registers;
+
 use crate::{
     bus::types::Interrupt,
-    registers::ppu::{PpuRegister, dispstat::Dispstat},
+    ppu::registers::{PpuRegister, dispstat::Dispstat},
 };
 
 pub const PALETTE_RAM_SIZE: usize = 0x400; // 1kb

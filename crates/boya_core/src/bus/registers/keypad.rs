@@ -67,7 +67,8 @@ pub enum KeyIrqCondition {
 #[cfg(test)]
 mod tests {
     use crate::{
-        bus::types::Interrupt, registers::io::keypad::Key, test::AsmTestBuilder,
+        bus::{registers::keypad::Key, types::Interrupt},
+        test::AsmTestBuilder,
         utils::bitflags::Bitflag,
     };
 

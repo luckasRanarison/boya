@@ -1,6 +1,6 @@
-use crate::{
-    bus::Bus,
-    registers::io::{
+use crate::bus::{
+    Bus,
+    registers::{
         dma::{Dma, DmaChannel},
         keypad::Keypad,
         timer::{Timer, TimerUnit},
