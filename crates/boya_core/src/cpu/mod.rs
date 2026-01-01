@@ -28,7 +28,6 @@ pub struct Arm7tdmi {
     pub registers: Register,
     pub cpsr: Psr,
     pub pipeline: Pipeline,
-    pub cycles: u64,
     pub bus: GbaBus,
 }
 
@@ -42,7 +41,6 @@ impl Arm7tdmi {
             registers: Register::default(),
             cpsr: Psr::default(),
             pipeline: Pipeline::default(),
-            cycles: 0,
             bus,
         }
     }

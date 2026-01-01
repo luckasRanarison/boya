@@ -94,14 +94,14 @@ impl Ppu {
         match self.scanline {
             159 if self.dot == 0 => {
                 dispstat.set(Dispstat::VBLANK);
-            }
-            228 => {
-                self.scanline = 0;
-                dispstat.clear(Dispstat::VBLANK);
 
                 if dispstat.has(Dispstat::VBLANK_IRQ) {
                     self.pending_irq = Some(Interrupt::VBlank);
                 }
+            }
+            228 => {
+                self.scanline = 0;
+                dispstat.clear(Dispstat::VBLANK);
             }
             _ => {}
         }
@@ -115,5 +115,37 @@ impl Ppu {
         } else {
             dispstat.clear(Dispstat::VCOUNT);
         }
+    }
+}
+
+#[cfg(test)]
+mod tets {
+    use crate::test::AsmTestBuilder;
+
+    #[test]
+    fn test_ppu_timing() {
+        // HDRaw: 240 * 4 = 960
+        // HBlank: 240 * 4 = 272
+        // Single scanline: 960 + 272 = 1232
+        // Visible scanlines: 1232 * 160 = 197120
+
+        let asm = r"
+            loop:
+                B   loop ; 2S + 1N (20)
+        ";
+
+        AsmTestBuilder::new()
+            .asm(asm)
+            .assert_fn(|cpu| {
+                assert_eq!(240, cpu.bus.ppu.dot);
+            })
+            .run(960 / 20);
+
+        AsmTestBuilder::new()
+            .asm(asm)
+            .assert_fn(|cpu| {
+                assert_eq!(160, cpu.bus.ppu.scanline);
+            })
+            .run(197120 / 20);
     }
 }

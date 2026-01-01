@@ -226,7 +226,7 @@ impl AsmTestBuilder {
             cpu.override_pc(pc);
         }
 
-        Gba { cpu }
+        Gba::new(cpu)
     }
 
     fn make_thumb_code(&self, code: &str) -> String {
