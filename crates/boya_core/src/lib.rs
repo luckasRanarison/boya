@@ -23,7 +23,7 @@ impl Gba {
             return self.cpu.handle_exception(Exception::NormalInterrupt);
         }
 
-        if let Some(cycles) = self.cpu.bus.start_dma() {
+        if let Some(cycles) = self.cpu.bus.try_dma() {
             return cycles;
         }
 

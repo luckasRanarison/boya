@@ -1,11 +1,11 @@
 use crate::utils::bitflags::Bitflag;
 
 #[derive(Debug, Default)]
-pub struct Bgcnt {
+pub struct BgCnt {
     pub value: u16,
 }
 
-impl Bgcnt {
+impl BgCnt {
     pub fn bg_priority(&self) -> u8 {
         self.value.get_bits_u8(0, 1)
     }

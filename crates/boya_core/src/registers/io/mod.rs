@@ -2,8 +2,8 @@ use crate::{
     bus::Bus,
     registers::io::{
         dma::{Dma, DmaChannel},
-        interrupt::IrqRequestFlag,
-        keyinput::KeyInput,
+        interrupt::{Interrupt, IrqRequestFlag},
+        keypad::{KeyCnt, KeyInput, KeyIrqCondition},
         timer::Timer,
         waitcnt::WaitCnt,
     },
@@ -11,7 +11,7 @@ use crate::{
 
 pub mod dma;
 pub mod interrupt;
-pub mod keyinput;
+pub mod keypad;
 pub mod timer;
 pub mod waitcnt;
 
@@ -35,6 +35,8 @@ pub struct IORegister {
     pub timer3: Timer,
     /// 0x130: Key Status (R)
     pub keyinput: KeyInput,
+    /// 0x132: Key Interrupt Control (R/W)
+    pub keycnt: KeyCnt,
     /// 0x200: Interrupt Enable (R/W)
     pub ie: u16,
     /// 0x202: Interrupt Request Flags (R/W)
@@ -54,6 +56,22 @@ impl IORegister {
             ..Default::default()
         }
     }
+
+    pub fn poll_keypad_interrupt(&self) -> Option<Interrupt> {
+        if !self.keycnt.irq_enable() {
+            return None;
+        }
+
+        let keyinput = self.keyinput.value;
+        let keycnt = self.keycnt.value;
+
+        let result = match self.keycnt.irq_condition() {
+            KeyIrqCondition::Or => (keyinput | keycnt) != 0,
+            KeyIrqCondition::And => (keyinput & keycnt) != 0,
+        };
+
+        result.then_some(Interrupt::Keypad)
+    }
 }
 
 impl Bus for IORegister {
@@ -68,6 +86,7 @@ impl Bus for IORegister {
             0x108..=0x10B => self.timer2.read_byte(address),
             0x10C..=0x10F => self.timer3.read_byte(address),
             0x130..=0x131 => self.keyinput.value.read_byte(address),
+            0x132..=0x133 => self.keycnt.value.read_byte(address),
             0x200..=0x201 => self.ie.read_byte(address),
             0x202..=0x203 => self.irf.value.read_byte(address),
             0x204..=0x205 => self.waitcnt.value.read_byte(address),
@@ -86,6 +105,7 @@ impl Bus for IORegister {
             0x104..=0x107 => self.timer1.write_byte(address, value),
             0x108..=0x10B => self.timer2.write_byte(address, value),
             0x10C..=0x10F => self.timer3.write_byte(address, value),
+            0x132..=0x133 => self.keycnt.value.write_byte(address, value),
             0x200..=0x201 => self.ie.write_byte(address, value),
             0x202..=0x203 => self.irf.value.write_byte(address, value),
             0x204..=0x205 => self.waitcnt.value.write_byte(address, value),

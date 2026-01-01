@@ -1,9 +1,10 @@
 use crate::{
     bus::{Bus, types::DataType},
+    registers::io::interrupt::Interrupt,
     utils::bitflags::Bitflag,
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Dma {
     pub sad: u32,
     pub dad: u32,
@@ -60,6 +61,15 @@ impl Dma {
 
     pub fn irq_enable(&self) -> bool {
         self.cnt_h.has(14)
+    }
+
+    pub fn get_interrupt(&self) -> Option<Interrupt> {
+        self.irq_enable().then_some(match self.channel {
+            DmaChannel::DMA0 => Interrupt::Dma0,
+            DmaChannel::DMA1 => Interrupt::Dma1,
+            DmaChannel::DMA2 => Interrupt::Dma2,
+            DmaChannel::DMA3 => Interrupt::Dma3,
+        })
     }
 
     pub fn dma_enable(&self) -> bool {

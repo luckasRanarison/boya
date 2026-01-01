@@ -7,6 +7,10 @@ pub const PALETTE_RAM_SIZE: usize = 0x400; // 1kb
 pub const OAM_SIZE: usize = 0x400; // 1kb
 pub const VRAM_SIZE: usize = 0x18_000; // 96kb
 
+pub const LCD_WIDTH: usize = 240;
+pub const LCD_HEIGHT: usize = 160;
+pub const BUFFER_LEN: usize = LCD_WIDTH * LCD_HEIGHT;
+
 #[derive(Debug)]
 pub struct Ppu {
     pub palette: [u8; PALETTE_RAM_SIZE],
@@ -18,6 +22,7 @@ pub struct Ppu {
     scanline: u16,
     divider: u32,
     pending_irq: Option<Interrupt>,
+    buffer: Box<[u8; BUFFER_LEN]>,
 }
 
 impl Default for Ppu {
@@ -31,6 +36,7 @@ impl Default for Ppu {
             scanline: 1,
             divider: 0,
             pending_irq: None,
+            buffer: Box::new([0; BUFFER_LEN]),
         }
     }
 }
@@ -45,8 +51,12 @@ impl Ppu {
         }
     }
 
-    pub fn poll_irq(&mut self) -> Option<Interrupt> {
+    pub fn poll_interrupt(&mut self) -> Option<Interrupt> {
         self.pending_irq.take()
+    }
+
+    pub fn get_frame_buffer(&self) -> &[u8; BUFFER_LEN] {
+        &self.buffer
     }
 
     pub fn step(&mut self) {

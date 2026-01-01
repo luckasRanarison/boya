@@ -48,7 +48,11 @@ impl GbaBus {
     pub fn tick(&mut self, cycles: u32) {
         self.ppu.tick(cycles);
 
-        if let Some(interrupt) = self.ppu.poll_irq() {
+        if let Some(interrupt) = self.ppu.poll_interrupt() {
+            self.set_interrupt(interrupt);
+        }
+
+        if let Some(interrupt) = self.registers.poll_keypad_interrupt() {
             self.set_interrupt(interrupt);
         }
     }
@@ -102,25 +106,33 @@ impl GbaBus {
     }
 
     // FIXME: currently slow, use slice copy to improve performance
-    pub fn start_dma(&mut self) -> Option<Cycle> {
+    pub fn try_dma(&mut self) -> Option<Cycle> {
         let dma = self.get_active_dma()?;
 
         if !dma.repeat() {
             dma.disable();
         }
 
+        let dma_image = dma.clone();
+        let cycles = self.get_dma_cycles(&dma_image);
+
+        self.execute_dma(&dma_image);
+
+        if let Some(interrupt) = dma_image.get_interrupt() {
+            self.set_interrupt(interrupt);
+        }
+
+        Some(cycles)
+    }
+
+    fn execute_dma(&mut self, dma: &Dma) {
         let mut src_addr = dma.sad;
         let mut dst_addr = dma.dad;
 
-        let src_addr_ctrl = dma.src_addr_control();
-        let dst_addr_ctrl = dma.dst_addr_control();
-        let dma_len = dma.transfer_len();
         let dma_dt = dma.transfer_type();
         let chunk_size = dma_dt.size() as u32;
 
-        let cycles = self.compute_dma_cycles(src_addr, dst_addr, dma_len, dma_dt);
-
-        for _ in 0..dma_len {
+        for _ in 0..dma.transfer_len() {
             match dma_dt {
                 DataType::Word => {
                     let word = self.read_word(src_addr);
@@ -132,13 +144,13 @@ impl GbaBus {
                 }
             }
 
-            match dst_addr_ctrl {
+            match dma.dst_addr_control() {
                 DmaAddressControl::Increment => dst_addr += chunk_size,
                 DmaAddressControl::Decrement => dst_addr -= chunk_size,
                 _ => {}
             }
 
-            match src_addr_ctrl {
+            match dma.src_addr_control() {
                 DmaAddressControl::Decrement => src_addr -= chunk_size,
                 DmaAddressControl::Increment | DmaAddressControl::IncrementReload => {
                     src_addr += chunk_size
@@ -146,27 +158,20 @@ impl GbaBus {
                 DmaAddressControl::Fixed => {}
             }
         }
-
-        Some(cycles)
     }
 
-    fn compute_dma_cycles(
-        &self,
-        src_addr: u32,
-        dst_addr: u32,
-        dma_len: u32,
-        dma_dt: DataType,
-    ) -> Cycle {
-        let src_region = MemoryRegion::from_address(src_addr);
-        let dst_region = MemoryRegion::from_address(dst_addr);
+    fn get_dma_cycles(&self, dma: &Dma) -> Cycle {
+        let dma_dt = dma.transfer_type();
+        let src_region = MemoryRegion::from_address(dma.sad);
+        let dst_region = MemoryRegion::from_address(dma.dad);
 
-        let read_cycles_seq = self.get_rw_cycle(src_addr, dma_dt, MemoryAccess::Seq);
-        let write_cycles_seq = self.get_rw_cycle(dst_addr, dma_dt, MemoryAccess::Seq);
-        let read_cycles_non_seq = self.get_rw_cycle(src_addr, dma_dt, MemoryAccess::NonSeq);
-        let write_cycles_non_seq = self.get_rw_cycle(dst_addr, dma_dt, MemoryAccess::NonSeq);
+        let read_cycles_seq = self.get_rw_cycle(dma.sad, dma_dt, MemoryAccess::Seq);
+        let write_cycles_seq = self.get_rw_cycle(dma.dad, dma_dt, MemoryAccess::Seq);
+        let read_cycles_non_seq = self.get_rw_cycle(dma.sad, dma_dt, MemoryAccess::NonSeq);
+        let write_cycles_non_seq = self.get_rw_cycle(dma.dad, dma_dt, MemoryAccess::NonSeq);
 
-        let read_cycles = read_cycles_non_seq + read_cycles_seq.repeat(dma_len - 1);
-        let write_cycles = write_cycles_non_seq + write_cycles_seq.repeat(dma_len - 1);
+        let read_cycles = read_cycles_non_seq + read_cycles_seq.repeat(dma.transfer_len() - 1);
+        let write_cycles = write_cycles_non_seq + write_cycles_seq.repeat(dma.transfer_len() - 1);
 
         let internal_cycles = match (src_region, dst_region) {
             _ if src_region.is_gamepak() && dst_region.is_gamepak() => Cycle::internal(4),
