@@ -62,8 +62,8 @@ impl IORegister {
             return None;
         }
 
-        let keyinput = self.keyinput.value;
-        let keycnt = self.keycnt.value;
+        let keyinput = self.keyinput.value & 0x3FF;
+        let keycnt = self.keycnt.value & 0x3FF;
 
         let result = match self.keycnt.irq_condition() {
             KeyIrqCondition::Or => (keyinput | keycnt) != 0,
