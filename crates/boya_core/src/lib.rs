@@ -1,7 +1,4 @@
-use crate::{
-    arm7tdmi::{Arm7tdmi, common::Exception, psr::Psr},
-    bus::types::Cycle,
-};
+use crate::{arm7tdmi::Arm7tdmi, bus::types::Cycle};
 
 #[allow(clippy::upper_case_acronyms)]
 pub mod arm7tdmi;
