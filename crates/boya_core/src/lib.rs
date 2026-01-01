@@ -1,8 +1,7 @@
-use crate::{arm7tdmi::Arm7tdmi, bus::types::Cycle};
+use crate::{bus::types::Cycle, cpu::Arm7tdmi};
 
-#[allow(clippy::upper_case_acronyms)]
-pub mod arm7tdmi;
 pub mod bus;
+pub mod cpu;
 pub mod ppu;
 pub mod registers;
 pub mod utils;

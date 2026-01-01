@@ -26,12 +26,12 @@ pub enum MemoryRegion {
     EWRAM,
     IWRAM,
     IO,
-    PALETTE,
+    Palette,
     VRAM,
     OAM,
-    WAITSTATE0,
-    WAITSTATE1,
-    WAITSTATE2,
+    WaitState0,
+    WaitState1,
+    WaitState2,
     SRAM,
     NonMapped,
 }
@@ -43,12 +43,12 @@ impl MemoryRegion {
             0x0200_0000..=0x0203_FFFF => MemoryRegion::EWRAM,
             0x0300_0000..=0x0300_7FFF => MemoryRegion::IWRAM,
             0x0400_0000..=0x0400_03FE => MemoryRegion::IO,
-            0x0500_0000..=0x0500_03FF => MemoryRegion::PALETTE,
+            0x0500_0000..=0x0500_03FF => MemoryRegion::Palette,
             0x0600_0000..=0x0617_FFFF => MemoryRegion::VRAM,
             0x0700_0000..=0x0700_03FF => MemoryRegion::OAM,
-            0x0800_0000..=0x09FF_FFFF => MemoryRegion::WAITSTATE0,
-            0x0A00_0000..=0x0BFF_FFFF => MemoryRegion::WAITSTATE1,
-            0x0C00_0000..=0x0DFF_FFFF => MemoryRegion::WAITSTATE2,
+            0x0800_0000..=0x09FF_FFFF => MemoryRegion::WaitState0,
+            0x0A00_0000..=0x0BFF_FFFF => MemoryRegion::WaitState1,
+            0x0C00_0000..=0x0DFF_FFFF => MemoryRegion::WaitState2,
             0x0E00_0000..=0x0E00_FFFF => MemoryRegion::BIOS,
             _ => MemoryRegion::NonMapped,
         }
@@ -60,12 +60,12 @@ impl MemoryRegion {
             MemoryRegion::EWRAM => 0x0200_0000,
             MemoryRegion::IWRAM => 0x0300_0000,
             MemoryRegion::IO => 0x0400_0000,
-            MemoryRegion::PALETTE => 0x0500_0000,
+            MemoryRegion::Palette => 0x0500_0000,
             MemoryRegion::VRAM => 0x0600_0000,
             MemoryRegion::OAM => 0x0700_0000,
-            MemoryRegion::WAITSTATE0 => 0x0800_0000,
-            MemoryRegion::WAITSTATE1 => 0x0A00_0000,
-            MemoryRegion::WAITSTATE2 => 0x0C00_0000,
+            MemoryRegion::WaitState0 => 0x0800_0000,
+            MemoryRegion::WaitState1 => 0x0A00_0000,
+            MemoryRegion::WaitState2 => 0x0C00_0000,
             MemoryRegion::SRAM => 0x0E00_0000,
             MemoryRegion::NonMapped => 0x0FFF_FFFF,
         }
@@ -74,7 +74,7 @@ impl MemoryRegion {
     pub fn is_gamepak(self) -> bool {
         matches!(
             self,
-            MemoryRegion::WAITSTATE0 | MemoryRegion::WAITSTATE1 | MemoryRegion::WAITSTATE2
+            MemoryRegion::WaitState0 | MemoryRegion::WaitState1 | MemoryRegion::WaitState2
         )
     }
 }

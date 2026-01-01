@@ -104,12 +104,12 @@ impl GbaBus {
             MemoryRegion::EWRAM => (DataType::HWord, WaitState { n: 2, s: 2 }),
             MemoryRegion::IWRAM => (DataType::Word, WaitState::default()),
             MemoryRegion::IO => (DataType::Word, WaitState::default()),
-            MemoryRegion::PALETTE => (DataType::HWord, WaitState::default()), // >
+            MemoryRegion::Palette => (DataType::HWord, WaitState::default()), // >
             MemoryRegion::VRAM => (DataType::HWord, WaitState::default()),    // >
             MemoryRegion::OAM => (DataType::Word, WaitState::default()), //      > FIXME: +1 during rendering
-            MemoryRegion::WAITSTATE0 => (DataType::HWord, self.registers.waitcnt.wait_state0()),
-            MemoryRegion::WAITSTATE1 => (DataType::HWord, self.registers.waitcnt.wait_state1()),
-            MemoryRegion::WAITSTATE2 => (DataType::HWord, self.registers.waitcnt.wait_state2()),
+            MemoryRegion::WaitState0 => (DataType::HWord, self.registers.waitcnt.wait_state0()),
+            MemoryRegion::WaitState1 => (DataType::HWord, self.registers.waitcnt.wait_state1()),
+            MemoryRegion::WaitState2 => (DataType::HWord, self.registers.waitcnt.wait_state2()),
             MemoryRegion::SRAM => (DataType::HWord, self.registers.waitcnt.sram_wait()), // FIXME: Detect save type SRAM/FLASH/EEPROM
             _ => (DataType::Word, WaitState::default()),
         };

@@ -2,8 +2,8 @@ mod asm;
 
 use crate::{
     Gba,
-    arm7tdmi::{Arm7tdmi, psr::Psr},
     bus::{BIOS_SIZE, Bus, GbaBus, types::DataType},
+    cpu::{Arm7tdmi, psr::Psr},
     test::asm::FAKE_BIOS,
 };
 
@@ -263,7 +263,7 @@ impl AsmTestBuilder {
 
     fn assert_reg_impl(&self, cpu: &Arm7tdmi, assertions: &[(usize, u32)]) {
         for (index, expected) in assertions {
-            let value = cpu.get_reg(*index);
+            let value = cpu.registers.get(*index, cpu.cpsr.op_mode());
 
             assert_eq!(
                 value, *expected,
