@@ -1,22 +1,43 @@
-use crate::utils::bitflags::Bitflag;
+use crate::{registers::io::interrupt::Interrupt, utils::bitflags::Bitflag};
 
-#[derive(Debug, Default)]
-pub struct KeyInput {
-    pub value: u16,
+#[derive(Debug)]
+pub struct Keypad {
+    pub keyinput: u16,
+    pub keycnt: u16,
 }
 
-#[derive(Debug, Default)]
-pub struct KeyCnt {
-    pub value: u16,
+impl Default for Keypad {
+    fn default() -> Self {
+        Self {
+            keyinput: 0x3FF,
+            keycnt: 0,
+        }
+    }
 }
 
-impl KeyCnt {
+impl Keypad {
+    pub fn poll_interrupt(&self) -> Option<Interrupt> {
+        if !self.irq_enable() {
+            return None;
+        }
+
+        let keyinput = !(self.keyinput & 0x3FF);
+        let keycnt = self.keycnt & 0x3FF;
+
+        let result = match self.irq_condition() {
+            KeyIrqCondition::Or => (keyinput | keycnt) != 0,
+            KeyIrqCondition::And => (keyinput & keycnt) != 0,
+        };
+
+        result.then_some(Interrupt::Keypad)
+    }
+
     pub fn irq_enable(&self) -> bool {
-        self.value.has(14)
+        self.keycnt.has(14)
     }
 
     pub fn irq_condition(&self) -> KeyIrqCondition {
-        match self.value.get(15) {
+        match self.keycnt.get(15) {
             0 => KeyIrqCondition::Or,
             _ => KeyIrqCondition::And,
         }

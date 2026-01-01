@@ -45,7 +45,8 @@ impl Bus for PpuRegister {
     fn read_byte(&self, address: u32) -> u8 {
         match address % 0x0400_0000 {
             0x000..=0x001 => self.dispcnt.value.read_byte(address),
-            0x004..=0x005 => self.dispstat.value.read_byte(address),
+            0x004 => self.dispstat.vcount,
+            0x005 => self.dispstat.flags,
             0x006..=0x007 => self.vcount.read_byte(address),
             0x008..=0x009 => self.bg0cnt.value.read_byte(address),
             0x00A..=0x00B => self.bg1cnt.value.read_byte(address),
@@ -58,7 +59,8 @@ impl Bus for PpuRegister {
     fn write_byte(&mut self, address: u32, value: u8) {
         match address % 0x0400_0000 {
             0x000..=0x001 => self.dispcnt.value.write_byte(address, value),
-            0x004..=0x005 => self.dispstat.value.write_byte(address, value),
+            0x004 => self.dispstat.vcount = value,
+            0x005 => self.dispstat.write_flags(value),
             0x008..=0x009 => self.bg0cnt.value.write_byte(address, value),
             0x00A..=0x00B => self.bg1cnt.value.write_byte(address, value),
             0x00C..=0x00D => self.bg2cnt.value.write_byte(address, value),

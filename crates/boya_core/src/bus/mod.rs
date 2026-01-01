@@ -46,13 +46,25 @@ impl Default for GbaBus {
 
 impl GbaBus {
     pub fn tick(&mut self, cycles: u32) {
+        let registers = &mut self.registers;
+
         self.ppu.tick(cycles);
 
-        if let Some(interrupt) = self.ppu.poll_interrupt() {
-            self.set_interrupt(interrupt);
-        }
+        let timer0_ovf = registers.timer0.tick(cycles, false);
+        let timer1_ovf = registers.timer1.tick(cycles, timer0_ovf);
+        let timer2_ovf = registers.timer2.tick(cycles, timer1_ovf);
+        let _ = registers.timer3.tick(cycles, timer2_ovf);
 
-        if let Some(interrupt) = self.registers.poll_keypad_interrupt() {
+        let interrupt = self
+            .ppu
+            .poll_interrupt()
+            .or_else(|| registers.timer0.poll_interrupt())
+            .or_else(|| registers.timer1.poll_interrupt())
+            .or_else(|| registers.timer2.poll_interrupt())
+            .or_else(|| registers.timer3.poll_interrupt())
+            .or_else(|| registers.keypad.poll_interrupt());
+
+        if let Some(interrupt) = interrupt {
             self.set_interrupt(interrupt);
         }
     }
@@ -118,8 +130,8 @@ impl GbaBus {
 
         self.execute_dma(&dma_image);
 
-        if let Some(interrupt) = dma_image.get_interrupt() {
-            self.set_interrupt(interrupt);
+        if dma_image.irq_enable() {
+            self.set_interrupt(dma_image.channel.into());
         }
 
         Some(cycles)

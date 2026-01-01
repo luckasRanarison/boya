@@ -49,10 +49,6 @@ impl Arm7tdmi {
         }
     }
 
-    pub fn reset(&mut self) {
-        self.handle_exception(Exception::Reset);
-    }
-
     pub fn step(&mut self) -> Cycle {
         let instruction = self.pipeline.take();
         let cycles = self.exec(instruction);
@@ -65,6 +61,10 @@ impl Arm7tdmi {
         self.load_pipeline();
 
         cycles
+    }
+
+    pub fn reset(&mut self) {
+        self.handle_exception(Exception::Reset);
     }
 
     #[inline(always)]
@@ -90,6 +90,14 @@ impl Arm7tdmi {
         match instruction {
             Instruction::Thumb(op) => self.exec_thumb(op),
             Instruction::Arm(op) => self.exec_arm(op),
+        }
+    }
+
+    pub fn try_irq(&mut self) -> Option<Cycle> {
+        if !self.cpsr.has(Psr::I) && self.bus.poll_interrupt() {
+            self.handle_exception(Exception::NormalInterrupt).into()
+        } else {
+            None
         }
     }
 

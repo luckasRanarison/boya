@@ -19,14 +19,14 @@ pub struct Gba {
 
 impl Gba {
     pub fn step(&mut self) -> Cycle {
-        if !self.cpu.cpsr.has(Psr::I) && self.cpu.bus.poll_interrupt() {
-            return self.cpu.handle_exception(Exception::NormalInterrupt);
-        }
+        let cycles = self
+            .cpu
+            .try_irq()
+            .or_else(|| self.cpu.bus.try_dma())
+            .unwrap_or_else(|| self.cpu.step());
 
-        if let Some(cycles) = self.cpu.bus.try_dma() {
-            return cycles;
-        }
+        self.cpu.bus.tick(cycles.count());
 
-        self.cpu.step()
+        cycles
     }
 }

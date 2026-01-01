@@ -63,15 +63,6 @@ impl Dma {
         self.cnt_h.has(14)
     }
 
-    pub fn get_interrupt(&self) -> Option<Interrupt> {
-        self.irq_enable().then_some(match self.channel {
-            DmaChannel::DMA0 => Interrupt::Dma0,
-            DmaChannel::DMA1 => Interrupt::Dma1,
-            DmaChannel::DMA2 => Interrupt::Dma2,
-            DmaChannel::DMA3 => Interrupt::Dma3,
-        })
-    }
-
     pub fn dma_enable(&self) -> bool {
         self.cnt_h.has(15)
     }
@@ -82,8 +73,8 @@ impl Dma {
 
     pub fn transfer_len(&self) -> u32 {
         match (self.cnt_l, self.channel) {
-            (0, DmaChannel::DMA3) => 0x10000,
-            (_, DmaChannel::DMA3) => self.cnt_l as u32,
+            (0, DmaChannel::Dma3) => 0x10000,
+            (_, DmaChannel::Dma3) => self.cnt_l as u32,
             (0, _) => 0x4000,
             (_, _) => self.cnt_l as u32 & 0x3FFF,
         }
@@ -115,19 +106,30 @@ impl Bus for Dma {
 #[derive(Debug, Default, Clone, Copy)]
 pub enum DmaChannel {
     #[default]
-    DMA0,
-    DMA1,
-    DMA2,
-    DMA3,
+    Dma0,
+    Dma1,
+    Dma2,
+    Dma3,
 }
 
 impl DmaChannel {
     pub fn get_special_timing(self) -> DmaSpecialTiming {
         match self {
-            DmaChannel::DMA0 => DmaSpecialTiming::None,
-            DmaChannel::DMA1 => DmaSpecialTiming::FifoA,
-            DmaChannel::DMA2 => DmaSpecialTiming::FifoB,
-            DmaChannel::DMA3 => DmaSpecialTiming::VideoCapture,
+            DmaChannel::Dma0 => DmaSpecialTiming::None,
+            DmaChannel::Dma1 => DmaSpecialTiming::FifoA,
+            DmaChannel::Dma2 => DmaSpecialTiming::FifoB,
+            DmaChannel::Dma3 => DmaSpecialTiming::VideoCapture,
+        }
+    }
+}
+
+impl From<DmaChannel> for Interrupt {
+    fn from(value: DmaChannel) -> Self {
+        match value {
+            DmaChannel::Dma0 => Interrupt::Dma0,
+            DmaChannel::Dma1 => Interrupt::Dma1,
+            DmaChannel::Dma2 => Interrupt::Dma2,
+            DmaChannel::Dma3 => Interrupt::Dma3,
         }
     }
 }

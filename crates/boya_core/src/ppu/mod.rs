@@ -19,7 +19,7 @@ pub struct Ppu {
     pub registers: PpuRegister,
 
     dot: u16,
-    scanline: u16,
+    scanline: u8,
     divider: u32,
     pending_irq: Option<Interrupt>,
     buffer: Box<[u8; BUFFER_LEN]>,
@@ -32,8 +32,8 @@ impl Default for Ppu {
             oam: [0; OAM_SIZE],
             vram: Box::new([0; VRAM_SIZE]),
             registers: PpuRegister::default(),
-            dot: 1,
-            scanline: 1,
+            dot: 0,
+            scanline: 0,
             divider: 0,
             pending_irq: None,
             buffer: Box::new([0; BUFFER_LEN]),
@@ -60,39 +60,60 @@ impl Ppu {
     }
 
     pub fn step(&mut self) {
+        self.handle_dot();
+        self.registers.vcount = self.scanline.into();
+        self.handle_scanline();
+        self.dot += 1;
+    }
+
+    fn handle_dot(&mut self) {
         let dispstat = &mut self.registers.dispstat;
 
         match self.dot {
-            1 => {
+            0 => {
                 dispstat.clear(Dispstat::HBLANK);
             }
-            240 => {
+            239 => {
                 dispstat.set(Dispstat::HBLANK);
 
                 if dispstat.has(Dispstat::HBLANK_IRQ) {
                     self.pending_irq = Some(Interrupt::HBlank);
                 }
             }
-            308 => {
+            307 => {
                 self.scanline += 1;
-                self.dot = 1;
+                self.dot = 0;
             }
             _ => {}
         }
+    }
+
+    fn handle_scanline(&mut self) {
+        let dispstat = &mut self.registers.dispstat;
 
         match self.scanline {
-            160 if self.dot == 1 => {
+            159 if self.dot == 0 => {
                 dispstat.set(Dispstat::VBLANK);
             }
-            229 => {
+            228 => {
+                self.scanline = 0;
                 dispstat.clear(Dispstat::VBLANK);
-                self.scanline = 1;
 
                 if dispstat.has(Dispstat::VBLANK_IRQ) {
                     self.pending_irq = Some(Interrupt::VBlank);
                 }
             }
             _ => {}
+        }
+
+        if self.scanline == dispstat.vcount {
+            dispstat.set(Dispstat::VCOUNT);
+
+            if dispstat.has(Dispstat::VCOUNT_IRQ) {
+                self.pending_irq = Some(Interrupt::VCount);
+            }
+        } else {
+            dispstat.clear(Dispstat::VCOUNT);
         }
     }
 }
