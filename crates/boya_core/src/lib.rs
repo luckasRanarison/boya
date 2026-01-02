@@ -1,6 +1,7 @@
 use crate::{bus::types::Cycle, cpu::Arm7tdmi};
 
-pub mod apu;
+#[allow(clippy::all)]
+pub mod apu; // TODO: APU implmentation
 pub mod bus;
 pub mod cpu;
 pub mod ppu;

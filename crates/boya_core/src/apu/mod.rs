@@ -7,7 +7,6 @@ pub struct Apu {
     pub registers: ApuRegister,
 }
 
-// TODO: APU implementation
 impl Default for Apu {
     fn default() -> Self {
         Self {
