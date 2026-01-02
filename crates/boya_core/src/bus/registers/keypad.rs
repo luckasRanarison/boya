@@ -44,6 +44,7 @@ impl Keypad {
     }
 }
 
+#[allow(unused)]
 #[derive(Debug)]
 pub enum Key {
     ButtonA,

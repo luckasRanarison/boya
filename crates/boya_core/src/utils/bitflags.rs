@@ -103,7 +103,6 @@ where
 
 pub trait BitIter: Copy {
     fn iter_lsb(self) -> impl Iterator<Item = (usize, u8)>;
-    fn iter_msb(self) -> impl Iterator<Item = (usize, u8)>;
 }
 
 impl<T> BitIter for T
@@ -119,18 +118,6 @@ where
             let bit = (shifted & one) == one;
             shifted >>= one;
             (index, bit as u8)
-        })
-    }
-
-    fn iter_msb(self) -> impl Iterator<Item = (usize, u8)> {
-        let bits = size_of::<T>() * 8;
-        let one = T::from(1);
-        let mut mask = T::from(1 << (bits - 1));
-
-        (0..bits).rev().map(move |index| {
-            let bit = ((self & mask) == mask) as u8;
-            mask >>= one;
-            (index, bit)
         })
     }
 }
@@ -166,19 +153,20 @@ mod tests {
     #[test]
     fn test_bit_iter() {
         let value = 0b00111010_u8;
-        let bits_msb = value.iter_msb().collect::<Vec<_>>();
         let bits_lsb = value.iter_lsb().collect::<Vec<_>>();
 
-        #[rustfmt::skip]
-        assert_eq!(
-            &bits_msb,
-            &[(7, 0), (6, 0), (5, 1), (4, 1), (3, 1), (2, 0), (1, 1), (0, 0)]
-        );
-
-        #[rustfmt::skip]
         assert_eq!(
             &bits_lsb,
-            &[(0, 0), (1, 1), (2, 0), (3, 1), (4, 1), (5, 1), (6, 0), (7, 0)]
+            &[
+                (0, 0),
+                (1, 1),
+                (2, 0),
+                (3, 1),
+                (4, 1),
+                (5, 1),
+                (6, 0),
+                (7, 0)
+            ]
         );
     }
 }

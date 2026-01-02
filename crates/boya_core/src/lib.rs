@@ -4,11 +4,11 @@ use crate::{
 };
 
 #[allow(clippy::all)]
-pub mod apu; // TODO: APU implmentation
-pub mod bus;
-pub mod cpu;
-pub mod ppu;
-pub mod utils;
+mod apu; // TODO: APU implmentation
+mod bus;
+mod cpu;
+mod ppu;
+mod utils;
 
 #[cfg(test)]
 mod test;

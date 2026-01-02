@@ -72,12 +72,6 @@ impl GbaBus {
         }
     }
 
-    pub fn send_interrupt(&mut self, interrupt: Interrupt) {
-        if self.io.irq_master_enable() && self.io.is_irq_enabled(interrupt) {
-            self.io.set_irq(interrupt);
-        }
-    }
-
     pub fn rw_cycle(&self, addr: u32, dt: DataType, access_kind: MemoryAccess) -> Cycle {
         let region = MemoryRegion::from_address(addr);
         let data = self.region_data(region);
@@ -87,25 +81,6 @@ impl GbaBus {
             MemoryAccess::Seq => Cycle::new(0, access, 0, data.waitstate),
             MemoryAccess::NonSeq => Cycle::new(0, access - 1, 1, data.waitstate),
         }
-    }
-
-    pub fn region_data(&self, region: MemoryRegion) -> MemoryRegionData {
-        let (width, waitstate) = match region {
-            MemoryRegion::BIOS => (DataType::Word, WaitState::default()),
-            MemoryRegion::EWRAM => (DataType::HWord, WaitState::new(2, 2)),
-            MemoryRegion::IWRAM => (DataType::Word, WaitState::default()),
-            MemoryRegion::IO => (DataType::Word, WaitState::default()),
-            MemoryRegion::Palette => (DataType::HWord, self.rendering_wait_state()),
-            MemoryRegion::VRAM => (DataType::HWord, self.rendering_wait_state()),
-            MemoryRegion::OAM => (DataType::Word, self.rendering_wait_state()),
-            MemoryRegion::WaitState0 => (DataType::HWord, self.io.waitcnt.wait_state0()),
-            MemoryRegion::WaitState1 => (DataType::HWord, self.io.waitcnt.wait_state1()),
-            MemoryRegion::WaitState2 => (DataType::HWord, self.io.waitcnt.wait_state2()),
-            MemoryRegion::SRAM => (DataType::HWord, self.io.waitcnt.sram_wait()), // FIXME: Detect save type SRAM/FLASH/EEPROM
-            _ => (DataType::Word, WaitState::default()),
-        };
-
-        MemoryRegionData { width, waitstate }
     }
 
     // FIXME: currently slow, use slice copy to improve performance
@@ -126,6 +101,25 @@ impl GbaBus {
         }
 
         Some(cycles)
+    }
+
+    fn region_data(&self, region: MemoryRegion) -> MemoryRegionData {
+        let (width, waitstate) = match region {
+            MemoryRegion::BIOS => (DataType::Word, WaitState::default()),
+            MemoryRegion::EWRAM => (DataType::HWord, WaitState::new(2, 2)),
+            MemoryRegion::IWRAM => (DataType::Word, WaitState::default()),
+            MemoryRegion::IO => (DataType::Word, WaitState::default()),
+            MemoryRegion::Palette => (DataType::HWord, self.rendering_wait_state()),
+            MemoryRegion::VRAM => (DataType::HWord, self.rendering_wait_state()),
+            MemoryRegion::OAM => (DataType::Word, self.rendering_wait_state()),
+            MemoryRegion::WaitState0 => (DataType::HWord, self.io.waitcnt.wait_state0()),
+            MemoryRegion::WaitState1 => (DataType::HWord, self.io.waitcnt.wait_state1()),
+            MemoryRegion::WaitState2 => (DataType::HWord, self.io.waitcnt.wait_state2()),
+            MemoryRegion::SRAM => (DataType::HWord, self.io.waitcnt.sram_wait()), // FIXME: Detect save type SRAM/FLASH/EEPROM
+            _ => (DataType::Word, WaitState::default()),
+        };
+
+        MemoryRegionData { width, waitstate }
     }
 
     fn execute_dma(&mut self, dma: &Dma) {
@@ -176,7 +170,7 @@ impl GbaBus {
         let read_cycles = read_cycles_non_seq + read_cycles_seq.repeat(dma.transfer_len() - 1);
         let write_cycles = write_cycles_non_seq + write_cycles_seq.repeat(dma.transfer_len() - 1);
 
-        let internal_cycles = match (src_region, dst_region) {
+        let internal_cycles = match true {
             _ if src_region.is_gamepak() && dst_region.is_gamepak() => Cycle::internal(4),
             _ => Cycle::internal(2),
         };
@@ -218,6 +212,12 @@ impl GbaBus {
         let s = if self.ppu.is_rendering() { 1 } else { 0 };
 
         WaitState::new(n, s)
+    }
+
+    fn send_interrupt(&mut self, interrupt: Interrupt) {
+        if self.io.irq_master_enable() && self.io.is_irq_enabled(interrupt) {
+            self.io.set_irq(interrupt);
+        }
     }
 }
 

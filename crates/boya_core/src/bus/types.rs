@@ -49,25 +49,8 @@ impl MemoryRegion {
             0x0800_0000..=0x09FF_FFFF => MemoryRegion::WaitState0,
             0x0A00_0000..=0x0BFF_FFFF => MemoryRegion::WaitState1,
             0x0C00_0000..=0x0DFF_FFFF => MemoryRegion::WaitState2,
-            0x0E00_0000..=0x0E00_FFFF => MemoryRegion::BIOS,
+            0x0E00_0000..=0x0E00_FFFF => MemoryRegion::SRAM,
             _ => MemoryRegion::NonMapped,
-        }
-    }
-
-    pub fn offset(self) -> u32 {
-        match self {
-            MemoryRegion::BIOS => 0x0000_0000,
-            MemoryRegion::EWRAM => 0x0200_0000,
-            MemoryRegion::IWRAM => 0x0300_0000,
-            MemoryRegion::IO => 0x0400_0000,
-            MemoryRegion::Palette => 0x0500_0000,
-            MemoryRegion::VRAM => 0x0600_0000,
-            MemoryRegion::OAM => 0x0700_0000,
-            MemoryRegion::WaitState0 => 0x0800_0000,
-            MemoryRegion::WaitState1 => 0x0A00_0000,
-            MemoryRegion::WaitState2 => 0x0C00_0000,
-            MemoryRegion::SRAM => 0x0E00_0000,
-            MemoryRegion::NonMapped => 0x0FFF_FFFF,
         }
     }
 
