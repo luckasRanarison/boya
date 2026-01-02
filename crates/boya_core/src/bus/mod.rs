@@ -49,23 +49,21 @@ impl Default for GbaBus {
 
 impl GbaBus {
     pub fn tick(&mut self, cycles: u32) {
-        let registers = &mut self.io;
-
         self.ppu.tick(cycles);
 
-        let timer0_ovf = registers.timer0.tick(cycles, false);
-        let timer1_ovf = registers.timer1.tick(cycles, timer0_ovf);
-        let timer2_ovf = registers.timer2.tick(cycles, timer1_ovf);
-        let _ = registers.timer3.tick(cycles, timer2_ovf);
+        let timer0_ovf = self.io.timer0.tick(cycles, false);
+        let timer1_ovf = self.io.timer1.tick(cycles, timer0_ovf);
+        let timer2_ovf = self.io.timer2.tick(cycles, timer1_ovf);
+        let _timer3_ovf = self.io.timer3.tick(cycles, timer2_ovf);
 
         let interrupt = self
             .ppu
             .poll_interrupt()
-            .or_else(|| registers.timer0.poll_interrupt())
-            .or_else(|| registers.timer1.poll_interrupt())
-            .or_else(|| registers.timer2.poll_interrupt())
-            .or_else(|| registers.timer3.poll_interrupt())
-            .or_else(|| registers.keypad.poll_interrupt());
+            .or_else(|| self.io.timer0.poll_interrupt())
+            .or_else(|| self.io.timer1.poll_interrupt())
+            .or_else(|| self.io.timer2.poll_interrupt())
+            .or_else(|| self.io.timer3.poll_interrupt())
+            .or_else(|| self.io.keypad.poll_interrupt());
 
         if let Some(interrupt) = interrupt {
             self.send_interrupt(interrupt);
@@ -162,13 +160,13 @@ impl GbaBus {
         let src_region = MemoryRegion::from_address(dma.sad);
         let dst_region = MemoryRegion::from_address(dma.dad);
 
-        let read_cycles_seq = self.rw_cycle(dma.sad, dma_dt, MemoryAccess::Seq);
-        let write_cycles_seq = self.rw_cycle(dma.dad, dma_dt, MemoryAccess::Seq);
-        let read_cycles_non_seq = self.rw_cycle(dma.sad, dma_dt, MemoryAccess::NonSeq);
-        let write_cycles_non_seq = self.rw_cycle(dma.dad, dma_dt, MemoryAccess::NonSeq);
+        let read_seq = self.rw_cycle(dma.sad, dma_dt, MemoryAccess::Seq);
+        let write_seq = self.rw_cycle(dma.dad, dma_dt, MemoryAccess::Seq);
+        let read_non_seq = self.rw_cycle(dma.sad, dma_dt, MemoryAccess::NonSeq);
+        let write_non_seq = self.rw_cycle(dma.dad, dma_dt, MemoryAccess::NonSeq);
 
-        let read_cycles = read_cycles_non_seq + read_cycles_seq.repeat(dma.transfer_len() - 1);
-        let write_cycles = write_cycles_non_seq + write_cycles_seq.repeat(dma.transfer_len() - 1);
+        let read_cycles = read_non_seq + read_seq.repeat(dma.transfer_len() - 1);
+        let write_cycles = write_non_seq + write_seq.repeat(dma.transfer_len() - 1);
 
         let internal_cycles = match true {
             _ if src_region.is_gamepak() && dst_region.is_gamepak() => Cycle::internal(4),
