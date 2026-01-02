@@ -48,6 +48,9 @@ impl Register {
             .map(|index| self.psr[index])
     }
 
+    /// # Panics
+    ///
+    /// If the operating mode has no SPSR bank.
     pub fn get_spsr_unchecked(&self, op_mode: OperatingMode) -> Psr {
         self.get_spsr(op_mode)
             .unwrap_or_else(|| panic!("invalid SPSR access, mode: {op_mode:?}"))
