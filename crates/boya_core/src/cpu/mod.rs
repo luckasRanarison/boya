@@ -118,7 +118,7 @@ impl Arm7tdmi {
             false => DataType::Word,
         };
 
-        self.bus.get_rw_cycle(self.pc(), dt, access_kind)
+        self.bus.rw_cycle(self.pc(), dt, access_kind)
     }
 
     #[inline(always)]

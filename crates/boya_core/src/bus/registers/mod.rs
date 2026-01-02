@@ -4,7 +4,7 @@ use crate::bus::{
         dma::{Dma, DmaChannel},
         keypad::Keypad,
         timer::{Timer, TimerUnit},
-        waitcnt::WaitCnt,
+        waitcnt::Waitcnt,
     },
 };
 
@@ -38,7 +38,7 @@ pub struct IORegister {
     /// 0x202: Interrupt Request Flags (R/W)
     pub irf: u16,
     /// 0x204: Waitstate Control (R/W)
-    pub waitcnt: WaitCnt,
+    pub waitcnt: Waitcnt,
     /// 0x208: Interrupt Master Enable (R/W)
     pub ime: u16,
     /// 0x300: Power Down Control (R/W)
@@ -134,7 +134,7 @@ mod tests {
         AsmTestBuilder::new()
             .asm(asm)
             .assert_fn(|cpu| {
-                let registers = &cpu.bus.registers;
+                let registers = &cpu.bus.io;
 
                 assert!(registers.ime == 1, "IME");
                 assert!(registers.ie.has(Interrupt::HBlank as u16), "HBlank IE");

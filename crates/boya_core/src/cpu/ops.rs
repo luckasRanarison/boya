@@ -26,7 +26,7 @@ impl Arm7tdmi {
         carry: Carry,
         update: bool,
     ) -> Cycle {
-        let (cycle_op, pc_dst) = self.get_data_op_cycle(dst, &rhs);
+        let (cycle_op, pc_dst) = self.data_op_cycle(dst, &rhs);
         let reg_shift = rhs.shift.as_ref().filter(|s| s.register).is_some();
 
         let lhs = match lhs.is_pc() {
@@ -56,7 +56,7 @@ impl Arm7tdmi {
             self.registers.set(rd, res2, self.cpsr.op_mode());
         }
 
-        let extra_fetch_cycle = self.get_extra_fetch_cycle(pc_dst);
+        let extra_fetch_cycle = self.extra_fetch_cycle(pc_dst);
 
         cycle_op + extra_fetch_cycle
     }
@@ -64,7 +64,7 @@ impl Arm7tdmi {
     #[inline(always)]
     pub fn shift_op(&mut self, dst: u8, lhs: u8, rhs: Operand, shift: ShiftKind) -> Cycle {
         let op_mode = self.cpsr.op_mode();
-        let (op_cycle, pc_dst) = self.get_data_op_cycle(dst.into(), &rhs);
+        let (op_cycle, pc_dst) = self.data_op_cycle(dst.into(), &rhs);
         let imm = rhs.is_imm();
         let lhs = self.registers.get(lhs, op_mode);
         let rhs = self.get_operand(rhs) & 0xFF;
@@ -73,7 +73,7 @@ impl Arm7tdmi {
         self.cpsr.update_zn(result);
         self.registers.set(dst, result, op_mode);
 
-        let extra_fetch_cycle = self.get_extra_fetch_cycle(pc_dst);
+        let extra_fetch_cycle = self.extra_fetch_cycle(pc_dst);
 
         op_cycle + extra_fetch_cycle
     }
@@ -91,7 +91,7 @@ impl Arm7tdmi {
         F: Fn(u32, u32) -> u32,
     {
         let op_mode = self.cpsr.op_mode();
-        let (op_cycle, pc_dst) = self.get_data_op_cycle(dst, &rhs);
+        let (op_cycle, pc_dst) = self.data_op_cycle(dst, &rhs);
         let lhs = self.registers.get(lhs, op_mode);
         let rhs = self.get_operand_with_shift(rhs, update);
         let result = func(lhs, rhs);
@@ -104,14 +104,14 @@ impl Arm7tdmi {
             self.registers.set(rd, result, op_mode);
         }
 
-        let extra_fetch_cycle = self.get_extra_fetch_cycle(pc_dst);
+        let extra_fetch_cycle = self.extra_fetch_cycle(pc_dst);
 
         op_cycle + extra_fetch_cycle
     }
 
     #[inline(always)]
     pub fn mov_op(&mut self, rd: u8, operand: Operand, update: bool) -> Cycle {
-        let (op_cycle, pc_dst) = self.get_data_op_cycle(rd.into(), &operand);
+        let (op_cycle, pc_dst) = self.data_op_cycle(rd.into(), &operand);
         let value = self.get_operand_with_shift(operand, update);
 
         if update {
@@ -120,7 +120,7 @@ impl Arm7tdmi {
 
         self.registers.set(rd, value, self.cpsr.op_mode());
 
-        let extra_fetch_cycle = self.get_extra_fetch_cycle(pc_dst);
+        let extra_fetch_cycle = self.extra_fetch_cycle(pc_dst);
 
         op_cycle + extra_fetch_cycle
     }
@@ -249,13 +249,13 @@ impl Arm7tdmi {
             _ => {}
         };
 
-        let read_cycle = self.bus.get_rw_cycle(addr, kind, MemoryAccess::NonSeq);
+        let read_cycle = self.bus.rw_cycle(addr, kind, MemoryAccess::NonSeq);
         let internal_cycle = Cycle::internal(1);
         let pre_fetch_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
 
         self.registers.set(rd, value, op_mode);
 
-        let extra_fetch_cycle = self.get_extra_fetch_cycle(rd == NamedRegister::PC as u8);
+        let extra_fetch_cycle = self.extra_fetch_cycle(rd == NamedRegister::PC as u8);
 
         read_cycle + internal_cycle + pre_fetch_cycle + extra_fetch_cycle
     }
@@ -297,7 +297,7 @@ impl Arm7tdmi {
             _ => {}
         };
 
-        let write_cycle = self.bus.get_rw_cycle(addr, kind, MemoryAccess::NonSeq);
+        let write_cycle = self.bus.rw_cycle(addr, kind, MemoryAccess::NonSeq);
 
         fetch_cycle + write_cycle
     }
@@ -323,7 +323,8 @@ impl Arm7tdmi {
                 AddrMode::IB => 0x04,
             };
             let addr = base.wrapping_add_signed(offset);
-            let pc = self.pipeline.current_address() + self.instr_size() as u32 * 2; // FIXME: self.pc() ???
+            // TODO: figure why this is one instruction ahead
+            let pc = self.pc() + self.instr_size() as u32;
 
             self.bus.write_word(addr, pc);
         }
@@ -343,7 +344,7 @@ impl Arm7tdmi {
                 false => MemoryAccess::NonSeq,
             };
 
-            write_cycle += self.bus.get_rw_cycle(offset, DataType::Word, access);
+            write_cycle += self.bus.rw_cycle(offset, DataType::Word, access);
 
             self.store_reg(idx, &mut offset, usr);
         }
@@ -387,9 +388,7 @@ impl Arm7tdmi {
                 pc_dst = true;
             }
 
-            read_cycle += self
-                .bus
-                .get_rw_cycle(offset, DataType::Word, MemoryAccess::Seq);
+            read_cycle += self.bus.rw_cycle(offset, DataType::Word, MemoryAccess::Seq);
 
             self.load_reg(idx, &mut offset, usr);
         }
@@ -400,7 +399,7 @@ impl Arm7tdmi {
             self.write_base_address(rb, n, amod);
         }
 
-        let extra_fetch_cycle = self.get_extra_fetch_cycle(pc_dst);
+        let extra_fetch_cycle = self.extra_fetch_cycle(pc_dst);
 
         // FIXME: not quite accurate
         pre_fetch_cycle + read_cycle + internal_cycle + extra_fetch_cycle
@@ -525,7 +524,7 @@ impl Arm7tdmi {
         }
 
         let dt = if byte { DataType::Byte } else { DataType::Word };
-        let rw_cycle = self.bus.get_rw_cycle(addr, dt, MemoryAccess::NonSeq);
+        let rw_cycle = self.bus.rw_cycle(addr, dt, MemoryAccess::NonSeq);
         let internal_cycle = Cycle::internal(1);
         let fetch_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
 
@@ -575,7 +574,7 @@ impl Arm7tdmi {
         result
     }
 
-    fn get_data_op_cycle(&self, dst: Option<u8>, operand: &Operand) -> (Cycle, bool) {
+    fn data_op_cycle(&self, dst: Option<u8>, operand: &Operand) -> (Cycle, bool) {
         let reg_shift = operand.shift.as_ref().filter(|s| s.register).is_some();
         let pc_dst = dst.filter(|r| *r == NamedRegister::PC as u8).is_some();
 
@@ -589,7 +588,7 @@ impl Arm7tdmi {
         (cycle, pc_dst)
     }
 
-    fn get_extra_fetch_cycle(&self, cond: bool) -> Cycle {
+    fn extra_fetch_cycle(&self, cond: bool) -> Cycle {
         if cond {
             self.pre_fetch_cycle(MemoryAccess::Seq).repeat(2)
         } else {

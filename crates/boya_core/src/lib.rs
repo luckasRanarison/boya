@@ -1,5 +1,6 @@
 use crate::{bus::types::Cycle, cpu::Arm7tdmi};
 
+pub mod apu;
 pub mod bus;
 pub mod cpu;
 pub mod ppu;

@@ -169,17 +169,17 @@ mod tests {
         AsmTestBuilder::new()
             .asm(asm)
             .setup(|cpu| {
-                cpu.bus.registers.ime = 1;
-                cpu.bus.registers.ie.set(Interrupt::Timer0 as u16);
+                cpu.bus.io.ime = 1;
+                cpu.bus.io.ie.set(Interrupt::Timer0 as u16);
             })
             .assert_fn(|cpu| {
-                let timer0 = &cpu.bus.registers.timer0;
-                let timer1 = &cpu.bus.registers.timer1;
+                let timer0 = &cpu.bus.io.timer0;
+                let timer1 = &cpu.bus.io.timer1;
 
                 assert_eq!(0xFF00 + 19, timer0.counter, "timer 0 counter"); // + wrapped 20 cycles
                 assert_eq!(0x1, timer1.counter, "timer 1 counter"); // + count-up cycle
                 assert!(
-                    cpu.bus.registers.irf.has(Interrupt::Timer0 as u16),
+                    cpu.bus.io.irf.has(Interrupt::Timer0 as u16),
                     "timer 0 pending irq"
                 );
             })

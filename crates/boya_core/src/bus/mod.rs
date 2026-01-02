@@ -2,6 +2,7 @@ pub mod registers;
 pub mod types;
 
 use crate::{
+    apu::Apu,
     bus::{
         registers::{
             IORegister,
@@ -27,8 +28,9 @@ pub struct GbaBus {
     pub ewram: Box<[u8; EWRAM_SIZE]>,
     pub rom: Vec<u8>,
     pub sram: Box<[u8; SRAM_SIZE]>,
-    pub registers: IORegister,
+    pub io: IORegister,
     pub ppu: Ppu,
+    pub apu: Apu,
 }
 
 impl Default for GbaBus {
@@ -39,15 +41,16 @@ impl Default for GbaBus {
             ewram: Box::new([0; EWRAM_SIZE]),
             rom: Vec::new(),
             sram: Box::new([0; SRAM_SIZE]),
-            registers: IORegister::default(),
+            io: IORegister::default(),
             ppu: Ppu::default(),
+            apu: Apu::default(),
         }
     }
 }
 
 impl GbaBus {
     pub fn tick(&mut self, cycles: u32) {
-        let registers = &mut self.registers;
+        let registers = &mut self.io;
 
         self.ppu.tick(cycles);
 
@@ -79,18 +82,18 @@ impl GbaBus {
     }
 
     pub fn poll_interrupt(&self) -> bool {
-        self.registers.has_pending_irq()
+        self.io.has_pending_irq()
     }
 
     pub fn set_interrupt(&mut self, interrupt: Interrupt) {
-        if self.registers.ime.has(0) && self.registers.ie.has(interrupt as u16) {
-            self.registers.irf.set(interrupt as u16);
+        if self.io.ime.has(0) && self.io.ie.has(interrupt as u16) {
+            self.io.irf.set(interrupt as u16);
         }
     }
 
-    pub fn get_rw_cycle(&self, addr: u32, dt: DataType, access_kind: MemoryAccess) -> Cycle {
+    pub fn rw_cycle(&self, addr: u32, dt: DataType, access_kind: MemoryAccess) -> Cycle {
         let region = MemoryRegion::from_address(addr);
-        let data = self.get_region_data(region);
+        let data = self.region_data(region);
         let access = u8::max(dt.size() / data.width.size(), 1) as u32;
 
         match access_kind {
@@ -99,19 +102,19 @@ impl GbaBus {
         }
     }
 
-    pub fn get_region_data(&self, region: MemoryRegion) -> MemoryRegionData {
+    pub fn region_data(&self, region: MemoryRegion) -> MemoryRegionData {
         let (width, waitstate) = match region {
             MemoryRegion::BIOS => (DataType::Word, WaitState::default()),
-            MemoryRegion::EWRAM => (DataType::HWord, WaitState { n: 2, s: 2 }),
+            MemoryRegion::EWRAM => (DataType::HWord, WaitState::new(2, 2)),
             MemoryRegion::IWRAM => (DataType::Word, WaitState::default()),
             MemoryRegion::IO => (DataType::Word, WaitState::default()),
-            MemoryRegion::Palette => (DataType::HWord, WaitState::default()), // >
-            MemoryRegion::VRAM => (DataType::HWord, WaitState::default()),    // >
-            MemoryRegion::OAM => (DataType::Word, WaitState::default()), //      > FIXME: +1 during rendering
-            MemoryRegion::WaitState0 => (DataType::HWord, self.registers.waitcnt.wait_state0()),
-            MemoryRegion::WaitState1 => (DataType::HWord, self.registers.waitcnt.wait_state1()),
-            MemoryRegion::WaitState2 => (DataType::HWord, self.registers.waitcnt.wait_state2()),
-            MemoryRegion::SRAM => (DataType::HWord, self.registers.waitcnt.sram_wait()), // FIXME: Detect save type SRAM/FLASH/EEPROM
+            MemoryRegion::Palette => (DataType::HWord, self.rendering_wait_state()),
+            MemoryRegion::VRAM => (DataType::HWord, self.rendering_wait_state()),
+            MemoryRegion::OAM => (DataType::Word, self.rendering_wait_state()),
+            MemoryRegion::WaitState0 => (DataType::HWord, self.io.waitcnt.wait_state0()),
+            MemoryRegion::WaitState1 => (DataType::HWord, self.io.waitcnt.wait_state1()),
+            MemoryRegion::WaitState2 => (DataType::HWord, self.io.waitcnt.wait_state2()),
+            MemoryRegion::SRAM => (DataType::HWord, self.io.waitcnt.sram_wait()), // FIXME: Detect save type SRAM/FLASH/EEPROM
             _ => (DataType::Word, WaitState::default()),
         };
 
@@ -127,7 +130,7 @@ impl GbaBus {
         }
 
         let dma_image = dma.clone();
-        let cycles = self.get_dma_cycles(&dma_image);
+        let cycles = self.dma_cycles(&dma_image);
 
         self.execute_dma(&dma_image);
 
@@ -173,15 +176,15 @@ impl GbaBus {
         }
     }
 
-    fn get_dma_cycles(&self, dma: &Dma) -> Cycle {
+    fn dma_cycles(&self, dma: &Dma) -> Cycle {
         let dma_dt = dma.transfer_type();
         let src_region = MemoryRegion::from_address(dma.sad);
         let dst_region = MemoryRegion::from_address(dma.dad);
 
-        let read_cycles_seq = self.get_rw_cycle(dma.sad, dma_dt, MemoryAccess::Seq);
-        let write_cycles_seq = self.get_rw_cycle(dma.dad, dma_dt, MemoryAccess::Seq);
-        let read_cycles_non_seq = self.get_rw_cycle(dma.sad, dma_dt, MemoryAccess::NonSeq);
-        let write_cycles_non_seq = self.get_rw_cycle(dma.dad, dma_dt, MemoryAccess::NonSeq);
+        let read_cycles_seq = self.rw_cycle(dma.sad, dma_dt, MemoryAccess::Seq);
+        let write_cycles_seq = self.rw_cycle(dma.dad, dma_dt, MemoryAccess::Seq);
+        let read_cycles_non_seq = self.rw_cycle(dma.sad, dma_dt, MemoryAccess::NonSeq);
+        let write_cycles_non_seq = self.rw_cycle(dma.dad, dma_dt, MemoryAccess::NonSeq);
 
         let read_cycles = read_cycles_non_seq + read_cycles_seq.repeat(dma.transfer_len() - 1);
         let write_cycles = write_cycles_non_seq + write_cycles_seq.repeat(dma.transfer_len() - 1);
@@ -196,10 +199,10 @@ impl GbaBus {
 
     fn get_active_dma(&mut self) -> Option<&mut Dma> {
         match true {
-            _ if self.should_start_dma(&self.registers.dma0) => Some(&mut self.registers.dma0),
-            _ if self.should_start_dma(&self.registers.dma1) => Some(&mut self.registers.dma1),
-            _ if self.should_start_dma(&self.registers.dma2) => Some(&mut self.registers.dma2),
-            _ if self.should_start_dma(&self.registers.dma3) => Some(&mut self.registers.dma3),
+            _ if self.should_start_dma(&self.io.dma0) => Some(&mut self.io.dma0),
+            _ if self.should_start_dma(&self.io.dma1) => Some(&mut self.io.dma1),
+            _ if self.should_start_dma(&self.io.dma2) => Some(&mut self.io.dma2),
+            _ if self.should_start_dma(&self.io.dma3) => Some(&mut self.io.dma3),
             _ => None,
         }
     }
@@ -214,13 +217,20 @@ impl GbaBus {
             DmaStartTiming::VBlank => self.ppu.registers.dispstat.has(Dispstat::VBLANK),
             DmaStartTiming::HBlank => self.ppu.registers.dispstat.has(Dispstat::HBLANK),
 
-            DmaStartTiming::Special => match dma.get_special_timing() {
+            DmaStartTiming::Special => match dma.special_timing() {
                 DmaSpecialTiming::None => true, // immediate
                 DmaSpecialTiming::FifoA => todo!("FIFO_A DMA start"),
                 DmaSpecialTiming::FifoB => todo!("FIFO_B DMA start"),
                 DmaSpecialTiming::VideoCapture => todo!("Video capture DMA start"),
             },
         }
+    }
+
+    fn rendering_wait_state(&self) -> WaitState {
+        let n = if self.ppu.is_rendering() { 1 } else { 0 };
+        let s = if self.ppu.is_rendering() { 1 } else { 0 };
+
+        WaitState::new(n, s)
     }
 }
 
@@ -231,7 +241,8 @@ impl Bus for GbaBus {
             0x0200_0000..=0x0203_FFFF => self.ewram[address as usize - 0x0200_0000],
             0x0300_0000..=0x0300_7FFF => self.iwram[address as usize - 0x0300_0000],
             0x0400_0000..=0x0400_005F => self.ppu.registers.read_byte(address),
-            0x0400_00B0..=0x0400_03FE => self.registers.read_byte(address),
+            0x0400_0060..=0x0400_00AF => self.apu.registers.read_byte(address),
+            0x0400_00B0..=0x0400_03FE => self.io.read_byte(address),
             0x0500_0000..=0x0500_03FF => self.ppu.palette[address as usize - 0x0500_0000],
             0x0600_0000..=0x0617_FFFF => self.ppu.vram[address as usize - 0x0600_0000],
             0x0700_0000..=0x0700_03FF => self.ppu.oam[address as usize - 0x0700_0000],
@@ -246,7 +257,8 @@ impl Bus for GbaBus {
             0x0200_0000..=0x0203_FFFF => self.ewram[address as usize - 0x0200_0000] = value,
             0x0300_0000..=0x0300_7FFF => self.iwram[address as usize - 0x0300_0000] = value,
             0x0400_0000..=0x0400_005F => self.ppu.registers.write_byte(address, value),
-            0x0400_00B0..=0x0400_03FE => self.registers.write_byte(address, value),
+            0x0400_0060..=0x0400_00AF => self.apu.registers.write_byte(address, value),
+            0x0400_00B0..=0x0400_03FE => self.io.write_byte(address, value),
             0x0500_0000..=0x0500_03FF => self.ppu.palette[address as usize - 0x0500_0000] = value,
             0x0600_0000..=0x0617_FFFF => self.ppu.vram[address as usize - 0x0600_0000] = value,
             0x0700_0000..=0x0700_03FF => self.ppu.oam[address as usize - 0x0700_0000] = value,

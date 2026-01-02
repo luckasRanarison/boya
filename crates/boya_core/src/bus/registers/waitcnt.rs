@@ -1,11 +1,11 @@
 use crate::{bus::types::WaitState, utils::bitflags::Bitflag};
 
 #[derive(Debug, Default)]
-pub struct WaitCnt {
+pub struct Waitcnt {
     pub value: u16,
 }
 
-impl WaitCnt {
+impl Waitcnt {
     pub fn sram_wait(&self) -> WaitState {
         let wait = self.two_bits_wait(0, 1);
 

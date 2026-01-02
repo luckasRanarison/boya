@@ -5,6 +5,7 @@ pub struct Dispcnt {
     pub value: u16,
 }
 
+// TODO: CGB mode (bit 3)
 impl Dispcnt {
     pub fn bg_mode(&self) -> BgMode {
         match self.value.get_bits(0, 2) {

@@ -91,14 +91,14 @@ mod tests {
         AsmTestBuilder::new()
             .asm(asm)
             .setup(|cpu| {
-                cpu.bus.registers.ime = 1;
-                cpu.bus.registers.ie.set(Interrupt::Keypad as u16);
-                cpu.bus.registers.keypad.keyinput.clear(Key::Down as u16);
-                cpu.bus.registers.keypad.keyinput.clear(Key::ButtonB as u16);
+                cpu.bus.io.ime = 1;
+                cpu.bus.io.ie.set(Interrupt::Keypad as u16);
+                cpu.bus.io.keypad.keyinput.clear(Key::Down as u16);
+                cpu.bus.io.keypad.keyinput.clear(Key::ButtonB as u16);
             })
             .assert_fn(|cpu| {
                 assert!(
-                    cpu.bus.registers.irf.has(Interrupt::Keypad as u16),
+                    cpu.bus.io.irf.has(Interrupt::Keypad as u16),
                     "keypad pending irq"
                 );
             })

@@ -1,6 +1,6 @@
 use crate::{
     bus::Bus,
-    ppu::registers::{bgcnt::BgCnt, dispcnt::Dispcnt, dispstat::Dispstat},
+    ppu::registers::{bgcnt::Bgcnt, dispcnt::Dispcnt, dispstat::Dispstat},
 };
 
 pub mod bgcnt;
@@ -16,13 +16,13 @@ pub struct PpuRegister {
     /// 0x006: Vertical Counter (R)
     pub vcount: u16,
     /// 0x008: Background 0 Control (R/W)
-    pub bg0cnt: BgCnt,
+    pub bg0cnt: Bgcnt,
     /// 0x00A: Background 1 Control (R/W)
-    pub bg1cnt: BgCnt,
+    pub bg1cnt: Bgcnt,
     /// 0x00C: Background 2 Control (R/W)
-    pub bg2cnt: BgCnt,
+    pub bg2cnt: Bgcnt,
     /// 0x00E: Background 3 Control (R/W)
-    pub bg3cnt: BgCnt,
+    pub bg3cnt: Bgcnt,
     /// 0x010: Background 0 X-Offset (W)
     pub bg0hofs: u16,
     /// 0x012: Background 0 Y-Offset (W)

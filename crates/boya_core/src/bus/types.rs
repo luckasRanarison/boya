@@ -54,7 +54,7 @@ impl MemoryRegion {
         }
     }
 
-    pub fn get_offset(self) -> u32 {
+    pub fn offset(self) -> u32 {
         match self {
             MemoryRegion::BIOS => 0x0000_0000,
             MemoryRegion::EWRAM => 0x0200_0000,
@@ -89,6 +89,12 @@ pub struct MemoryRegionData {
 pub struct WaitState {
     pub n: u8,
     pub s: u8,
+}
+
+impl WaitState {
+    pub fn new(n: u8, s: u8) -> Self {
+        Self { n, s }
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy)]

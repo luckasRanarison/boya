@@ -82,8 +82,8 @@ impl Dma {
         }
     }
 
-    pub fn get_special_timing(&self) -> DmaSpecialTiming {
-        self.channel.get_special_timing()
+    pub fn special_timing(&self) -> DmaSpecialTiming {
+        self.channel.special_timing()
     }
 }
 
@@ -115,7 +115,7 @@ pub enum DmaChannel {
 }
 
 impl DmaChannel {
-    pub fn get_special_timing(self) -> DmaSpecialTiming {
+    pub fn special_timing(self) -> DmaSpecialTiming {
         match self {
             DmaChannel::Dma0 => DmaSpecialTiming::None,
             DmaChannel::Dma1 => DmaSpecialTiming::FifoA,
@@ -210,11 +210,11 @@ mod tests {
         AsmTestBuilder::new()
             .asm(asm)
             .setup(|cpu| {
-                cpu.bus.registers.ime = 1;
-                cpu.bus.registers.ie.set(Interrupt::Dma0 as u16);
+                cpu.bus.io.ime = 1;
+                cpu.bus.io.ie.set(Interrupt::Dma0 as u16);
             })
             .assert_fn(move |cpu| {
-                let dma0 = &cpu.bus.registers.dma0;
+                let dma0 = &cpu.bus.io.dma0;
 
                 assert_eq!(0x0800_0004, dma0.sad, "DMA0 source address");
                 assert_eq!(0x0300_0000, dma0.dad, "DMA0 destination address");
@@ -222,7 +222,7 @@ mod tests {
                 assert_eq!(&cpu.bus.iwram[..16], &expected_chunks);
                 assert!(!dma0.dma_enable(), "DMA0 should be disabled");
                 assert!(
-                    cpu.bus.registers.irf.has(Interrupt::Dma0 as u16),
+                    cpu.bus.io.irf.has(Interrupt::Dma0 as u16),
                     "DMA0 pending irq"
                 );
             })

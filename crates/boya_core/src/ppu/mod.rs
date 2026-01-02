@@ -61,6 +61,10 @@ impl Ppu {
         &self.buffer
     }
 
+    pub fn is_rendering(&self) -> bool {
+        !self.registers.dispstat.has(Dispstat::VBLANK)
+    }
+
     pub fn step(&mut self) {
         self.handle_dot();
         self.registers.vcount = self.scanline.into();
