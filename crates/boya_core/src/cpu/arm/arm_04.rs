@@ -51,11 +51,10 @@ impl Executable for Instruction {
     }
 
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
-        if matches!(self.op, Opcode::BL) {
-            let lr = NamedRegister::LR as usize;
-            let pc = cpu.next_instr_addr().unwrap();
-
-            cpu.registers.set(lr, pc, cpu.cpsr.op_mode());
+        if matches!(self.op, Opcode::BL)
+            && let Some(pc) = cpu.next_op_address()
+        {
+            cpu.registers.set(Register::LR, pc, cpu.cpsr.op_mode());
         }
 
         cpu.b(self.nn)

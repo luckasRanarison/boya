@@ -32,10 +32,6 @@ pub struct Arm7tdmi {
 }
 
 impl Arm7tdmi {
-    const PC: usize = 15;
-    const LR: usize = 14;
-    const SP: usize = 13;
-
     pub fn new(bus: GbaBus) -> Self {
         Self {
             registers: Register::default(),
@@ -49,7 +45,7 @@ impl Arm7tdmi {
         let instruction = self.pipeline.take();
         let cycles = self.exec(instruction);
 
-        if self.pipeline.last_pc() != self.pc() {
+        if self.pipeline.next_address() != self.pc() {
             self.align_pc();
             self.pipeline.flush();
         }
@@ -63,16 +59,16 @@ impl Arm7tdmi {
         self.handle_exception(Exception::Reset);
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn fetch(&mut self) -> u32 {
         let offset = self.instr_size();
         let word = self.bus.read_word(self.pc());
 
-        self.shift_pc(offset.into());
+        self.registers.shift_pc(offset.into());
         word
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn decode(&self, word: u32) -> Instruction {
         if self.cpsr.thumb() {
             Instruction::Thumb(self.decode_thumb(word))
@@ -81,12 +77,19 @@ impl Arm7tdmi {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn exec(&mut self, instruction: Instruction) -> Cycle {
         match instruction {
             Instruction::Thumb(op) => self.exec_thumb(op),
             Instruction::Arm(op) => self.exec_arm(op),
         }
+    }
+
+    pub fn next_op_address(&self) -> Option<u32> {
+        let last_pc = self.pipeline.next_address();
+        let instr_size = self.instr_size().into();
+
+        last_pc.checked_sub(instr_size)
     }
 
     pub fn try_irq(&mut self) -> Option<Cycle> {
@@ -98,25 +101,15 @@ impl Arm7tdmi {
     }
 
     #[inline(always)]
-    fn set_pc(&mut self, value: u32) {
-        self.registers.main[Self::PC] = value;
-    }
-
-    #[inline(always)]
     fn pc(&self) -> u32 {
-        self.registers.main[Self::PC]
-    }
-
-    #[inline(always)]
-    fn shift_pc(&mut self, offset: i32) {
-        self.registers.main[Self::PC] = self.registers.main[Self::PC].wrapping_add_signed(offset);
+        self.registers.pc()
     }
 
     fn align_pc(&mut self) {
         let mask = if self.cpsr.thumb() { !0b01 } else { !0b11 }; // half-word | word
         let value = self.pc() & mask;
 
-        self.set_pc(value);
+        self.registers.set_pc(value);
     }
 
     fn pre_fetch_cycle(&self, access_kind: MemoryAccess) -> Cycle {
@@ -233,7 +226,7 @@ impl Arm7tdmi {
 #[cfg(test)]
 impl Arm7tdmi {
     pub fn override_pc(&mut self, value: u32) {
-        self.set_pc(value);
+        self.registers.set_pc(value);
         self.pipeline.flush();
         self.load_pipeline();
     }

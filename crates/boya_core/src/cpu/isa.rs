@@ -6,6 +6,7 @@ pub mod prelude {
     pub use crate::cpu::common::*;
     pub use crate::cpu::isa::Executable;
     pub use crate::cpu::psr::*;
+    pub use crate::cpu::register::Register;
     pub use crate::utils::bitflags::Bitflag;
 
     #[cfg(test)]
@@ -18,7 +19,7 @@ use prelude::*;
 
 use crate::{
     bus::types::{DataType, MemoryAccess},
-    cpu::{arm::ArmInstr, thumb::ThumbInstr},
+    cpu::{arm::ArmInstr, register::Register, thumb::ThumbInstr},
 };
 
 pub enum Instruction {
@@ -198,12 +199,12 @@ impl Arm7tdmi {
 
     #[rustfmt::skip]
     pub fn push(&mut self, rlist: u8, lr: bool) -> Cycle {
-        self.stm_op(Self::SP, rlist as u16 | ((lr as u16) << 14), AddrMode::DB, true, false)
+        self.stm_op(Register::SP, rlist as u16 | ((lr as u16) << 14), AddrMode::DB, true, false)
     }
 
     #[rustfmt::skip]
     pub fn pop(&mut self, rlist: u8, pc: bool) -> Cycle {
-        self.ldm_op(Self::SP, rlist as u16 | ((pc as u16) << 15), AddrMode::IA, true, false)
+        self.ldm_op(Register::SP, rlist as u16 | ((pc as u16) << 15), AddrMode::IA, true, false)
     }
 
     pub fn stm(&mut self, rl: u16, rb: u8, amod: AddrMode, wb: bool, usr: bool) -> Cycle {

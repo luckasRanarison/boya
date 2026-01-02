@@ -4,20 +4,33 @@ use super::{Arm7tdmi, Instruction};
 
 #[derive(Debug, Default)]
 pub struct Pipeline {
-    pub curr_pc: u32,
-    pub last_pc: u32,
-    pub curr_word: Option<u32>,
-    pub next_word: Option<u32>,
-    pub curr_instr: Option<Instruction>,
+    curr_pc: u32,
+    next_pc: u32,
+    curr_word: Option<u32>,
+    next_word: Option<u32>,
+    curr_instr: Option<Instruction>,
 }
 
 impl Pipeline {
+    /// # Panics
+    ///
+    /// If pipeline has not been loaded.
     pub fn take(&mut self) -> Instruction {
-        self.curr_instr.take().unwrap() // pipeline should always be pre-loaded
+        self.curr_instr
+            .take()
+            .expect("pipeline has not been loaded")
     }
 
-    pub fn last_pc(&self) -> u32 {
-        self.last_pc
+    pub fn next_address(&self) -> u32 {
+        self.next_pc
+    }
+
+    pub fn current_address(&self) -> u32 {
+        self.curr_pc
+    }
+
+    pub fn current_instruction(&self) -> Option<&Instruction> {
+        self.curr_instr.as_ref()
     }
 
     pub fn flush(&mut self) {
@@ -28,13 +41,6 @@ impl Pipeline {
 }
 
 impl Arm7tdmi {
-    pub fn next_instr_addr(&self) -> Option<u32> {
-        let last_pc = self.pipeline.last_pc();
-        let instr_size = self.instr_size().into();
-
-        last_pc.checked_sub(instr_size)
-    }
-
     pub fn load_pipeline(&mut self) {
         let curr_pc = self.pc();
         let word = self.pipeline.next_word.unwrap_or_else(|| self.fetch());
@@ -43,6 +49,6 @@ impl Arm7tdmi {
         self.pipeline.curr_word = Some(word);
         self.pipeline.curr_instr = Some(self.decode(word));
         self.pipeline.next_word = Some(self.fetch());
-        self.pipeline.last_pc = self.pc();
+        self.pipeline.next_pc = self.pc();
     }
 }

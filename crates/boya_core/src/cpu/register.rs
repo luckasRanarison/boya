@@ -13,6 +13,10 @@ pub struct Register {
 }
 
 impl Register {
+    pub const PC: usize = 15;
+    pub const LR: usize = 14;
+    pub const SP: usize = 13;
+
     pub fn get<I: Into<usize>>(&self, index: I, op_mode: OperatingMode) -> u32 {
         let index = index.into();
 
@@ -62,6 +66,21 @@ impl Register {
 
             self.psr[index] = Psr::from(value);
         }
+    }
+
+    #[inline(always)]
+    pub fn set_pc(&mut self, value: u32) {
+        self.main[Self::PC] = value;
+    }
+
+    #[inline(always)]
+    pub fn pc(&self) -> u32 {
+        self.main[Self::PC]
+    }
+
+    #[inline(always)]
+    pub fn shift_pc(&mut self, offset: i32) {
+        self.main[Self::PC] = self.main[Self::PC].wrapping_add_signed(offset);
     }
 
     fn operating_mode_index(&self, op_mode: OperatingMode) -> Option<usize> {

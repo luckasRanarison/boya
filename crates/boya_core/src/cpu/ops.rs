@@ -3,7 +3,7 @@ use crate::{
         Bus,
         types::{Cycle, DataType, MemoryAccess},
     },
-    cpu::{common::*, psr::PsrKind},
+    cpu::{common::*, psr::PsrKind, register::Register},
     utils::{
         bitflags::{BitIter, Bitflag},
         ops::ExtendedOps,
@@ -132,7 +132,7 @@ impl Arm7tdmi {
         let first_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
 
         self.cpsr.update(Psr::T, value.has(0));
-        self.set_pc(value);
+        self.registers.set_pc(value);
 
         if prev_mode != self.cpsr.thumb() {
             self.pipeline.flush();
@@ -323,7 +323,7 @@ impl Arm7tdmi {
                 AddrMode::IB => 0x04,
             };
             let addr = base.wrapping_add_signed(offset);
-            let pc = self.pipeline.curr_pc + self.instr_size() as u32 * 2; // FIXME: self.pc() ???
+            let pc = self.pipeline.current_address() + self.instr_size() as u32 * 2; // FIXME: self.pc() ???
 
             self.bus.write_word(addr, pc);
         }
@@ -369,7 +369,7 @@ impl Arm7tdmi {
         if n == 0 {
             let addr = self.registers.get(rb, op_mode);
             let word = self.bus.read_word(addr);
-            self.set_pc(word);
+            self.registers.set_pc(word);
         }
 
         let mut offset = self.get_lowest_address(rb, n, amod);
@@ -383,7 +383,7 @@ impl Arm7tdmi {
                 skip_write = true;
             }
 
-            if idx == NamedRegister::PC as usize {
+            if idx == Register::PC {
                 pc_dst = true;
             }
 
@@ -415,7 +415,7 @@ impl Arm7tdmi {
         }
 
         if offset != 0 {
-            self.shift_pc(offset);
+            self.registers.shift_pc(offset);
         } else {
             self.pipeline.flush();
         }
@@ -431,20 +431,20 @@ impl Arm7tdmi {
         let upper = (nn as u32) << 12;
         let result = self.pc().wrapping_add(upper);
 
-        self.registers.set(Self::LR, result, op_mode);
+        self.registers.set(Register::LR, result, op_mode);
         self.pre_fetch_cycle(MemoryAccess::Seq)
     }
 
     pub fn branch_long_second_op(&mut self, nn: u16) -> Cycle {
         let op_mode = self.cpsr.op_mode();
         let lower = (nn as u32) << 1;
-        let lr = self.registers.get(Self::LR, op_mode) as i32;
+        let lr = self.registers.get(Register::LR, op_mode) as i32;
         let offset = lr.wrapping_add(lower as i32);
-        let lr = self.next_instr_addr().unwrap_or_default() | 1;
+        let lr = self.next_op_address().unwrap_or_default() | 1;
         let first_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
 
-        self.set_pc(offset as u32);
-        self.registers.set(Self::LR, lr, op_mode);
+        self.registers.set_pc(offset as u32);
+        self.registers.set(Register::LR, lr, op_mode);
         self.pipeline.flush();
 
         let extra_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
@@ -462,15 +462,15 @@ impl Arm7tdmi {
         self.cpsr.set_operating_mode(op_mode);
         self.registers.set_spsr(op_mode, self.cpsr);
 
-        if let Some(next_addr) = self.next_instr_addr() {
-            self.registers.set(Self::LR, next_addr, op_mode);
+        if let Some(next_addr) = self.next_op_address() {
+            self.registers.set(Register::LR, next_addr, op_mode);
         }
 
         self.cpsr.update(Psr::T, false);
         self.cpsr.update(Psr::I, irq);
         self.cpsr.update(Psr::F, fiq);
 
-        self.set_pc(vector);
+        self.registers.set_pc(vector);
         self.load_pipeline();
 
         let extra_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);

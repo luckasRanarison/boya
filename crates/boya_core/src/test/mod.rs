@@ -153,8 +153,8 @@ impl AsmTestBuilder {
     fn debug_instruction(&self, cpu: &Arm7tdmi) {
         println!(
             "{:#08x}: {:?}",
-            cpu.pipeline.curr_pc,
-            cpu.pipeline.curr_instr.as_ref().unwrap(),
+            cpu.pipeline.current_address(),
+            cpu.pipeline.current_instruction().unwrap(),
         );
         // println!("{:?}", cpu.cpsr);
     }

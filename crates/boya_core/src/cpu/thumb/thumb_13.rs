@@ -31,7 +31,7 @@ impl From<u16> for Instruction {
 
 impl Executable for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
-        let sp = NamedRegister::SP as u8;
+        let sp = Register::SP as u8;
         let nn = self.nn.value.imm();
 
         match self.nn.negate {
