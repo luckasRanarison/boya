@@ -233,7 +233,7 @@ impl Bus for GbaBus {
             0x0700_0000..=0x0700_03FF => self.ppu.oam[address as usize - 0x0700_0000],
             0x0800_0000..=0x0DFF_FFFF => self.rom[address as usize - 0x0800_0000],
             0x0E00_0000..=0x0E00_FFFF => self.sram[address as usize - 0x0E00_0000],
-            _ => 0x0, // open bus
+            _ => 0x0, // TODO: open bus
         }
     }
 

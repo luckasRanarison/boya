@@ -1,6 +1,4 @@
-use std::{fmt::Debug, ops::Neg};
-
-use crate::utils::bitflags::BitIter;
+use std::ops::Neg;
 
 #[derive(Debug, Clone, Copy)]
 pub enum NamedRegister {
@@ -149,6 +147,7 @@ impl From<u8> for Condition {
     }
 }
 
+#[derive(Clone)]
 pub struct Operand {
     pub kind: OperandKind,
     pub value: u32,
@@ -156,7 +155,7 @@ pub struct Operand {
     pub shift: Option<Shift>,
 }
 
-impl Debug for Operand {
+impl std::fmt::Debug for Operand {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let lhs = match self.kind {
             OperandKind::Imm if self.negate => format!("#-{}", self.value),
@@ -307,38 +306,5 @@ where
             negate: false,
             shift: None,
         }
-    }
-}
-
-pub fn format_rlist<I: BitIter>(registers: I, named: Option<NamedRegister>) -> String {
-    let inner = registers
-        .iter_lsb()
-        .filter(|(_, bit)| *bit == 1)
-        .map(|(i, _)| format!("R{i}"))
-        .chain([named.map(|s| format!("{s:?}"))].into_iter().flatten())
-        .collect::<Vec<_>>()
-        .join(",");
-
-    format!("{{{inner}}}")
-}
-
-pub fn format_addr_mode(amod: AddrMode, base: u8, offset: &Operand, wb: bool) -> String {
-    let rn = base.reg();
-
-    let addr = match amod {
-        AddrMode::IB | AddrMode::DB if offset.is_imm() && offset.value == 0 => {
-            format!("[{rn:?}]")
-        }
-        AddrMode::IB => format!("[{rn:?}, {:?}]", offset),
-        AddrMode::DB if offset.is_imm() => format!("[{rn:?}, #-{:?}]", offset.value),
-        AddrMode::DB => format!("[{rn:?}, -{:?}]", offset),
-        AddrMode::IA => format!("[{rn:?}], {:?}", offset),
-        AddrMode::DA if offset.is_imm() => format!("[{rn:?}], #-{:?}", offset.value),
-        AddrMode::DA => format!("[{rn:?}], -{:?}", offset),
-    };
-
-    match amod {
-        AddrMode::IB | AddrMode::DB if wb => format!("{addr}!"),
-        _ => addr,
     }
 }

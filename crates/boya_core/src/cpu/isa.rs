@@ -7,6 +7,7 @@ pub mod prelude {
     pub use crate::cpu::isa::Executable;
     pub use crate::cpu::psr::*;
     pub use crate::cpu::register::Register;
+    pub use crate::debug::*;
     pub use crate::utils::bitflags::Bitflag;
 
     #[cfg(test)]
@@ -19,25 +20,26 @@ use prelude::*;
 
 use crate::{
     bus::types::{DataType, MemoryAccess},
-    cpu::{arm::ArmInstr, register::Register, thumb::ThumbInstr},
+    cpu::{arm::Arm, register::Register, thumb::Thumb},
 };
 
 pub enum Instruction {
-    Arm(ArmInstr),
-    Thumb(ThumbInstr),
+    Arm(Arm),
+    Thumb(Thumb),
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Instruction {
+    pub fn get_data(&self) -> InstructionData {
         match self {
-            Instruction::Arm(op) => write!(f, "{op:?}"),
-            Instruction::Thumb(op) => write!(f, "{op:?}"),
+            Instruction::Arm(op) => op.get_data(),
+            Instruction::Thumb(op) => op.get_data(),
         }
     }
 }
 
 pub trait Executable: Sized {
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle;
+    fn get_data(&self) -> InstructionData;
 
     fn condition(&self) -> Condition {
         Condition::AL

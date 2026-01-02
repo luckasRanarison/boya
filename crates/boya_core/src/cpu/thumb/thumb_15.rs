@@ -12,18 +12,6 @@ pub struct Instruction {
     rlist: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:?} {:?}!, {}",
-            self.op,
-            self.rb.reg(),
-            format_rlist(self.rlist, None)
-        )
-    }
-}
-
 impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         let op = value.get_u8(11).into();
@@ -55,6 +43,22 @@ impl Executable for Instruction {
         match self.op {
             Opcode::STMIA => cpu.stm(self.rlist.into(), self.rb, AddrMode::IA, true, false),
             Opcode::LDMIA => cpu.ldm(self.rlist.into(), self.rb, AddrMode::IA, true, false),
+        }
+    }
+
+    fn get_data(&self) -> InstructionData {
+        let offset = RegisterOffsetData {
+            amod: AddrMode::IA,
+            base: RegisterOffsetBase::Plain(self.rb),
+            offset: None,
+            wb: true,
+        };
+        let rlist = RegisterList::new(self.rlist.into(), None);
+
+        InstructionData {
+            keyword: format!("{:?}", self.op),
+            args: vec![offset.into(), rlist.into()],
+            kind: InstructionKind::thumb(15),
         }
     }
 }

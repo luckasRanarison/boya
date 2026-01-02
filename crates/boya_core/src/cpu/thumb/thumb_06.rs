@@ -11,12 +11,6 @@ pub struct Instruction {
     nn: u16, // 0-1020, steps 4
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "LDR, {:?}, [PC, {:?}]", self.rd.reg(), self.nn.imm())
-    }
-}
-
 impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         let rd = value.get_bits_u8(8, 10);
@@ -33,6 +27,21 @@ impl Executable for Instruction {
         let pc = NamedRegister::PC as u8;
 
         cpu.ldr(self.rd, pc, offset)
+    }
+
+    fn get_data(&self) -> InstructionData {
+        let offset = RegisterOffsetData {
+            amod: AddrMode::IB,
+            base: RegisterOffsetBase::Named(NamedRegister::PC),
+            offset: Some(self.nn.imm()),
+            wb: false,
+        };
+
+        InstructionData {
+            keyword: "LDR".to_string(),
+            args: vec![self.rd.reg().into(), offset.into()],
+            kind: InstructionKind::thumb(6),
+        }
     }
 }
 

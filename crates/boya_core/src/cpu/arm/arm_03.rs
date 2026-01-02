@@ -13,12 +13,6 @@ pub struct Instruction {
     rn: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "BX{:?} {:?}", self.cd, self.rn.reg())
-    }
-}
-
 impl From<u32> for Instruction {
     fn from(value: u32) -> Self {
         let cd = value.get_bits_u8(28, 31).into();
@@ -27,6 +21,7 @@ impl From<u32> for Instruction {
         Self { cd, rn }
     }
 }
+
 impl Executable for Instruction {
     fn condition(&self) -> Condition {
         self.cd
@@ -34,6 +29,14 @@ impl Executable for Instruction {
 
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         cpu.bx(self.rn)
+    }
+
+    fn get_data(&self) -> InstructionData {
+        InstructionData {
+            keyword: "BX".into(),
+            args: vec![self.rn.reg().into()],
+            kind: InstructionKind::arm(3, self.cd.into(), None, false),
+        }
     }
 }
 

@@ -13,19 +13,6 @@ pub struct Instruction {
     rd: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:?} {:?}, {:?}, {:?}",
-            self.op,
-            self.rd.reg(),
-            self.rs.reg(),
-            self.of.imm()
-        )
-    }
-}
-
 impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         let op = value.get_bits_u8(11, 12).into();
@@ -63,6 +50,18 @@ impl Executable for Instruction {
             Opcode::LSL => cpu.lsl(self.rd, self.rs, nn),
             Opcode::LSR => cpu.lsr(self.rd, self.rs, nn),
             Opcode::ASR => cpu.asr(self.rd, self.rs, nn),
+        }
+    }
+
+    fn get_data(&self) -> InstructionData {
+        InstructionData {
+            keyword: format!("{:?}", self.op),
+            args: vec![
+                self.rd.reg().into(),
+                self.rs.reg().into(),
+                self.of.imm().into(),
+            ],
+            kind: InstructionKind::thumb(1),
         }
     }
 }

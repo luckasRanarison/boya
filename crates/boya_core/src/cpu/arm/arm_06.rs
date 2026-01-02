@@ -14,17 +14,6 @@ pub struct Instruction {
     psr: PsrKind,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let Instruction { cd, psr, .. } = self;
-
-        match &self.op {
-            Opcode::MRS { rd } => write!(f, "MRS{cd:?} {rd:?}, {psr:?}"),
-            Opcode::MSR { fd, op } => write!(f, "MSR{cd:?} {psr:?}_{fd:?}, {op:?}"),
-        }
-    }
-}
-
 impl From<u32> for Instruction {
     fn from(value: u32) -> Self {
         let cd = value.get_bits_u8(28, 31).into();
@@ -77,6 +66,25 @@ impl Executable for Instruction {
         match self.op {
             Opcode::MRS { rd } => cpu.store_psr_op(rd, self.psr),
             Opcode::MSR { fd, op } => cpu.update_psr_op(op, fd.mask, self.psr),
+        }
+    }
+
+    fn get_data(&self) -> InstructionData {
+        let args = match &self.op {
+            Opcode::MRS { rd } => vec![rd.reg().into()],
+            Opcode::MSR { fd, op } => vec![
+                InstructionParam::PsrUpdate(PsrUpdate {
+                    kind: self.psr,
+                    fields: fd.clone(),
+                }),
+                op.clone().into(),
+            ],
+        };
+
+        InstructionData {
+            keyword: format!("{:?}", self.op),
+            kind: InstructionKind::arm(6, self.cd.into(), None, false),
+            args,
         }
     }
 }

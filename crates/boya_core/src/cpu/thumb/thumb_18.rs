@@ -10,12 +10,6 @@ pub struct Instruction {
     of: i16,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "B {:?}", self.of)
-    }
-}
-
 impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         Self {
@@ -27,6 +21,14 @@ impl From<u16> for Instruction {
 impl Executable for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         cpu.b(self.of.into())
+    }
+
+    fn get_data(&self) -> InstructionData {
+        InstructionData {
+            keyword: "B".into(),
+            args: vec![InstructionParam::BranchOffset(self.of.into())],
+            kind: InstructionKind::thumb(18),
+        }
     }
 }
 

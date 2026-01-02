@@ -18,21 +18,6 @@ pub struct Instruction {
     rm: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:?}{:?} {:?}, {:?}, {:?}, {:?}",
-            self.op,
-            self.cd,
-            self.lo.reg(),
-            self.hi.reg(),
-            self.rm.reg(),
-            self.rs.reg()
-        )
-    }
-}
-
 impl From<u32> for Instruction {
     fn from(value: u32) -> Self {
         let cd = value.get_bits_u8(28, 31).into();
@@ -88,6 +73,19 @@ impl Executable for Instruction {
             Opcode::UMLAL => cpu.umula(rd, self.rm, self.rs, self.s),
             Opcode::SMULL => cpu.smull(rd, self.rm, self.rs, self.s),
             Opcode::SMLAL => cpu.smula(rd, self.rm, self.rs, self.s),
+        }
+    }
+
+    fn get_data(&self) -> InstructionData {
+        InstructionData {
+            keyword: format!("{:?}", self.op),
+            args: vec![
+                self.lo.reg().into(),
+                self.hi.reg().into(),
+                self.rm.reg().into(),
+                self.rs.reg().into(),
+            ],
+            kind: InstructionKind::arm(8, self.cd.into(), None, false),
         }
     }
 }

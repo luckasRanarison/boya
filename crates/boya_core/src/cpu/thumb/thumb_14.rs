@@ -12,17 +12,6 @@ pub struct Instruction {
     rlist: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let rlist = match self.op {
-            Opcode::PUSH => format_rlist(self.rlist, self.lrpc.then_some(NamedRegister::LR)),
-            Opcode::POP => format_rlist(self.rlist, self.lrpc.then_some(NamedRegister::PC)),
-        };
-
-        write!(f, "{:?} {rlist}", self.op)
-    }
-}
-
 impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         let op = value.get_u8(11).into();
@@ -54,6 +43,19 @@ impl Executable for Instruction {
         match self.op {
             Opcode::PUSH => cpu.push(self.rlist, self.lrpc),
             Opcode::POP => cpu.pop(self.rlist, self.lrpc),
+        }
+    }
+
+    fn get_data(&self) -> InstructionData {
+        let named = match &self.op {
+            Opcode::PUSH => Some(NamedRegister::LR),
+            Opcode::POP => Some(NamedRegister::PC),
+        };
+
+        InstructionData {
+            keyword: format!("{:?}", self.op),
+            args: vec![RegisterList::new(self.rlist.into(), named).into()],
+            kind: InstructionKind::thumb(14),
         }
     }
 }

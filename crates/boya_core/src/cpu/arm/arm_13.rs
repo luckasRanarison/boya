@@ -12,12 +12,6 @@ pub struct Instruction {
     nn: u32,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "SWI {:?}", self.nn)
-    }
-}
-
 impl From<u32> for Instruction {
     fn from(value: u32) -> Self {
         let nn = value.get_bits(0, 23);
@@ -29,5 +23,13 @@ impl From<u32> for Instruction {
 impl Executable for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         cpu.swi()
+    }
+
+    fn get_data(&self) -> InstructionData {
+        InstructionData {
+            keyword: "SWI".into(),
+            args: vec![self.nn.imm().into()],
+            kind: InstructionKind::arm(13, None, None, false),
+        }
     }
 }

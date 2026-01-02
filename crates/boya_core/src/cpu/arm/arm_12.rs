@@ -16,20 +16,6 @@ pub struct Instruction {
     rm: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "SWP{:?}{} {:?}, {:?}, [{:?}]",
-            self.cd,
-            if self.b { "B" } else { "" },
-            self.rd.reg(),
-            self.rm.reg(),
-            self.rn.reg()
-        )
-    }
-}
-
 impl From<u32> for Instruction {
     fn from(value: u32) -> Self {
         let cd = value.get_bits_u8(28, 31).into();
@@ -49,6 +35,18 @@ impl Executable for Instruction {
 
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         cpu.swp(self.rd, self.rm, self.rn, self.b)
+    }
+
+    fn get_data(&self) -> InstructionData {
+        InstructionData {
+            keyword: format!("SWP{}", if self.b { "B" } else { "" }),
+            args: vec![
+                self.rd.reg().into(),
+                self.rm.reg().into(),
+                InstructionParam::Address(self.rn.reg()),
+            ],
+            kind: InstructionKind::arm(13, None, None, false),
+        }
     }
 }
 

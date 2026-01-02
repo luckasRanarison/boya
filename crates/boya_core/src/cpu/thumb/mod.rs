@@ -22,13 +22,13 @@ use crate::utils::bitflags::BitArray;
 
 use super::isa::prelude::*;
 
-pub enum ThumbInstr {
+pub enum Thumb {
     /// Move shifted register
     Format01(thumb_01::Instruction),
     /// Add/Substract
     Format02(thumb_02::Instruction),
     /// Move/Compare/Add/Substract immediate
-    Format03(thumb_03::Instruciton),
+    Format03(thumb_03::Instruction),
     /// ALU operations
     Format04(thumb_04::Instruction),
     /// Hi register operations/branch exchange
@@ -65,86 +65,86 @@ pub enum ThumbInstr {
     Undefined(u16),
 }
 
-impl Debug for ThumbInstr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Thumb {
+    pub fn get_data(&self) -> InstructionData {
         match self {
-            ThumbInstr::Format01(op) => write!(f, "{op:?} ; thumb 01"),
-            ThumbInstr::Format02(op) => write!(f, "{op:?} ; thumb 02"),
-            ThumbInstr::Format03(op) => write!(f, "{op:?} ; thumb 03"),
-            ThumbInstr::Format04(op) => write!(f, "{op:?} ; thumb 04"),
-            ThumbInstr::Format05(op) => write!(f, "{op:?} ; thumb 05"),
-            ThumbInstr::Format06(op) => write!(f, "{op:?} ; thumb 06"),
-            ThumbInstr::Format07(op) => write!(f, "{op:?} ; thumb 07"),
-            ThumbInstr::Format08(op) => write!(f, "{op:?} ; thumb 08"),
-            ThumbInstr::Format09(op) => write!(f, "{op:?} ; thumb 09"),
-            ThumbInstr::Format10(op) => write!(f, "{op:?} ; thumb 10"),
-            ThumbInstr::Format11(op) => write!(f, "{op:?} ; thumb 11"),
-            ThumbInstr::Format12(op) => write!(f, "{op:?} ; thumb 12"),
-            ThumbInstr::Format13(op) => write!(f, "{op:?} ; thumb 13"),
-            ThumbInstr::Format14(op) => write!(f, "{op:?} ; thumb 14"),
-            ThumbInstr::Format15(op) => write!(f, "{op:?} ; thumb 15"),
-            ThumbInstr::Format16(op) => write!(f, "{op:?} ; thumb 16"),
-            ThumbInstr::Format17(op) => write!(f, "{op:?} ; thumb 17"),
-            ThumbInstr::Format18(op) => write!(f, "{op:?} ; thumb 18"),
-            ThumbInstr::Format19(op) => write!(f, "{op:?} ; thumb 19"),
-            ThumbInstr::Undefined(op) => write!(f, "{op:x} ; thumb undefined"),
+            Thumb::Format01(op) => op.get_data(),
+            Thumb::Format02(op) => op.get_data(),
+            Thumb::Format03(op) => op.get_data(),
+            Thumb::Format04(op) => op.get_data(),
+            Thumb::Format05(op) => op.get_data(),
+            Thumb::Format06(op) => op.get_data(),
+            Thumb::Format07(op) => op.get_data(),
+            Thumb::Format08(op) => op.get_data(),
+            Thumb::Format09(op) => op.get_data(),
+            Thumb::Format10(op) => op.get_data(),
+            Thumb::Format11(op) => op.get_data(),
+            Thumb::Format12(op) => op.get_data(),
+            Thumb::Format13(op) => op.get_data(),
+            Thumb::Format14(op) => op.get_data(),
+            Thumb::Format15(op) => op.get_data(),
+            Thumb::Format16(op) => op.get_data(),
+            Thumb::Format17(op) => op.get_data(),
+            Thumb::Format18(op) => op.get_data(),
+            Thumb::Format19(op) => op.get_data(),
+            Thumb::Undefined(op) => InstructionData::undefined_thumb(*op),
         }
     }
 }
 
 impl Arm7tdmi {
-    pub fn decode_thumb(&self, word: u32) -> ThumbInstr {
+    pub fn decode_thumb(&self, word: u32) -> Thumb {
         let word_aligned = self.pc() & 0b1 == 0;
         let (lsb, msb) = if word_aligned { (0, 15) } else { (16, 31) };
         let instr = word.get_bits(lsb, msb) as u16;
         let bit_array = instr.to_bit_array(8);
 
         match bit_array {
-            [1, 1, 1, 1, _, _, _, _] => ThumbInstr::Format19(instr.into()),
-            [1, 1, 1, 0, 0, _, _, _] => ThumbInstr::Format18(instr.into()),
-            [1, 1, 0, 1, 1, 1, 1, 1] => ThumbInstr::Format17(instr.into()),
-            [1, 1, 0, 1, _, _, _, _] => ThumbInstr::Format16(instr.into()),
-            [1, 1, 0, 0, _, _, _, _] => ThumbInstr::Format15(instr.into()),
-            [1, 0, 1, 1, _, 1, 0, _] => ThumbInstr::Format14(instr.into()),
-            [1, 0, 1, 1, 0, 0, 0, 0] => ThumbInstr::Format13(instr.into()),
-            [1, 0, 1, 0, _, _, _, _] => ThumbInstr::Format12(instr.into()),
-            [1, 0, 0, 1, _, _, _, _] => ThumbInstr::Format11(instr.into()),
-            [1, 0, 0, 0, _, _, _, _] => ThumbInstr::Format10(instr.into()),
-            [0, 1, 1, _, _, _, _, _] => ThumbInstr::Format09(instr.into()),
-            [0, 1, 0, 1, _, _, 1, _] => ThumbInstr::Format08(instr.into()),
-            [0, 1, 0, 1, _, _, _, _] => ThumbInstr::Format07(instr.into()),
-            [0, 1, 0, 0, 1, _, _, _] => ThumbInstr::Format06(instr.into()),
-            [0, 1, 0, 0, 0, 1, _, _] => ThumbInstr::Format05(instr.into()),
-            [0, 1, 0, 0, 0, 0, _, _] => ThumbInstr::Format04(instr.into()),
-            [0, 0, 1, _, _, _, _, _] => ThumbInstr::Format03(instr.into()),
-            [0, 0, 0, 1, 1, _, _, _] => ThumbInstr::Format02(instr.into()),
-            [0, 0, 0, _, _, _, _, _] => ThumbInstr::Format01(instr.into()),
-            _ => ThumbInstr::Undefined(instr),
+            [1, 1, 1, 1, _, _, _, _] => Thumb::Format19(instr.into()),
+            [1, 1, 1, 0, 0, _, _, _] => Thumb::Format18(instr.into()),
+            [1, 1, 0, 1, 1, 1, 1, 1] => Thumb::Format17(instr.into()),
+            [1, 1, 0, 1, _, _, _, _] => Thumb::Format16(instr.into()),
+            [1, 1, 0, 0, _, _, _, _] => Thumb::Format15(instr.into()),
+            [1, 0, 1, 1, _, 1, 0, _] => Thumb::Format14(instr.into()),
+            [1, 0, 1, 1, 0, 0, 0, 0] => Thumb::Format13(instr.into()),
+            [1, 0, 1, 0, _, _, _, _] => Thumb::Format12(instr.into()),
+            [1, 0, 0, 1, _, _, _, _] => Thumb::Format11(instr.into()),
+            [1, 0, 0, 0, _, _, _, _] => Thumb::Format10(instr.into()),
+            [0, 1, 1, _, _, _, _, _] => Thumb::Format09(instr.into()),
+            [0, 1, 0, 1, _, _, 1, _] => Thumb::Format08(instr.into()),
+            [0, 1, 0, 1, _, _, _, _] => Thumb::Format07(instr.into()),
+            [0, 1, 0, 0, 1, _, _, _] => Thumb::Format06(instr.into()),
+            [0, 1, 0, 0, 0, 1, _, _] => Thumb::Format05(instr.into()),
+            [0, 1, 0, 0, 0, 0, _, _] => Thumb::Format04(instr.into()),
+            [0, 0, 1, _, _, _, _, _] => Thumb::Format03(instr.into()),
+            [0, 0, 0, 1, 1, _, _, _] => Thumb::Format02(instr.into()),
+            [0, 0, 0, _, _, _, _, _] => Thumb::Format01(instr.into()),
+            _ => Thumb::Undefined(instr),
         }
     }
 
-    pub fn exec_thumb(&mut self, instruction: ThumbInstr) -> Cycle {
+    pub fn exec_thumb(&mut self, instruction: Thumb) -> Cycle {
         match instruction {
-            ThumbInstr::Format01(op) => op.dispatch(self),
-            ThumbInstr::Format02(op) => op.dispatch(self),
-            ThumbInstr::Format03(op) => op.dispatch(self),
-            ThumbInstr::Format04(op) => op.dispatch(self),
-            ThumbInstr::Format05(op) => op.dispatch(self),
-            ThumbInstr::Format06(op) => op.dispatch(self),
-            ThumbInstr::Format07(op) => op.dispatch(self),
-            ThumbInstr::Format08(op) => op.dispatch(self),
-            ThumbInstr::Format09(op) => op.dispatch(self),
-            ThumbInstr::Format10(op) => op.dispatch(self),
-            ThumbInstr::Format11(op) => op.dispatch(self),
-            ThumbInstr::Format12(op) => op.dispatch(self),
-            ThumbInstr::Format13(op) => op.dispatch(self),
-            ThumbInstr::Format14(op) => op.dispatch(self),
-            ThumbInstr::Format15(op) => op.dispatch(self),
-            ThumbInstr::Format16(op) => op.dispatch(self),
-            ThumbInstr::Format17(op) => op.dispatch(self),
-            ThumbInstr::Format18(op) => op.dispatch(self),
-            ThumbInstr::Format19(op) => op.dispatch(self),
-            ThumbInstr::Undefined(_) => self.handle_exception(Exception::Undefined),
+            Thumb::Format01(op) => op.dispatch(self),
+            Thumb::Format02(op) => op.dispatch(self),
+            Thumb::Format03(op) => op.dispatch(self),
+            Thumb::Format04(op) => op.dispatch(self),
+            Thumb::Format05(op) => op.dispatch(self),
+            Thumb::Format06(op) => op.dispatch(self),
+            Thumb::Format07(op) => op.dispatch(self),
+            Thumb::Format08(op) => op.dispatch(self),
+            Thumb::Format09(op) => op.dispatch(self),
+            Thumb::Format10(op) => op.dispatch(self),
+            Thumb::Format11(op) => op.dispatch(self),
+            Thumb::Format12(op) => op.dispatch(self),
+            Thumb::Format13(op) => op.dispatch(self),
+            Thumb::Format14(op) => op.dispatch(self),
+            Thumb::Format15(op) => op.dispatch(self),
+            Thumb::Format16(op) => op.dispatch(self),
+            Thumb::Format17(op) => op.dispatch(self),
+            Thumb::Format18(op) => op.dispatch(self),
+            Thumb::Format19(op) => op.dispatch(self),
+            Thumb::Undefined(_) => self.handle_exception(Exception::Undefined),
         }
     }
 }

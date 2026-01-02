@@ -11,12 +11,6 @@ pub struct Instruction {
     nn: u16,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", if self.h { "; BL label" } else { "BL label" })
-    }
-}
-
 impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         let h = value.has(11);
@@ -31,6 +25,14 @@ impl Executable for Instruction {
         match self.h {
             false => cpu.branch_long_first_op(self.nn),
             true => cpu.branch_long_second_op(self.nn),
+        }
+    }
+
+    fn get_data(&self) -> InstructionData {
+        InstructionData {
+            keyword: "BL".into(),
+            args: vec![], // TODO: combine the two instructions
+            kind: InstructionKind::thumb(19),
         }
     }
 }

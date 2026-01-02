@@ -19,20 +19,6 @@ pub struct Instruction {
     of: Operand,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:?}{:?}{} {:?}, {}",
-            self.op,
-            self.cd,
-            if self.b { "B" } else { "" },
-            self.rd.reg(),
-            format_addr_mode(self.amod, self.rn, &self.of, self.wb),
-        )
-    }
-}
-
 impl From<u32> for Instruction {
     fn from(value: u32) -> Self {
         let cd = value.get_bits_u8(28, 31).into();
@@ -98,6 +84,21 @@ impl Executable for Instruction {
             Opcode::LDR if self.b => cpu.ldrb(self.rd, self.rn, offset),
             Opcode::STR => cpu.str(self.rd, self.rn, offset),
             Opcode::LDR => cpu.ldr(self.rd, self.rn, offset),
+        }
+    }
+
+    fn get_data(&self) -> InstructionData {
+        let offset = RegisterOffsetData {
+            amod: self.amod,
+            base: RegisterOffsetBase::Plain(self.rn),
+            offset: Some(self.of.clone()),
+            wb: self.wb,
+        };
+
+        InstructionData {
+            keyword: format!("{:?}{}", self.op, if self.b { "B" } else { "" }),
+            args: vec![self.rd.reg().into(), offset.into()],
+            kind: InstructionKind::arm(9, self.cd.into(), None, false),
         }
     }
 }

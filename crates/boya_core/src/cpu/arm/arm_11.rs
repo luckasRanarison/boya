@@ -18,22 +18,6 @@ pub struct Instruction {
     rlist: u16,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:?}{:?}{:?} {:?}{}, {:?}{}",
-            self.op,
-            self.amod,
-            self.cd,
-            self.rn.reg(),
-            if self.wb { "!" } else { "" },
-            format_rlist(self.rlist, None),
-            if self.s { "^" } else { "" }
-        )
-    }
-}
-
 impl From<u32> for Instruction {
     fn from(value: u32) -> Self {
         let cd = value.get_bits_u8(28, 31).into();
@@ -89,6 +73,22 @@ impl Executable for Instruction {
 
                 cpu.ldm(self.rlist, self.rn, self.amod, self.wb, self.s)
             }
+        }
+    }
+
+    fn get_data(&self) -> InstructionData {
+        let offset = RegisterOffsetData {
+            amod: self.amod,
+            base: RegisterOffsetBase::Plain(self.rn),
+            offset: None,
+            wb: true,
+        };
+        let rlist = RegisterList::new(self.rlist, None);
+
+        InstructionData {
+            keyword: format!("{:?}", self.op),
+            args: vec![offset.into(), rlist.into()],
+            kind: InstructionKind::arm(11, self.cd.into(), None, true),
         }
     }
 }

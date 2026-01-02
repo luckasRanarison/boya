@@ -17,23 +17,6 @@ pub struct Instruction {
     op2: Operand,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let Instruction { cd, op, op2, .. } = self;
-        let s = if self.s { "S" } else { "" };
-        let rd = self.rd.reg();
-        let rn = self.rn.reg();
-
-        match self.op {
-            Opcode::TST | Opcode::TEQ | Opcode::CMP | Opcode::CMN => {
-                write!(f, "{op:?}{cd:?}{s} {rn:?}, {op2:?}")
-            }
-            Opcode::MOV | Opcode::MVN => write!(f, "{op:?}{cd:?}{s} {rd:?}, {op2:?}"),
-            _ => write!(f, "{op:?}{cd:?}{s} {rd:?}, {rn:?}, {op2:?}"),
-        }
-    }
-}
-
 impl From<u32> for Instruction {
     fn from(value: u32) -> Self {
         let cd = value.get_bits_u8(28, 31).into();
@@ -144,6 +127,24 @@ impl Executable for Instruction {
             Opcode::CMN => cpu.cmn(self.rn, self.op2, self.s),
             Opcode::MOV => cpu.mov(self.rd, self.op2, self.s),
             Opcode::MVN => cpu.mvn(self.rd, self.op2, self.s),
+        }
+    }
+
+    fn get_data(&self) -> InstructionData {
+        let op2 = self.op2.clone().into();
+        let rn = self.rn.reg().into();
+        let rd = self.rd.reg().into();
+
+        let args = match self.op {
+            Opcode::TST | Opcode::TEQ | Opcode::CMP | Opcode::CMN => vec![rn, op2],
+            Opcode::MOV | Opcode::MVN => vec![rd, op2],
+            _ => vec![rd, rn, op2],
+        };
+
+        InstructionData {
+            keyword: format!("{:?}", self.op),
+            args,
+            kind: InstructionKind::arm(5, self.cd.into(), self.s.into(), false),
         }
     }
 }

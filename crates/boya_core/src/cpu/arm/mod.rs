@@ -14,7 +14,7 @@ use crate::utils::bitflags::BitArray;
 
 use super::isa::prelude::*;
 
-pub enum ArmInstr {
+pub enum Arm {
     /// Branch X
     Arm03(arm_03::Instruction),
     /// Branch and Branch with Link
@@ -41,61 +41,61 @@ pub enum ArmInstr {
     Undefined(u32),
 }
 
-impl Debug for ArmInstr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Arm {
+    pub fn get_data(&self) -> InstructionData {
         match self {
-            ArmInstr::Arm03(op) => write!(f, "{op:?} ; arm 03"),
-            ArmInstr::Arm04(op) => write!(f, "{op:?} ; arm 04"),
-            ArmInstr::Arm05(op) => write!(f, "{op:?} ; arm 05"),
-            ArmInstr::Arm06(op) => write!(f, "{op:?} ; arm 06"),
-            ArmInstr::Arm07(op) => write!(f, "{op:?} ; arm 07"),
-            ArmInstr::Arm08(op) => write!(f, "{op:?} ; arm 08"),
-            ArmInstr::Arm09(op) => write!(f, "{op:?} ; arm 09"),
-            ArmInstr::Arm10(op) => write!(f, "{op:?} ; arm 10"),
-            ArmInstr::Arm11(op) => write!(f, "{op:?} ; arm 11"),
-            ArmInstr::Arm12(op) => write!(f, "{op:?} ; arm 12"),
-            ArmInstr::Arm13(op) => write!(f, "{op:?} ; arm 13"),
-            ArmInstr::Undefined(op) => write!(f, "{op:x} ; arm undefined"),
+            Arm::Arm03(op) => op.get_data(),
+            Arm::Arm04(op) => op.get_data(),
+            Arm::Arm05(op) => op.get_data(),
+            Arm::Arm06(op) => op.get_data(),
+            Arm::Arm07(op) => op.get_data(),
+            Arm::Arm08(op) => op.get_data(),
+            Arm::Arm09(op) => op.get_data(),
+            Arm::Arm10(op) => op.get_data(),
+            Arm::Arm11(op) => op.get_data(),
+            Arm::Arm12(op) => op.get_data(),
+            Arm::Arm13(op) => op.get_data(),
+            Arm::Undefined(op) => InstructionData::undefined_arm(*op),
         }
     }
 }
 
 impl Arm7tdmi {
     #[rustfmt::skip]
-    pub fn decode_arm(&self, word: u32) -> ArmInstr {
+    pub fn decode_arm(&self, word: u32) -> Arm {
         let bit_array = word.to_bit_array(4);
 
         match bit_array {
-            [1, 1, 1, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Arm13(word.into()),
-            [1, 0, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Arm04(word.into()),
-            [1, 0, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Arm11(word.into()),
-            [0, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Arm09(word.into()),
-            [0, 0, 0, 0, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, 1, 0, 0, 1] => ArmInstr::Arm08(word.into()),
-            [0, 0, 0, _, _, _, _, 0, _, _, _, _, _, _, _, _, _, _, _, _, 1, 0, 1, 1] => ArmInstr::Arm10(word.into()),
-            [0, 0, 0, _, _, _, _, 1, _, _, _, _, _, _, _, _, _, _, _, _, 1, _, _, 1] => ArmInstr::Arm10(word.into()),
-            [0, 0, 0, 1, 0, _, 0, 0, _, _, _, _, _, _, _, _, 0, 0, 0, 0, 1, 0, 0, 1] => ArmInstr::Arm12(word.into()),
-            [0, 0, 0, 0, 0, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, 1, 0, 0, 1] => ArmInstr::Arm07(word.into()),
-            [0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1] => ArmInstr::Arm03(word.into()),
-            [0, 0, _, 1, 0, _, _, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Arm06(word.into()),
-            [0, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => ArmInstr::Arm05(word.into()),
-            _ => ArmInstr::Undefined(word),
+            [1, 1, 1, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => Arm::Arm13(word.into()),
+            [1, 0, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => Arm::Arm04(word.into()),
+            [1, 0, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => Arm::Arm11(word.into()),
+            [0, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => Arm::Arm09(word.into()),
+            [0, 0, 0, 0, 1, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, 1, 0, 0, 1] => Arm::Arm08(word.into()),
+            [0, 0, 0, _, _, _, _, 0, _, _, _, _, _, _, _, _, _, _, _, _, 1, 0, 1, 1] => Arm::Arm10(word.into()),
+            [0, 0, 0, _, _, _, _, 1, _, _, _, _, _, _, _, _, _, _, _, _, 1, _, _, 1] => Arm::Arm10(word.into()),
+            [0, 0, 0, 1, 0, _, 0, 0, _, _, _, _, _, _, _, _, 0, 0, 0, 0, 1, 0, 0, 1] => Arm::Arm12(word.into()),
+            [0, 0, 0, 0, 0, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, 1, 0, 0, 1] => Arm::Arm07(word.into()),
+            [0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1] => Arm::Arm03(word.into()),
+            [0, 0, _, 1, 0, _, _, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => Arm::Arm06(word.into()),
+            [0, 0, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _] => Arm::Arm05(word.into()),
+            _ => Arm::Undefined(word),
         }
     }
 
-    pub fn exec_arm(&mut self, instruction: ArmInstr) -> Cycle {
+    pub fn exec_arm(&mut self, instruction: Arm) -> Cycle {
         match instruction {
-            ArmInstr::Arm03(op) => op.dispatch_checked(self),
-            ArmInstr::Arm04(op) => op.dispatch_checked(self),
-            ArmInstr::Arm05(op) => op.dispatch_checked(self),
-            ArmInstr::Arm06(op) => op.dispatch_checked(self),
-            ArmInstr::Arm07(op) => op.dispatch_checked(self),
-            ArmInstr::Arm08(op) => op.dispatch_checked(self),
-            ArmInstr::Arm09(op) => op.dispatch_checked(self),
-            ArmInstr::Arm10(op) => op.dispatch_checked(self),
-            ArmInstr::Arm11(op) => op.dispatch_checked(self),
-            ArmInstr::Arm12(op) => op.dispatch_checked(self),
-            ArmInstr::Arm13(op) => op.dispatch_checked(self),
-            ArmInstr::Undefined(_) => self.handle_exception(Exception::Undefined),
+            Arm::Arm03(op) => op.dispatch_checked(self),
+            Arm::Arm04(op) => op.dispatch_checked(self),
+            Arm::Arm05(op) => op.dispatch_checked(self),
+            Arm::Arm06(op) => op.dispatch_checked(self),
+            Arm::Arm07(op) => op.dispatch_checked(self),
+            Arm::Arm08(op) => op.dispatch_checked(self),
+            Arm::Arm09(op) => op.dispatch_checked(self),
+            Arm::Arm10(op) => op.dispatch_checked(self),
+            Arm::Arm11(op) => op.dispatch_checked(self),
+            Arm::Arm12(op) => op.dispatch_checked(self),
+            Arm::Arm13(op) => op.dispatch_checked(self),
+            Arm::Undefined(_) => self.handle_exception(Exception::Undefined),
         }
     }
 }

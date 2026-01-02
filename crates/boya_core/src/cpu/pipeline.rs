@@ -1,8 +1,6 @@
-use std::fmt::Debug;
-
 use super::{Arm7tdmi, Instruction};
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct Pipeline {
     curr_pc: u32,
     next_pc: u32,
@@ -14,7 +12,7 @@ pub struct Pipeline {
 impl Pipeline {
     /// # Panics
     ///
-    /// If pipeline has not been loaded.
+    /// If the pipeline has not been loaded.
     pub fn take(&mut self) -> Instruction {
         self.curr_instr
             .take()

@@ -10,12 +10,6 @@ pub struct Instruction {
     nn: Operand, // 0-1020, step 4
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ADD SP, {:?}", self.nn)
-    }
-}
-
 impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         let nn = value.get_bits(0, 6) << 2;
@@ -37,6 +31,14 @@ impl Executable for Instruction {
         match self.nn.negate {
             true => cpu.sub(sp, sp, nn, false),
             false => cpu.add(sp, sp, nn, false),
+        }
+    }
+
+    fn get_data(&self) -> InstructionData {
+        InstructionData {
+            keyword: "ADD".to_string(),
+            args: vec![NamedRegister::SP.into(), self.nn.clone().into()],
+            kind: InstructionKind::thumb(13),
         }
     }
 }

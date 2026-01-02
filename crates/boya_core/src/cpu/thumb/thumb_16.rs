@@ -11,12 +11,6 @@ pub struct Instruction {
     of: i16,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?} {:?}", self.op, self.of)
-    }
-}
-
 impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         let op = value.get_bits_u8(8, 11).into();
@@ -83,6 +77,14 @@ impl Executable for Instruction {
             Opcode::BLT => cpu.blt(self.of),
             Opcode::BGT => cpu.bgt(self.of),
             Opcode::BLE => cpu.ble(self.of),
+        }
+    }
+
+    fn get_data(&self) -> InstructionData {
+        InstructionData {
+            keyword: format!("{:?}", self.op),
+            args: vec![InstructionParam::BranchOffset(self.of.into())],
+            kind: InstructionKind::thumb(16),
         }
     }
 }

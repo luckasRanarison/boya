@@ -12,18 +12,6 @@ pub struct Instruction {
     rd: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:?} R{:?}, [SP, {:?}]",
-            self.op,
-            self.rd.reg(),
-            self.nn.imm()
-        )
-    }
-}
-
 impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         let op = value.get_u8(11).into();
@@ -59,6 +47,21 @@ impl Executable for Instruction {
         match self.op {
             Opcode::STR => cpu.str(self.rd, sp, offset),
             Opcode::LDR => cpu.ldr(self.rd, sp, offset),
+        }
+    }
+
+    fn get_data(&self) -> InstructionData {
+        let offset = RegisterOffsetData {
+            amod: AddrMode::IB,
+            base: RegisterOffsetBase::Named(NamedRegister::SP),
+            offset: Some(self.nn.imm()),
+            wb: false,
+        };
+
+        InstructionData {
+            keyword: format!("{:?}", self.op),
+            args: vec![self.rd.reg().into(), offset.into()],
+            kind: InstructionKind::thumb(11),
         }
     }
 }

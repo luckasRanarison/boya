@@ -1,11 +1,9 @@
-use std::fmt::Debug;
-
 use crate::{
     cpu::common::{Condition, OperatingMode},
     utils::bitflags::Bitflag,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum PsrKind {
     CPSR,
     SPSR,
@@ -42,7 +40,7 @@ impl Psr {
     pub const T: u32 = 5;
 }
 
-impl Debug for Psr {
+impl std::fmt::Debug for Psr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -143,11 +141,12 @@ impl Psr {
     }
 }
 
+#[derive(Clone)]
 pub struct PsrField {
     pub mask: u32,
 }
 
-impl Debug for PsrField {
+impl std::fmt::Debug for PsrField {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let f_fld = if self.mask & 0xFF000000 != 0 { "F" } else { "" };
         let s_fld = if self.mask & 0x00FF0000 != 0 { "S" } else { "" };

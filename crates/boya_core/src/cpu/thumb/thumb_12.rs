@@ -12,12 +12,6 @@ pub struct Instruction {
     rd: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ADD {:?}, {:?}, {:?}", self.rd, self.rs, self.nn.imm())
-    }
-}
-
 impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         let rs = match value.get(11) {
@@ -35,6 +29,14 @@ impl From<u16> for Instruction {
 impl Executable for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         cpu.add(self.rd, self.rs as u8, self.nn.imm(), false)
+    }
+
+    fn get_data(&self) -> InstructionData {
+        InstructionData {
+            keyword: "ADD".to_string(),
+            args: vec![self.rd.reg().into(), self.rs.into(), self.nn.imm().into()],
+            kind: InstructionKind::thumb(12),
+        }
     }
 }
 

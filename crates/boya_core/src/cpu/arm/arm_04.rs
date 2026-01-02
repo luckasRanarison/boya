@@ -14,12 +14,6 @@ pub struct Instruction {
     nn: i32,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}{:?} {:?}", self.op, self.cd, self.nn)
-    }
-}
-
 impl From<u32> for Instruction {
     fn from(value: u32) -> Self {
         let cd = value.get_bits_u8(28, 31).into();
@@ -58,6 +52,14 @@ impl Executable for Instruction {
         }
 
         cpu.b(self.nn)
+    }
+
+    fn get_data(&self) -> InstructionData {
+        InstructionData {
+            keyword: format!("{:?}", self.op),
+            args: vec![InstructionParam::BranchOffset(self.nn)],
+            kind: InstructionKind::arm(4, self.cd.into(), None, false),
+        }
     }
 }
 
