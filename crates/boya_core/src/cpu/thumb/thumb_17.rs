@@ -10,9 +10,14 @@ pub struct Instruction {
     nn: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "SWI {:?}", self.nn)
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        Self {
+            keyword: "SWI".into(),
+            args: vec![value.nn.imm().into()],
+            kind: InstructionKind::thumb(17),
+            source: Box::new(value),
+        }
     }
 }
 

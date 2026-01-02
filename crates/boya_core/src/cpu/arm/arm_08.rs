@@ -18,18 +18,19 @@ pub struct Instruction {
     rm: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:?}{:?} {:?}, {:?}, {:?}, {:?}",
-            self.op,
-            self.cd,
-            self.lo.reg(),
-            self.hi.reg(),
-            self.rm.reg(),
-            self.rs.reg()
-        )
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        Self {
+            keyword: format!("{:?}", value.op),
+            args: vec![
+                value.lo.reg().into(),
+                value.hi.reg().into(),
+                value.rm.reg().into(),
+                value.rs.reg().into(),
+            ],
+            kind: InstructionKind::arm(8, value.cd, None),
+            source: Box::new(value),
+        }
     }
 }
 

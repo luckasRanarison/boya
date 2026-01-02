@@ -14,9 +14,14 @@ pub struct Instruction {
     nn: i32,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}{:?} {:?}", self.op, self.cd, self.nn)
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        Self {
+            keyword: format!("{:?}", value.op),
+            args: vec![InstructionParam::BranchOffset(value.nn)],
+            kind: InstructionKind::arm(4, value.cd, None),
+            source: Box::new(value),
+        }
     }
 }
 

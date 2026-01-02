@@ -12,15 +12,22 @@ pub struct Instruction {
     rlist: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:?} {:?}!, {}",
-            self.op,
-            self.rb.reg(),
-            format_rlist(self.rlist, None)
-        )
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        let offset = DebuggableRegisterOffset {
+            amod: AddrMode::IA,
+            base: RegisterOffsetBase::Plain(value.rb),
+            offset: None,
+            wb: true,
+        };
+        let rlist = RegisterList::new(value.rlist.into(), None);
+
+        Self {
+            keyword: format!("{:?}", value.op),
+            args: vec![offset.into(), rlist.into()],
+            kind: InstructionKind::thumb(15),
+            source: Box::new(value),
+        }
     }
 }
 

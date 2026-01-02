@@ -10,9 +10,14 @@ pub struct Instruction {
     of: i16,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "B {:?}", self.of)
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        Self {
+            keyword: "B".into(),
+            args: vec![InstructionParam::BranchOffset(value.of.into())],
+            kind: InstructionKind::thumb(18),
+            source: Box::new(value),
+        }
     }
 }
 

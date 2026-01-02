@@ -17,19 +17,23 @@ pub struct Instruction {
     op2: Operand,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let Instruction { cd, op, op2, .. } = self;
-        let s = if self.s { "S" } else { "" };
-        let rd = self.rd.reg();
-        let rn = self.rn.reg();
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        let op2 = value.op2.clone().into();
+        let rn = value.rn.reg().into();
+        let rd = value.rd.reg().into();
 
-        match self.op {
-            Opcode::TST | Opcode::TEQ | Opcode::CMP | Opcode::CMN => {
-                write!(f, "{op:?}{cd:?}{s} {rn:?}, {op2:?}")
-            }
-            Opcode::MOV | Opcode::MVN => write!(f, "{op:?}{cd:?}{s} {rd:?}, {op2:?}"),
-            _ => write!(f, "{op:?}{cd:?}{s} {rd:?}, {rn:?}, {op2:?}"),
+        let args = match value.op {
+            Opcode::TST | Opcode::TEQ | Opcode::CMP | Opcode::CMN => vec![rn, op2],
+            Opcode::MOV | Opcode::MVN => vec![rd, op2],
+            _ => vec![rd, rn, op2],
+        };
+
+        Self {
+            keyword: format!("{:?}", value.op),
+            args,
+            kind: InstructionKind::arm(5, value.cd, Some(value.s)),
+            source: Box::new(value),
         }
     }
 }

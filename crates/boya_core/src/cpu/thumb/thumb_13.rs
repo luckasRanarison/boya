@@ -10,9 +10,14 @@ pub struct Instruction {
     nn: Operand, // 0-1020, step 4
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ADD SP, {:?}", self.nn)
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        Self {
+            keyword: "ADD".to_string(),
+            args: vec![NamedRegister::SP.into(), value.nn.clone().into()],
+            kind: InstructionKind::thumb(13),
+            source: Box::new(value),
+        }
     }
 }
 

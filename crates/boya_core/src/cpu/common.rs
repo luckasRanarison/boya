@@ -149,6 +149,7 @@ impl From<u8> for Condition {
     }
 }
 
+#[derive(Clone)]
 pub struct Operand {
     pub kind: OperandKind,
     pub value: u32,

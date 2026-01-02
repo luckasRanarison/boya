@@ -13,9 +13,14 @@ pub struct Instruction {
     rn: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "BX{:?} {:?}", self.cd, self.rn.reg())
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        Self {
+            keyword: "BX".into(),
+            args: vec![value.rn.reg().into()],
+            kind: InstructionKind::arm(3, value.cd, None),
+            source: Box::new(value),
+        }
     }
 }
 

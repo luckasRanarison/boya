@@ -12,9 +12,18 @@ pub struct Instruction {
     rd: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ADD {:?}, {:?}, {:?}", self.rd, self.rs, self.nn.imm())
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        Self {
+            keyword: "ADD".to_string(),
+            args: vec![
+                value.rd.reg().into(),
+                value.rs.into(),
+                value.nn.imm().into(),
+            ],
+            kind: InstructionKind::thumb(12),
+            source: Box::new(value),
+        }
     }
 }
 

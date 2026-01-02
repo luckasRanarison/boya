@@ -28,7 +28,7 @@ pub enum ThumbInstr {
     /// Add/Substract
     Format02(thumb_02::Instruction),
     /// Move/Compare/Add/Substract immediate
-    Format03(thumb_03::Instruciton),
+    Format03(thumb_03::Instruction),
     /// ALU operations
     Format04(thumb_04::Instruction),
     /// Hi register operations/branch exchange
@@ -65,29 +65,29 @@ pub enum ThumbInstr {
     Undefined(u16),
 }
 
-impl Debug for ThumbInstr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ThumbInstr::Format01(op) => write!(f, "{op:?} ; thumb 01"),
-            ThumbInstr::Format02(op) => write!(f, "{op:?} ; thumb 02"),
-            ThumbInstr::Format03(op) => write!(f, "{op:?} ; thumb 03"),
-            ThumbInstr::Format04(op) => write!(f, "{op:?} ; thumb 04"),
-            ThumbInstr::Format05(op) => write!(f, "{op:?} ; thumb 05"),
-            ThumbInstr::Format06(op) => write!(f, "{op:?} ; thumb 06"),
-            ThumbInstr::Format07(op) => write!(f, "{op:?} ; thumb 07"),
-            ThumbInstr::Format08(op) => write!(f, "{op:?} ; thumb 08"),
-            ThumbInstr::Format09(op) => write!(f, "{op:?} ; thumb 09"),
-            ThumbInstr::Format10(op) => write!(f, "{op:?} ; thumb 10"),
-            ThumbInstr::Format11(op) => write!(f, "{op:?} ; thumb 11"),
-            ThumbInstr::Format12(op) => write!(f, "{op:?} ; thumb 12"),
-            ThumbInstr::Format13(op) => write!(f, "{op:?} ; thumb 13"),
-            ThumbInstr::Format14(op) => write!(f, "{op:?} ; thumb 14"),
-            ThumbInstr::Format15(op) => write!(f, "{op:?} ; thumb 15"),
-            ThumbInstr::Format16(op) => write!(f, "{op:?} ; thumb 16"),
-            ThumbInstr::Format17(op) => write!(f, "{op:?} ; thumb 17"),
-            ThumbInstr::Format18(op) => write!(f, "{op:?} ; thumb 18"),
-            ThumbInstr::Format19(op) => write!(f, "{op:?} ; thumb 19"),
-            ThumbInstr::Undefined(op) => write!(f, "{op:x} ; thumb undefined"),
+impl From<ThumbInstr> for DebuggableInstruction {
+    fn from(value: ThumbInstr) -> Self {
+        match value {
+            ThumbInstr::Format01(op) => op.into(),
+            ThumbInstr::Format02(op) => op.into(),
+            ThumbInstr::Format03(op) => op.into(),
+            ThumbInstr::Format04(op) => op.into(),
+            ThumbInstr::Format05(op) => op.into(),
+            ThumbInstr::Format06(op) => op.into(),
+            ThumbInstr::Format07(op) => op.into(),
+            ThumbInstr::Format08(op) => op.into(),
+            ThumbInstr::Format09(op) => op.into(),
+            ThumbInstr::Format10(op) => op.into(),
+            ThumbInstr::Format11(op) => op.into(),
+            ThumbInstr::Format12(op) => op.into(),
+            ThumbInstr::Format13(op) => op.into(),
+            ThumbInstr::Format14(op) => op.into(),
+            ThumbInstr::Format15(op) => op.into(),
+            ThumbInstr::Format16(op) => op.into(),
+            ThumbInstr::Format17(op) => op.into(),
+            ThumbInstr::Format18(op) => op.into(),
+            ThumbInstr::Format19(op) => op.into(),
+            ThumbInstr::Undefined(op) => UndefinedInstruction::Thumb(op).into(),
         }
     }
 }

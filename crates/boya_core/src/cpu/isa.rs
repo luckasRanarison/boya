@@ -7,6 +7,7 @@ pub mod prelude {
     pub use crate::cpu::isa::Executable;
     pub use crate::cpu::psr::*;
     pub use crate::cpu::register::Register;
+    pub use crate::debug::*;
     pub use crate::utils::bitflags::Bitflag;
 
     #[cfg(test)]

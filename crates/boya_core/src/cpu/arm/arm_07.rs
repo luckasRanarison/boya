@@ -18,23 +18,18 @@ pub struct Instruction {
     rm: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:?}{:?} {:?}, {:?}, {:?}",
-            self.op,
-            self.cd,
-            self.rd.reg(),
-            self.rm.reg(),
-            self.rs.reg()
-        )?;
-
-        if matches!(self.op, Opcode::MLA) {
-            write!(f, ", {:?}", self.rn.reg())?;
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        Self {
+            keyword: format!("{:?}", value.op),
+            args: vec![
+                value.rd.reg().into(),
+                value.rm.reg().into(),
+                value.rs.reg().into(),
+            ],
+            kind: InstructionKind::arm(7, value.cd, None),
+            source: Box::new(value),
         }
-
-        Ok(())
     }
 }
 

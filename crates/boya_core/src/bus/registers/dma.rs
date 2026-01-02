@@ -42,7 +42,7 @@ impl Dma {
     }
 
     pub fn repeat(&self) -> bool {
-        self.cnt_h.has(7)
+        self.cnt_h.has(9)
     }
 
     pub fn transfer_type(&self) -> DataType {

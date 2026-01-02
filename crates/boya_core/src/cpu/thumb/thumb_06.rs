@@ -11,9 +11,21 @@ pub struct Instruction {
     nn: u16, // 0-1020, steps 4
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "LDR, {:?}, [PC, {:?}]", self.rd.reg(), self.nn.imm())
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        let offset = DebuggableRegisterOffset {
+            amod: AddrMode::IB,
+            base: RegisterOffsetBase::Named(NamedRegister::PC),
+            offset: Some(value.nn.imm()),
+            wb: false,
+        };
+
+        Self {
+            keyword: "LDR".to_string(),
+            args: vec![value.rd.reg().into(), offset.into()],
+            kind: InstructionKind::thumb(6),
+            source: Box::new(value),
+        }
     }
 }
 

@@ -12,11 +12,18 @@ pub struct Instruction {
     rd: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.op {
-            Opcode::BX => write!(f, "BX {:?}", self.rs.reg()),
-            opcode => write!(f, "{opcode:?} {:?}, {:?}", self.rd.reg(), self.rs.reg()),
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        let args = match &value.op {
+            Opcode::BX => vec![value.rs.reg().into()],
+            _ => vec![value.rd.reg().into(), value.rs.reg().into()],
+        };
+
+        Self {
+            keyword: format!("{:?}", value.op),
+            kind: InstructionKind::thumb(5),
+            source: Box::new(value),
+            args,
         }
     }
 }

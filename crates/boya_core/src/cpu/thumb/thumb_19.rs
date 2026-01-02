@@ -11,9 +11,14 @@ pub struct Instruction {
     nn: u16,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", if self.h { "; BL label" } else { "BL label" })
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        Self {
+            keyword: "BL".into(),
+            args: vec![], // TODO: combine the two instructions
+            kind: InstructionKind::thumb(19),
+            source: Box::new(value),
+        }
     }
 }
 

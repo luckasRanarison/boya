@@ -6,19 +6,24 @@ use crate::cpu::isa::prelude::*;
 /// |-------------------------------------------------------------------------------|
 /// |  0 |  0 |  1 |    Op   |    Rd   |                   Offset8                  |
 /// +-------------------------------------------------------------------------------+
-pub struct Instruciton {
+pub struct Instruction {
     op: Opcode,
     rd: u8,
     nn: u8,
 }
 
-impl Debug for Instruciton {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?} {:?}, {:?}", self.op, self.rd.reg(), self.nn.imm())
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        Self {
+            keyword: format!("{:?}", value.op),
+            args: vec![value.rd.reg().into(), value.nn.imm().into()],
+            kind: InstructionKind::thumb(3),
+            source: Box::new(value),
+        }
     }
 }
 
-impl From<u16> for Instruciton {
+impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         let op = value.get_bits_u8(11, 12).into();
         let rd = value.get_bits_u8(8, 10);
@@ -48,7 +53,7 @@ impl From<u8> for Opcode {
     }
 }
 
-impl Executable for Instruciton {
+impl Executable for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         let nn = self.nn.imm();
 

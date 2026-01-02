@@ -3,6 +3,8 @@ use crate::{
     cpu::Arm7tdmi,
 };
 
+pub mod debug;
+
 #[allow(clippy::all)]
 mod apu; // TODO: APU implmentation
 mod bus;
@@ -42,4 +44,11 @@ impl Gba {
 
         cycles
     }
+}
+
+#[derive(Debug)]
+pub enum StepEvent {
+    Instruction,
+    Interrupt,
+    Dma,
 }

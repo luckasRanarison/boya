@@ -13,16 +13,16 @@ pub struct Instruction {
     rd: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:?} {:?}, [{:?}, {:?}]",
-            self.op,
-            self.rd.reg(),
-            self.rb.reg(),
-            self.nn.imm()
-        )
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        let offset = DebuggableRegisterOffset::simple(value.rb, value.nn.imm());
+
+        Self {
+            keyword: format!("{:?}", value.op),
+            args: vec![value.rd.reg().into(), offset.into()],
+            kind: InstructionKind::thumb(10),
+            source: Box::new(value),
+        }
     }
 }
 

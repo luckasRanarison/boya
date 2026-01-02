@@ -5,7 +5,7 @@ use crate::{
     utils::bitflags::Bitflag,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum PsrKind {
     CPSR,
     SPSR,
@@ -143,6 +143,7 @@ impl Psr {
     }
 }
 
+#[derive(Clone)]
 pub struct PsrField {
     pub mask: u32,
 }

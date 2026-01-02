@@ -12,14 +12,19 @@ pub struct Instruction {
     rlist: u8,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let rlist = match self.op {
-            Opcode::PUSH => format_rlist(self.rlist, self.lrpc.then_some(NamedRegister::LR)),
-            Opcode::POP => format_rlist(self.rlist, self.lrpc.then_some(NamedRegister::PC)),
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        let named = match &value.op {
+            Opcode::PUSH => Some(NamedRegister::LR),
+            Opcode::POP => Some(NamedRegister::PC),
         };
 
-        write!(f, "{:?} {rlist}", self.op)
+        Self {
+            keyword: format!("{:?}", value.op),
+            args: vec![RegisterList::new(value.rlist.into(), named).into()],
+            kind: InstructionKind::thumb(14),
+            source: Box::new(value),
+        }
     }
 }
 

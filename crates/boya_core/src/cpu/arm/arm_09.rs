@@ -19,17 +19,21 @@ pub struct Instruction {
     of: Operand,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:?}{:?}{} {:?}, {}",
-            self.op,
-            self.cd,
-            if self.b { "B" } else { "" },
-            self.rd.reg(),
-            format_addr_mode(self.amod, self.rn, &self.of, self.wb),
-        )
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        let offset = DebuggableRegisterOffset {
+            amod: value.amod,
+            base: RegisterOffsetBase::Plain(value.rn),
+            offset: Some(value.of.clone()),
+            wb: value.wb,
+        };
+
+        Self {
+            keyword: format!("{:?}{}", value.op, if value.b { "B" } else { "" }),
+            args: vec![value.rd.reg().into(), offset.into()],
+            kind: InstructionKind::arm(9, value.cd, None),
+            source: Box::new(value),
+        }
     }
 }
 

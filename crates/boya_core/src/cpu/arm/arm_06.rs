@@ -14,13 +14,24 @@ pub struct Instruction {
     psr: PsrKind,
 }
 
-impl Debug for Instruction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let Instruction { cd, psr, .. } = self;
+impl From<Instruction> for DebuggableInstruction {
+    fn from(value: Instruction) -> Self {
+        let args = match &value.op {
+            Opcode::MRS { rd } => vec![rd.reg().into()],
+            Opcode::MSR { fd, op } => vec![
+                InstructionParam::PsrUpdate {
+                    kind: value.psr.clone(),
+                    fields: fd.clone(),
+                },
+                op.clone().into(),
+            ],
+        };
 
-        match &self.op {
-            Opcode::MRS { rd } => write!(f, "MRS{cd:?} {rd:?}, {psr:?}"),
-            Opcode::MSR { fd, op } => write!(f, "MSR{cd:?} {psr:?}_{fd:?}, {op:?}"),
+        Self {
+            keyword: format!("{:?}", value.op),
+            kind: InstructionKind::arm(6, value.cd, None),
+            source: Box::new(value),
+            args,
         }
     }
 }
