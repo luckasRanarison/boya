@@ -52,7 +52,7 @@ mod tests {
             add SP, #-4
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(13, SP_START + 8 - 4)

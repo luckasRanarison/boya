@@ -135,7 +135,7 @@ impl From<TimerUnit> for Interrupt {
 
 #[cfg(test)]
 mod tests {
-    use crate::{bus::types::Interrupt, test::AsmTestBuilder, utils::bitflags::Bitflag};
+    use crate::{bus::types::Interrupt, test::GbaTestBuilder};
 
     #[test]
     fn test_timer() {
@@ -166,11 +166,11 @@ mod tests {
                 B       loop ; 2S + 1N (20)
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .setup(|cpu| {
-                cpu.bus.io.ime = 1;
-                cpu.bus.io.ie.set(Interrupt::Timer0 as u16);
+                cpu.bus.io.enable_master_irq();
+                cpu.bus.io.enable_irq(Interrupt::Timer0);
             })
             .assert_fn(|cpu| {
                 let timer0 = &cpu.bus.io.timer0;
@@ -178,10 +178,7 @@ mod tests {
 
                 assert_eq!(0xFF00 + 19, timer0.counter, "timer 0 counter"); // + wrapped 20 cycles
                 assert_eq!(0x1, timer1.counter, "timer 1 counter"); // + count-up cycle
-                assert!(
-                    cpu.bus.io.irf.has(Interrupt::Timer0 as u16),
-                    "timer 0 pending irq"
-                );
+                assert!(cpu.bus.io.has_irq(Interrupt::Timer0), "timer 0 pending irq");
             })
             .run(17 + 13);
     }

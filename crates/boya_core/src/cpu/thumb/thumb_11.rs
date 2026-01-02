@@ -75,7 +75,7 @@ mod tests {
             ldr r2, [SP, #24]
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .setup(|cpu| cpu.bus.write_word(SP_START + 24, 9))

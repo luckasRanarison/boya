@@ -49,7 +49,7 @@ mod tests {
                 b   back   ; 8
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(0, 0)

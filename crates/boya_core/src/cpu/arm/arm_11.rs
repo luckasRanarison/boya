@@ -105,7 +105,7 @@ mod tests {
             STMIA   R13!, {R0, R1, R15} ; 8
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_word(SP_START, 1)
             .assert_word(SP_START + 4, 2)

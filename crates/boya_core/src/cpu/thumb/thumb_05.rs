@@ -79,7 +79,7 @@ mod tests {
             mov pc, r0
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(15, 28) // pre-fetch + 4
@@ -93,7 +93,7 @@ mod tests {
             bx  r0
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_flag(Psr::T, false)

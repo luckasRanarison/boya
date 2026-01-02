@@ -44,7 +44,7 @@ mod tests {
                 mov  r0, #1 ; 2
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_flag(Psr::T, false)

@@ -126,7 +126,7 @@ impl Ppu {
 
 #[cfg(test)]
 mod tets {
-    use crate::test::AsmTestBuilder;
+    use crate::test::GbaTestBuilder;
 
     #[test]
     fn test_ppu_timing() {
@@ -140,14 +140,14 @@ mod tets {
                 B   loop ; 2S + 1N (20)
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_fn(|cpu| {
                 assert_eq!(240, cpu.bus.ppu.dot);
             })
             .run(960 / 20);
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_fn(|cpu| {
                 assert_eq!(160, cpu.bus.ppu.scanline);

@@ -112,7 +112,7 @@ mod tests {
 
     #[test]
     fn test_arm_suite() {
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .bytes(TEST_FILE)
             .pc(TEST_START)
             .assert_fn(|cpu| {

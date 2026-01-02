@@ -74,7 +74,7 @@ mod tests {
             stmia r0!, {r1,r2,r3}
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(0, 0x0200_000C)
@@ -92,7 +92,7 @@ mod tests {
             ldmia r0!, {r1,r2,r3}
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .setup(|cpu| {

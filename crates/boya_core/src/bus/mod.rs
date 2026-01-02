@@ -13,7 +13,6 @@ use crate::{
         },
     },
     ppu::{Ppu, registers::dispstat::Dispstat},
-    utils::bitflags::Bitflag,
 };
 
 pub const BIOS_SIZE: usize = 0x04000; // 16kb
@@ -69,25 +68,13 @@ impl GbaBus {
             .or_else(|| registers.keypad.poll_interrupt());
 
         if let Some(interrupt) = interrupt {
-            self.set_interrupt(interrupt);
+            self.send_interrupt(interrupt);
         }
     }
 
-    pub fn load_bios(&mut self, bios: &[u8; BIOS_SIZE]) {
-        self.bios = *bios;
-    }
-
-    pub fn load_rom(&mut self, rom: &[u8]) {
-        self.rom = rom.to_vec();
-    }
-
-    pub fn poll_interrupt(&self) -> bool {
-        self.io.has_pending_irq()
-    }
-
-    pub fn set_interrupt(&mut self, interrupt: Interrupt) {
-        if self.io.ime.has(0) && self.io.ie.has(interrupt as u16) {
-            self.io.irf.set(interrupt as u16);
+    pub fn send_interrupt(&mut self, interrupt: Interrupt) {
+        if self.io.irq_master_enable() && self.io.is_irq_enabled(interrupt) {
+            self.io.set_irq(interrupt);
         }
     }
 
@@ -135,7 +122,7 @@ impl GbaBus {
         self.execute_dma(&dma_image);
 
         if dma_image.irq_enable() {
-            self.set_interrupt(dma_image.channel.into());
+            self.send_interrupt(dma_image.channel.into());
         }
 
         Some(cycles)
@@ -337,7 +324,7 @@ impl Bus for u32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::AsmTestBuilder;
+    use crate::test::GbaTestBuilder;
 
     #[test]
     fn test_bios_cycle_count() {
@@ -349,7 +336,7 @@ mod tests {
         //     MOV     PC, 0x0800_0000
 
         // Because Gamepak has 16bit bus width, S is divided into 2 accesses, so it becomes 4(S + waitstate) + 1N
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .pc(0x00)
             .assert_cycles([
                 3,  // B   (2S + 1N)

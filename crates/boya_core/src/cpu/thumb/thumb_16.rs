@@ -104,7 +104,7 @@ mod tests {
                 mov r2, #2 ; 8
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(2, 2)
@@ -126,7 +126,7 @@ mod tests {
                 mov r2, #2 ; 12
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(3, 0)

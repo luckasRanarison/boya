@@ -107,7 +107,7 @@ mod tests {
             adc r0, r1
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(0, 9)
@@ -126,7 +126,7 @@ mod tests {
             sbc r0, r1
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(0, 3)
@@ -144,7 +144,7 @@ mod tests {
             neg r1, r0
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(1, -2i32 as u32)
@@ -166,7 +166,7 @@ mod tests {
             bic r3, r2
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(1, 3)
@@ -185,7 +185,7 @@ mod tests {
             mul r0, r1
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(0, 6)

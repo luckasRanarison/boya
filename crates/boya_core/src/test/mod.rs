@@ -2,7 +2,7 @@ mod asm;
 
 use crate::{
     Gba,
-    bus::{BIOS_SIZE, Bus, GbaBus, types::DataType},
+    bus::{BIOS_SIZE, Bus, types::DataType},
     cpu::{Arm7tdmi, psr::Psr},
     test::asm::FAKE_BIOS,
 };
@@ -14,7 +14,7 @@ pub const ARM_MAIN_START: u32 = 0x0800_0000;
 pub const TMB_MAIN_START: u32 = 0x0800_0012;
 
 #[derive(Default)]
-pub struct AsmTestBuilder {
+pub struct GbaTestBuilder {
     thumb: bool,
     code: String,
     bytes: Vec<u8>,
@@ -28,7 +28,7 @@ pub struct AsmTestBuilder {
     cycle_assertions: Vec<u32>,
 }
 
-impl AsmTestBuilder {
+impl GbaTestBuilder {
     pub fn new() -> Self {
         Self::default()
     }
@@ -194,39 +194,28 @@ impl AsmTestBuilder {
         rom
     }
 
-    fn init_bus(&self) -> GbaBus {
-        let mut bus = GbaBus::default();
-
-        let rom = self.init_rom();
-        let bios = self.init_bios();
-
-        bus.load_bios(&bios);
-        bus.load_rom(&rom);
-
-        bus
-    }
-
     fn init_gba(&self) -> Gba {
-        let bus = self.init_bus();
-        let mut cpu = Arm7tdmi::new(bus);
+        let mut gba = Gba::default();
 
-        cpu.reset();
+        gba.load_bios(self.init_bios());
+        gba.load_rom(&self.init_rom());
+        gba.cpu.reset();
 
         let extra_steps = if self.thumb { 9 } else { 4 };
 
         for _ in 0..extra_steps {
-            cpu.step();
+            gba.cpu.step();
         }
 
         if let Some(setup) = &self.setup {
-            setup(&mut cpu);
+            setup(&mut gba.cpu);
         }
 
         if let Some(pc) = self.pc {
-            cpu.override_pc(pc);
+            gba.cpu.override_pc(pc);
         }
 
-        Gba::new(cpu)
+        gba
     }
 
     fn make_thumb_code(&self, code: &str) -> String {

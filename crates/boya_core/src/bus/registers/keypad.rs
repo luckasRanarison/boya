@@ -68,7 +68,7 @@ pub enum KeyIrqCondition {
 mod tests {
     use crate::{
         bus::{registers::keypad::Key, types::Interrupt},
-        test::AsmTestBuilder,
+        test::GbaTestBuilder,
         utils::bitflags::Bitflag,
     };
 
@@ -88,19 +88,16 @@ mod tests {
             NOP
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .setup(|cpu| {
-                cpu.bus.io.ime = 1;
-                cpu.bus.io.ie.set(Interrupt::Keypad as u16);
+                cpu.bus.io.enable_master_irq();
+                cpu.bus.io.enable_irq(Interrupt::Keypad);
                 cpu.bus.io.keypad.keyinput.clear(Key::Down as u16);
                 cpu.bus.io.keypad.keyinput.clear(Key::ButtonB as u16);
             })
             .assert_fn(|cpu| {
-                assert!(
-                    cpu.bus.io.irf.has(Interrupt::Keypad as u16),
-                    "keypad pending irq"
-                );
+                assert!(cpu.bus.io.has_irq(Interrupt::Keypad), "keypad pending irq");
             })
             .run(10);
     }

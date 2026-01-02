@@ -82,7 +82,7 @@ mod tests {
             cmp r4, #6
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(2, 5)

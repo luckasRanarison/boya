@@ -24,6 +24,7 @@ use crate::{
     utils::bitflags::BitIter,
 };
 
+#[derive(Default)]
 pub struct Arm7tdmi {
     pub registers: Register,
     pub cpsr: Psr,
@@ -93,8 +94,8 @@ impl Arm7tdmi {
     }
 
     pub fn try_irq(&mut self) -> Option<Cycle> {
-        if !self.cpsr.has(Psr::I) && self.bus.poll_interrupt() {
-            self.handle_exception(Exception::NormalInterrupt).into()
+        if !self.cpsr.has(Psr::I) && self.bus.io.has_pending_irq() {
+            Some(self.handle_exception(Exception::NormalInterrupt))
         } else {
             None
         }

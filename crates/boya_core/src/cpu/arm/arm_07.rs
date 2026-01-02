@@ -104,7 +104,7 @@ mod tests {
             MLA    R5, R1, R2, R3
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_reg(4, 0xFFFF_FFFE)
             .assert_reg(5, 11)

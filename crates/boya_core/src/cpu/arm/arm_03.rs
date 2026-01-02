@@ -49,7 +49,7 @@ mod tests {
             BX      R0 ; + pre-fetch 4
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_reg(15, 0x228)
             .assert_flag(Psr::T, true)

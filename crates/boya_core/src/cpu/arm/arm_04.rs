@@ -80,7 +80,7 @@ mod tests {
                 B       back   ; 16
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_reg(0, 2)
             .assert_reg(1, 3)

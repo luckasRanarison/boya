@@ -96,7 +96,7 @@ mod tests {
         ";
 
         // SVC mode on boot
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_reg(1, 0b00000000_00000000_00000000_11010011)
             .assert_reg(2, 0b00100000_00000000_00000000_00010001)

@@ -86,7 +86,7 @@ mod tests {
             ldrsh r4, [r0, r2]
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .setup(|cpu| {
                 cpu.bus.write_byte(0x0200_0001, -1_i8 as u8);

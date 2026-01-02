@@ -1,4 +1,7 @@
-use crate::{bus::types::Cycle, cpu::Arm7tdmi};
+use crate::{
+    bus::{BIOS_SIZE, types::Cycle},
+    cpu::Arm7tdmi,
+};
 
 #[allow(clippy::all)]
 pub mod apu; // TODO: APU implmentation
@@ -10,14 +13,19 @@ pub mod utils;
 #[cfg(test)]
 mod test;
 
+#[derive(Default)]
 pub struct Gba {
     pub cpu: Arm7tdmi,
     pub cycles: u64,
 }
 
 impl Gba {
-    pub fn new(cpu: Arm7tdmi) -> Self {
-        Self { cpu, cycles: 0 }
+    pub fn load_bios(&mut self, bios: [u8; BIOS_SIZE]) {
+        self.cpu.bus.bios = bios;
+    }
+
+    pub fn load_rom(&mut self, rom: &[u8]) {
+        self.cpu.bus.rom = rom.to_vec();
     }
 
     pub fn step(&mut self) -> Cycle {

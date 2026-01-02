@@ -71,7 +71,7 @@ pub enum GamepakType {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::AsmTestBuilder;
+    use crate::test::GbaTestBuilder;
 
     #[test]
     fn test_waitstate() {
@@ -85,7 +85,7 @@ mod tests {
             MOV     R4, R0
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_cycles([
                 6, // MOV  (1S)

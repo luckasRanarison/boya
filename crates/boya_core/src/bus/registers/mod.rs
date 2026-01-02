@@ -1,11 +1,15 @@
-use crate::bus::{
-    Bus,
-    registers::{
-        dma::{Dma, DmaChannel},
-        keypad::Keypad,
-        timer::{Timer, TimerUnit},
-        waitcnt::Waitcnt,
+use crate::{
+    bus::{
+        Bus,
+        registers::{
+            dma::{Dma, DmaChannel},
+            keypad::Keypad,
+            timer::{Timer, TimerUnit},
+            waitcnt::Waitcnt,
+        },
+        types::Interrupt,
     },
+    utils::bitflags::Bitflag,
 };
 
 pub mod dma;
@@ -63,6 +67,18 @@ impl IORegister {
     pub fn has_pending_irq(&self) -> bool {
         self.irf != 0
     }
+
+    pub fn irq_master_enable(&self) -> bool {
+        self.ime.has(0)
+    }
+
+    pub fn is_irq_enabled(&self, irq: Interrupt) -> bool {
+        self.ie.has(irq as u16)
+    }
+
+    pub fn set_irq(&mut self, irq: Interrupt) {
+        self.irf.set(irq as u16);
+    }
 }
 
 impl Bus for IORegister {
@@ -112,8 +128,23 @@ impl Bus for IORegister {
 }
 
 #[cfg(test)]
+impl IORegister {
+    pub fn enable_master_irq(&mut self) {
+        self.ime = 1;
+    }
+
+    pub fn enable_irq(&mut self, irq: Interrupt) {
+        self.ie.set(irq as u16);
+    }
+
+    pub fn has_irq(&self, irq: Interrupt) -> bool {
+        self.irf.has(irq as u16)
+    }
+}
+
+#[cfg(test)]
 mod tests {
-    use crate::{bus::types::Interrupt, test::AsmTestBuilder, utils::bitflags::Bitflag};
+    use crate::{bus::types::Interrupt, test::GbaTestBuilder};
 
     #[test]
     fn test_irq_registers() {
@@ -131,14 +162,12 @@ mod tests {
             STRH    R2, [R0, R1]     ; set IE
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_fn(|cpu| {
-                let registers = &cpu.bus.io;
-
-                assert!(registers.ime == 1, "IME");
-                assert!(registers.ie.has(Interrupt::HBlank as u16), "HBlank IE");
-                assert!(registers.ie.has(Interrupt::Dma0 as u16), "DMA0 IE");
+                assert!(cpu.bus.io.irq_master_enable(), "IME");
+                assert!(cpu.bus.io.is_irq_enabled(Interrupt::HBlank), "HBlank IE");
+                assert!(cpu.bus.io.is_irq_enabled(Interrupt::Dma0), "DMA0 IE");
             })
             .run(10);
     }

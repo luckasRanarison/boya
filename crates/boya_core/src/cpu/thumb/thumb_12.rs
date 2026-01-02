@@ -49,7 +49,7 @@ mod tests {
             add r3, SP, #8
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(2, ((TMB_MAIN_START + 4) & !2) + 12)

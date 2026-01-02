@@ -113,7 +113,7 @@ mod tests {
             LDRH    R3, [R2], -R0
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_hword(0x0200_0050, 3)
             .assert_reg(1, 0x0200_0050)

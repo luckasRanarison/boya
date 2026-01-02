@@ -42,13 +42,13 @@ impl Arm7tdmi {
         };
 
         let rhs = self.get_operand(rhs);
-        let (res1, ov1) = lhs.overflowing_add(rhs);
-        let (res2, ov2) = res1.overflowing_add(carry);
+        let (res1, ovf1) = lhs.overflowing_add(rhs);
+        let (res2, ovf2) = res1.overflowing_add(carry);
         let overflow = ((res2 ^ lhs) & (res2 ^ rhs)).has(31);
 
         if update {
             self.cpsr.update_zn(res2);
-            self.cpsr.update(Psr::C, ov1 || ov2);
+            self.cpsr.update(Psr::C, ovf1 || ovf2);
             self.cpsr.update(Psr::V, overflow);
         }
 

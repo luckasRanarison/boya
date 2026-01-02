@@ -86,7 +86,7 @@ mod tests {
             strb r1, [r0, 0x0A]
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .setup(|cpu| cpu.bus.write_word(0x0200_0050, 5))

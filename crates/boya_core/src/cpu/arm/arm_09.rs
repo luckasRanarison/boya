@@ -116,7 +116,7 @@ mod tests {
             LDR     R3, [R1, 0xF00]
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_byte(0x0200_0F00, 5)
             .assert_reg(3, 5)

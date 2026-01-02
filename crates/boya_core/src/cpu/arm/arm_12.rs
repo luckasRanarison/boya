@@ -67,7 +67,7 @@ mod tests {
             SWP    R3, R0, [R5]
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .setup(|cpu| {
                 cpu.bus.write_byte(0x0200_0000, 40);

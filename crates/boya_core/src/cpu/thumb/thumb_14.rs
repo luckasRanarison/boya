@@ -72,7 +72,7 @@ mod tests {
             pop  {r3,r4,r5}
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_word(SP_START - 4, 25)

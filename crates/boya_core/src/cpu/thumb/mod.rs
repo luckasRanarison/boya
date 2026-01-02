@@ -161,7 +161,7 @@ mod tests {
 
     #[test]
     fn test_thumb_suite() {
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .bytes(TEST_FILE)
             .setup(|cpu| {
                 cpu.cpsr.update(Psr::T, true);

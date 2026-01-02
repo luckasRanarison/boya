@@ -78,7 +78,7 @@ mod tests {
             lsl r2, r1, 2
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(2, 8)
@@ -96,7 +96,7 @@ mod tests {
             asr r2, r1, #1
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(2, !0)

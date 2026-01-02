@@ -107,7 +107,7 @@ mod tests {
             SMLAL  R4, R5, R0, R1
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_reg(2, -10_i64 as u32)
             .assert_reg(3, (-10_i64 >> 32) as u32)

@@ -162,7 +162,7 @@ mod tests {
             MOVS   R4, R3, LSR R0
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_reg(0, 2)
             .assert_reg(2, 0xFF000000)
@@ -179,7 +179,7 @@ mod tests {
             MOVPL   R1, #2
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_reg(1, 1)
             .assert_flag(Psr::N, true)
@@ -194,7 +194,7 @@ mod tests {
             ORR    R2, R0, R1
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_reg(1, 0b100)
             .assert_reg(2, 0b110)
@@ -210,7 +210,7 @@ mod tests {
             SUBS   R3, R2, R0
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_reg(1, 3)
             .assert_reg(2, 8)
@@ -225,7 +225,7 @@ mod tests {
             MOVS   R1, R0, LSR #32 ; op2 = 0
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_reg(1, 0)
             .assert_flag(Psr::C, true)
@@ -239,7 +239,7 @@ mod tests {
             MOVS   R1, R0, ASR #32 ; op2 = 0xFFFF_FFFF
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .assert_reg(1, 0xFFFF_FFFF)
             .assert_flag(Psr::C, true)

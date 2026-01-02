@@ -48,7 +48,7 @@ mod tests {
             dw  0x0000_0005
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(1, 5)

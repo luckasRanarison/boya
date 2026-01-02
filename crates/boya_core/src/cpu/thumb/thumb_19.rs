@@ -54,7 +54,7 @@ mod tests {
                 bl last    ; 10-12
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_reg(0, 0)

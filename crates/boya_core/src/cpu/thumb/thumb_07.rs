@@ -86,7 +86,7 @@ mod tests {
             ldr r3, [r1, r2]
         ";
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .thumb()
             .asm(asm)
             .assert_word(0x0200_0008, 3)

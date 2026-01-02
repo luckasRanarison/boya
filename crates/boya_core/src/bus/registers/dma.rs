@@ -162,7 +162,7 @@ pub enum DmaAddressControl {
 
 #[cfg(test)]
 mod tests {
-    use crate::{bus::types::Interrupt, test::AsmTestBuilder, utils::bitflags::Bitflag};
+    use crate::{bus::types::Interrupt, test::GbaTestBuilder};
 
     #[test]
     fn test_dma() {
@@ -207,11 +207,11 @@ mod tests {
             .flatten()
             .collect::<Vec<_>>();
 
-        AsmTestBuilder::new()
+        GbaTestBuilder::new()
             .asm(asm)
             .setup(|cpu| {
-                cpu.bus.io.ime = 1;
-                cpu.bus.io.ie.set(Interrupt::Dma0 as u16);
+                cpu.bus.io.enable_master_irq();
+                cpu.bus.io.enable_irq(Interrupt::Dma0);
             })
             .assert_fn(move |cpu| {
                 let dma0 = &cpu.bus.io.dma0;
@@ -221,10 +221,7 @@ mod tests {
                 assert_eq!(8, dma0.transfer_len(), "DMA0 transfer length");
                 assert_eq!(&cpu.bus.iwram[..16], &expected_chunks);
                 assert!(!dma0.dma_enable(), "DMA0 should be disabled");
-                assert!(
-                    cpu.bus.io.irf.has(Interrupt::Dma0 as u16),
-                    "DMA0 pending irq"
-                );
+                assert!(cpu.bus.io.has_irq(Interrupt::Dma0), "DMA0 pending irq");
             })
             .assert_cycles([
                 20, // B   (2S + 1N)
