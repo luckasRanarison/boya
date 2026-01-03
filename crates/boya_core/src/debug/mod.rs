@@ -97,7 +97,12 @@ impl InstructionData {
             .join(", ");
         let arg_suffix = self.arg_suffix().unwrap_or_default();
 
-        format!("{args}{arg_suffix}")
+        let cased_args = match self.kind {
+            InstructionKind::Arm(_) => args.to_uppercase(),
+            InstructionKind::Thumb(_) => args.to_lowercase(),
+        };
+
+        format!("{cased_args}{arg_suffix}")
     }
 
     pub fn format_keyword(&self) -> String {
@@ -217,12 +222,11 @@ impl fmt::Debug for RegisterOffsetData {
 
 pub struct RegisterList {
     pub value: u16,
-    pub named: Option<NamedRegister>,
 }
 
 impl RegisterList {
-    pub fn new(value: u16, named: Option<NamedRegister>) -> Self {
-        Self { value, named }
+    pub fn new(value: u16) -> Self {
+        Self { value }
     }
 }
 
@@ -233,7 +237,6 @@ impl fmt::Debug for RegisterList {
             .iter_lsb()
             .filter(|(_, bit)| *bit == 1)
             .map(|(i, _)| format!("R{i}"))
-            .chain([self.named.map(|s| format!("{s:?}"))].into_iter().flatten())
             .collect::<Vec<_>>()
             .join(",");
 

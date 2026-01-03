@@ -47,14 +47,9 @@ impl Executable for Instruction {
     }
 
     fn get_data(&self) -> InstructionData {
-        let named = match &self.op {
-            Opcode::PUSH => Some(NamedRegister::LR),
-            Opcode::POP => Some(NamedRegister::PC),
-        };
-
         InstructionData {
             keyword: format!("{:?}", self.op),
-            args: vec![RegisterList::new(self.rlist.into(), named).into()],
+            args: vec![RegisterList::new(self.rlist.into()).into()],
             kind: InstructionKind::thumb(14),
         }
     }

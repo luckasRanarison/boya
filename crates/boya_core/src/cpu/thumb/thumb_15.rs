@@ -53,7 +53,7 @@ impl Executable for Instruction {
             offset: None,
             wb: true,
         };
-        let rlist = RegisterList::new(self.rlist.into(), None);
+        let rlist = RegisterList::new(self.rlist.into());
 
         InstructionData {
             keyword: format!("{:?}", self.op),

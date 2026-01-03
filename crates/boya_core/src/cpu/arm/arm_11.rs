@@ -85,7 +85,7 @@ impl Executable for Instruction {
             offset: None,
             wb: self.wb,
         };
-        let rlist = RegisterList::new(self.rlist, None);
+        let rlist = RegisterList::new(self.rlist);
 
         InstructionData {
             keyword: format!("{:?}", self.op),
