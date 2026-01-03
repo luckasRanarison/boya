@@ -14,7 +14,7 @@ pub enum PsrKind {
 /// |-------|-------|-------|----------|----------|------|------|-------|--------|
 /// | sign  | zero  | carry | overflow | reserved | irq  | fiq  | thumb |  mode  |
 /// +----------------------------------------------------------------------------+
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct Psr(u32);
 
 impl From<u32> for Psr {
@@ -38,23 +38,6 @@ impl Psr {
     pub const F: u32 = 6;
     /// T - State bit (0: ARM, 1: THUMB)
     pub const T: u32 = 5;
-}
-
-impl std::fmt::Debug for Psr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "N: {}, Z: {}, C: {}, V: {}, I: {}, F: {}, T: {}, M: {:?}",
-            self.0.get(Self::N),
-            self.0.get(Self::Z),
-            self.0.get(Self::C),
-            self.0.get(Self::V),
-            self.0.get(Self::I),
-            self.0.get(Self::F),
-            self.0.get(Self::T),
-            self.op_mode()
-        )
-    }
 }
 
 impl Psr {
@@ -141,20 +124,9 @@ impl Psr {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct PsrField {
     pub mask: u32,
-}
-
-impl std::fmt::Debug for PsrField {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let f_fld = if self.mask & 0xFF000000 != 0 { "F" } else { "" };
-        let s_fld = if self.mask & 0x00FF0000 != 0 { "S" } else { "" };
-        let x_fld = if self.mask & 0x0000FF00 != 0 { "X" } else { "" };
-        let c_fld = if self.mask & 0x000000FF != 0 { "C" } else { "" };
-
-        write!(f, "{f_fld}{s_fld}{x_fld}{c_fld}")
-    }
 }
 
 impl From<u8> for PsrField {

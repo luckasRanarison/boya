@@ -147,34 +147,12 @@ impl From<u8> for Condition {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Operand {
     pub kind: OperandKind,
     pub value: u32,
     pub negate: bool,
     pub shift: Option<Shift>,
-}
-
-impl std::fmt::Debug for Operand {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let lhs = match self.kind {
-            OperandKind::Imm if self.negate => format!("#-{}", self.value),
-            OperandKind::Imm => format!("#{}", self.value),
-            OperandKind::Reg => format!("R{}", self.value),
-        };
-
-        if let Some(shift) = &self.shift {
-            write!(
-                f,
-                "{lhs}, {:?} {}{}",
-                shift.kind,
-                if shift.register { "R" } else { "#" },
-                if shift.value == 0 { 32 } else { shift.value }
-            )
-        } else {
-            write!(f, "{lhs}")
-        }
-    }
 }
 
 impl Neg for Operand {

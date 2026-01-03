@@ -46,12 +46,7 @@ impl Arm7tdmi {
         let instruction = self.pipeline.take();
         let cycles = self.exec(instruction);
 
-        if self.pipeline.next_address() != self.pc() {
-            self.align_pc();
-            self.pipeline.flush();
-        }
-
-        self.load_pipeline();
+        self.sync_pipeline();
 
         cycles
     }

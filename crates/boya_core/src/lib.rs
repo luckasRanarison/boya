@@ -6,11 +6,11 @@ use crate::{
 pub mod debug;
 
 #[allow(clippy::all)]
-mod apu; // TODO: APU implmentation
-mod bus;
-mod cpu;
-mod ppu;
-mod utils;
+pub mod apu; // TODO: APU implmentation
+pub mod bus;
+pub mod cpu;
+pub mod ppu;
+pub mod utils;
 
 #[cfg(test)]
 mod test;
@@ -34,7 +34,7 @@ impl Gba {
         let cycles = self
             .cpu
             .try_irq()
-            .or_else(|| self.cpu.bus.try_dma())
+            .or_else(|| self.cpu.bus.try_dma().map(|dma| dma.cycles))
             .unwrap_or_else(|| self.cpu.step());
 
         let count = cycles.count();

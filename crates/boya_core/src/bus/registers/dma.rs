@@ -1,7 +1,7 @@
 use crate::{
     bus::{
         Bus,
-        types::{DataType, Interrupt},
+        types::{Cycle, DataType, Interrupt},
     },
     utils::bitflags::Bitflag,
 };
@@ -84,6 +84,21 @@ impl Dma {
 
     pub fn special_timing(&self) -> DmaSpecialTiming {
         self.channel.special_timing()
+    }
+
+    pub fn get_data(&self) -> DmaData {
+        DmaData {
+            channel: self.channel,
+            src_addr: self.sad,
+            dst_addr: self.dad,
+            src_addr_ctrl: self.src_addr_control(),
+            dst_addr_ctrl: self.dst_addr_control(),
+            transfer_type: self.transfer_type(),
+            transfer_len: self.transfer_len(),
+            irq_enable: self.irq_enable(),
+            timing: self.start_timing(),
+            repeat: self.repeat(),
+        }
     }
 }
 
@@ -244,4 +259,24 @@ mod tests {
             ])
             .run(17);
     }
+}
+
+#[derive(Debug)]
+pub struct DmaData {
+    pub channel: DmaChannel,
+    pub src_addr: u32,
+    pub dst_addr: u32,
+    pub src_addr_ctrl: DmaAddressControl,
+    pub dst_addr_ctrl: DmaAddressControl,
+    pub transfer_type: DataType,
+    pub transfer_len: u32,
+    pub irq_enable: bool,
+    pub timing: DmaStartTiming,
+    pub repeat: bool,
+}
+
+#[derive(Debug)]
+pub struct DmaResult {
+    pub data: DmaData,
+    pub cycles: Cycle,
 }

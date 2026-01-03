@@ -269,7 +269,7 @@ impl GbaTestBuilder {
 
             assert_eq!(
                 value, *expected,
-                "expected flag {name} to be {status}, flags: {:?}",
+                "expected flag {name} to be {status}, flags: {}",
                 cpu.cpsr
             )
         }

@@ -49,4 +49,13 @@ impl Arm7tdmi {
         self.pipeline.next_word = Some(self.fetch());
         self.pipeline.next_pc = self.pc();
     }
+
+    pub fn sync_pipeline(&mut self) {
+        if self.pipeline.next_address() != self.pc() {
+            self.align_pc();
+            self.pipeline.flush();
+        }
+
+        self.load_pipeline();
+    }
 }
