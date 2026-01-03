@@ -169,7 +169,7 @@ impl std::fmt::Debug for Operand {
                 "{lhs}, {:?} {}{}",
                 shift.kind,
                 if shift.register { "R" } else { "#" },
-                shift.value
+                if shift.value == 0 { 32 } else { shift.value }
             )
         } else {
             write!(f, "{lhs}")

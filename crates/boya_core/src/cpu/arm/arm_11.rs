@@ -12,6 +12,7 @@ pub struct Instruction {
     cd: Condition,
     op: Opcode,
     s: bool,
+    u: bool,
     amod: AddrMode,
     wb: bool,
     rn: u8,
@@ -22,17 +23,18 @@ impl From<u32> for Instruction {
     fn from(value: u32) -> Self {
         let cd = value.get_bits_u8(28, 31).into();
         let p = value.get_u8(24);
-        let u = value.get_u8(23);
+        let u = value.has(23);
         let s = value.has(22);
         let wb = value.has(21);
         let op = value.get_u8(20).into();
         let rn = value.get_bits_u8(16, 19);
         let rlist = value.get_bits(0, 15) as u16;
-        let amod = AddrMode::new(p, u);
+        let amod = AddrMode::new(p, u.into());
 
         Self {
             cd,
             op,
+            u,
             s,
             amod,
             wb,
@@ -81,14 +83,14 @@ impl Executable for Instruction {
             amod: self.amod,
             base: RegisterOffsetBase::Plain(self.rn),
             offset: None,
-            wb: true,
+            wb: self.wb,
         };
         let rlist = RegisterList::new(self.rlist, None);
 
         InstructionData {
             keyword: format!("{:?}", self.op),
             args: vec![offset.into(), rlist.into()],
-            kind: InstructionKind::arm(11, self.cd.into(), None, true),
+            kind: InstructionKind::arm(11, self.cd.into(), None, self.u),
         }
     }
 }

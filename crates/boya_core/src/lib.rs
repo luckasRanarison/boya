@@ -45,10 +45,3 @@ impl Gba {
         cycles
     }
 }
-
-#[derive(Debug)]
-pub enum StepEvent {
-    Instruction,
-    Interrupt,
-    Dma,
-}

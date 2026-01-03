@@ -70,19 +70,22 @@ impl Executable for Instruction {
     }
 
     fn get_data(&self) -> InstructionData {
-        let args = match &self.op {
-            Opcode::MRS { rd } => vec![rd.reg().into()],
-            Opcode::MSR { fd, op } => vec![
-                InstructionParam::PsrUpdate(PsrUpdate {
-                    kind: self.psr,
-                    fields: fd.clone(),
-                }),
-                op.clone().into(),
-            ],
+        let (keyword, args) = match &self.op {
+            Opcode::MRS { rd } => ("MRS", vec![rd.reg().into()]),
+            Opcode::MSR { fd, op } => (
+                "MSR",
+                vec![
+                    InstructionParam::PsrUpdate(PsrUpdate {
+                        kind: self.psr,
+                        fields: fd.clone(),
+                    }),
+                    op.clone().into(),
+                ],
+            ),
         };
 
         InstructionData {
-            keyword: format!("{:?}", self.op),
+            keyword: keyword.to_string(),
             kind: InstructionKind::arm(6, self.cd.into(), None, false),
             args,
         }

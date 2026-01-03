@@ -141,7 +141,7 @@ impl Psr {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct PsrField {
     pub mask: u32,
 }

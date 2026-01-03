@@ -30,8 +30,8 @@ impl Executable for Instruction {
 
     fn get_data(&self) -> InstructionData {
         InstructionData {
-            keyword: "BL".into(),
-            args: vec![], // TODO: combine the two instructions
+            keyword: format!("{:#06X}", ((self.h as u16) << 11) | self.nn),
+            args: vec![],
             kind: InstructionKind::thumb(19),
         }
     }

@@ -244,6 +244,6 @@ mod tests {
             .asm(asm)
             .assert_reg(1, 0xFFFF_FFFF)
             .assert_flag(Psr::C, true)
-            .run(3);
+            .run(2);
     }
 }

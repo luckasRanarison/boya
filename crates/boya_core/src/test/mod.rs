@@ -152,9 +152,10 @@ impl GbaTestBuilder {
 
     fn debug_instruction(&self, cpu: &Arm7tdmi) {
         let curr_addr = cpu.pipeline.current_address();
-        let curr_instr = cpu.pipeline.current_instruction().unwrap().get_data();
+        let curr_instr = cpu.pipeline.current_instruction().unwrap();
+        let instr_fmt = curr_instr.get_data().format(10);
 
-        println!("{curr_addr:#08x}: {curr_instr:?}",);
+        println!("{curr_addr:#08x}: {instr_fmt}",);
         // println!("{:?}", cpu.cpsr);
     }
 

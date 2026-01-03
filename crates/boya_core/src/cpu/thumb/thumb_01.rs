@@ -73,8 +73,8 @@ mod tests {
     #[test]
     fn test_logic_shift() {
         let asm = r"
-            mov r1, 2
-            lsl r2, r1, 2
+            mov r1, #2
+            lsl r2, r1, #2
         ";
 
         GbaTestBuilder::new()

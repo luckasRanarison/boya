@@ -18,17 +18,12 @@ impl InstructionKind {
         Self::Thumb(ThumbData { format })
     }
 
-    pub fn arm(
-        format: u8,
-        condition: Option<Condition>,
-        update: Option<bool>,
-        arg_suffix: bool,
-    ) -> Self {
+    pub fn arm(format: u8, condition: Option<Condition>, update: Option<bool>, user: bool) -> Self {
         Self::Arm(ArmData {
             format,
             condition,
             update,
-            arg_suffix,
+            user,
         })
     }
 }
@@ -37,16 +32,23 @@ pub struct ArmData {
     pub format: u8,
     pub condition: Option<Condition>,
     pub update: Option<bool>,
-    pub arg_suffix: bool,
+    pub user: bool,
 }
 
 impl ArmData {
     fn instruction_suffix(&self) -> String {
-        format!(
-            "{}{}",
-            self.condition.map(|c| format!("{c:?}")).unwrap_or_default(),
-            self.update.map(|_| "S".to_string()).unwrap_or_default()
-        )
+        let condition = self
+            .condition
+            .filter(|c| !matches!(c, Condition::AL))
+            .map(|c| format!("{c:?}"))
+            .unwrap_or_default();
+
+        let update = self
+            .update
+            .and_then(|s| s.then_some("S".to_string()))
+            .unwrap_or_default();
+
+        format!("{condition}{update}")
     }
 }
 
@@ -78,35 +80,38 @@ impl InstructionData {
     }
 }
 
-impl fmt::Debug for InstructionData {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl InstructionData {
+    pub fn format(&self, instr_width: usize) -> String {
+        let keyword = self.format_keyword();
+        let args = self.format_args();
+
+        format!("{keyword:<instr_width$} {args}")
+    }
+
+    pub fn format_args(&self) -> String {
         let args = self
             .args
             .iter()
             .map(|arg| format!("{arg:?}"))
-            .collect::<Vec<_>>();
+            .collect::<Vec<_>>()
+            .join(", ");
+        let arg_suffix = self.arg_suffix().unwrap_or_default();
 
-        let (instruction, comment, arg_suffix) = match &self.kind {
-            InstructionKind::Arm(data) => (
-                format!("{}{}", self.keyword, data.instruction_suffix()),
-                format!("; arm {}", data.format),
-                data.arg_suffix.then_some("^"),
-            ),
-            InstructionKind::Thumb(data) => (
-                self.keyword.to_lowercase(),
-                format!("; thumb {}", data.format),
-                None,
-            ),
-        };
+        format!("{args}{arg_suffix}")
+    }
 
-        let instr_width = 12;
+    pub fn format_keyword(&self) -> String {
+        match &self.kind {
+            InstructionKind::Arm(data) => format!("{}{}", self.keyword, data.instruction_suffix()),
+            InstructionKind::Thumb(_) => self.keyword.to_lowercase().to_string(),
+        }
+    }
 
-        write!(
-            f,
-            "{instruction:<instr_width$} {}{} {comment}",
-            args.join(", "),
-            arg_suffix.unwrap_or_default()
-        )
+    fn arg_suffix(&self) -> Option<&str> {
+        match &self.kind {
+            InstructionKind::Arm(data) => data.user.then_some("^"),
+            InstructionKind::Thumb(_) => None,
+        }
     }
 }
 
@@ -203,9 +208,9 @@ impl fmt::Debug for RegisterOffsetData {
             _ => rn,
         };
 
-        match self.amod {
-            AddrMode::IB | AddrMode::DB if self.wb => write!(f, "{addr}!"),
-            _ => write!(f, "{addr}"),
+        match self.wb {
+            true => write!(f, "{addr}!"),
+            false => write!(f, "{addr}"),
         }
     }
 }

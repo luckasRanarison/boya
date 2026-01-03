@@ -100,7 +100,7 @@ impl Bus for IORegister {
             0x208..=0x209 => self.ime.read_byte(address),
             0x300..=0x301 => self.haltcnt.read_byte(address),
             0x800..=0x803 => self.imemcnt.read_byte(address),
-            _ => todo!("I/O register read: {address:#08X}"),
+            _ => todo!("I/O register read: {address:#010X}"),
         }
     }
 
@@ -122,7 +122,7 @@ impl Bus for IORegister {
             0x300..=0x301 => self.haltcnt.write_byte(address, value),
             0x410..=0x411 => {} // undocumented, purpose unknown
             0x800..=0x803 => self.imemcnt.write_byte(address, value),
-            _ => todo!("I/O register write: {address:#08X}"),
+            _ => todo!("I/O register write: {address:#010X}"),
         }
     }
 }

@@ -52,7 +52,7 @@ impl Bus for PpuRegister {
             0x00A..=0x00B => self.bg1cnt.value.read_byte(address),
             0x00C..=0x00D => self.bg2cnt.value.read_byte(address),
             0x00E..=0x00F => self.bg3cnt.value.read_byte(address),
-            _ => todo!("LCD registers read: {address:#08X}"),
+            _ => todo!("LCD registers read: {address:#010X}"),
         }
     }
 
@@ -73,7 +73,7 @@ impl Bus for PpuRegister {
             0x01A..=0x01B => self.bg2vofs.write_byte(address, value),
             0x01C..=0x01D => self.bg3hofs.write_byte(address, value),
             0x01E..=0x01F => self.bg3vofs.write_byte(address, value),
-            _ => todo!("LCD registers write: {address:#08X}"),
+            _ => todo!("LCD registers write: {address:#010X}"),
         }
     }
 }
