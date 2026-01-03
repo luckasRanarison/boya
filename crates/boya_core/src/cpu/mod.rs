@@ -14,13 +14,14 @@ use psr::Psr;
 use crate::{
     bus::{
         Bus, GbaBus,
-        types::{Cycle, DataType, MemoryAccess},
+        types::{Cycle, DataType, InterruptResult, MemoryAccess},
     },
     cpu::{
         common::{Exception, NamedRegister, Shift},
         isa::Instruction,
         register::Register,
     },
+    debug::types::InstructionResult,
     utils::bitflags::BitIter,
 };
 
@@ -49,10 +50,6 @@ impl Arm7tdmi {
         self.sync_pipeline();
 
         cycles
-    }
-
-    pub fn reset(&mut self) {
-        self.handle_exception(Exception::Reset);
     }
 
     #[inline]
@@ -88,9 +85,11 @@ impl Arm7tdmi {
         last_pc.checked_sub(instr_size)
     }
 
-    pub fn try_irq(&mut self) -> Option<Cycle> {
+    pub fn try_irq(&mut self) -> Option<InterruptResult> {
         if !self.cpsr.has(Psr::I) && self.bus.io.has_pending_irq() {
-            Some(self.handle_exception(Exception::NormalInterrupt))
+            Some(InterruptResult {
+                cycles: self.handle_exception(Exception::NormalInterrupt),
+            })
         } else {
             None
         }
@@ -216,6 +215,16 @@ impl Arm7tdmi {
         if let Some(spsr) = self.registers.get_spsr(op_mode) {
             self.cpsr = spsr;
         }
+    }
+
+    pub fn debug_step(&mut self) -> InstructionResult {
+        let instruction = self.pipeline.take();
+        let data = instruction.get_data();
+        let cycles = self.exec(instruction);
+
+        self.sync_pipeline();
+
+        InstructionResult { data, cycles }
     }
 }
 

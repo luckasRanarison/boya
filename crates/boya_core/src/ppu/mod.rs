@@ -19,10 +19,10 @@ pub struct Ppu {
     pub oam: [u8; OAM_SIZE],
     pub vram: Box<[u8; VRAM_SIZE]>,
     pub registers: PpuRegister,
+    pub dot: u16,
+    pub scanline: u8,
+    pub divider: u32,
 
-    dot: u16,
-    scanline: u8,
-    divider: u32,
     pending_irq: Option<Interrupt>,
     buffer: Box<[u8; BUFFER_LEN]>,
 }
@@ -140,6 +140,7 @@ mod tets {
                 B   loop ; 2S + 1N (20)
         ";
 
+        // PPU is not clocked during the fake BIOS setup
         GbaTestBuilder::new()
             .asm(asm)
             .assert_fn(|cpu| {

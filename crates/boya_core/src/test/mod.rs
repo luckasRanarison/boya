@@ -133,9 +133,10 @@ impl GbaTestBuilder {
         while func(&gba.cpu) {
             self.debug_instruction(&gba.cpu);
 
-            let cycle = gba.step();
+            let step = gba.debug_synced_step();
+            let count = step.count();
 
-            cycles.push(cycle.count());
+            cycles.push(count);
         }
 
         self.run_assertions(&gba, cycles.as_slice());
@@ -199,7 +200,7 @@ impl GbaTestBuilder {
 
         gba.load_bios(self.init_bios());
         gba.load_rom(&self.init_rom());
-        gba.cpu.reset();
+        gba.boot();
 
         let extra_steps = if self.thumb { 9 } else { 4 };
 

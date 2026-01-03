@@ -136,3 +136,8 @@ pub enum Interrupt {
     Keypad,
     Gamepak,
 }
+
+#[derive(Debug)]
+pub struct InterruptResult {
+    pub cycles: Cycle,
+}

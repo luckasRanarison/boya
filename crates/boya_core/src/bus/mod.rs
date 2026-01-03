@@ -197,10 +197,10 @@ impl GbaBus {
             DmaStartTiming::HBlank => self.ppu.registers.dispstat.has(Dispstat::HBLANK),
 
             DmaStartTiming::Special => match dma.special_timing() {
-                DmaSpecialTiming::None => true, // immediate
-                DmaSpecialTiming::FifoA => todo!("FIFO_A DMA start"),
-                DmaSpecialTiming::FifoB => todo!("FIFO_B DMA start"),
-                DmaSpecialTiming::VideoCapture => todo!("Video capture DMA start"),
+                DmaSpecialTiming::None => true,            // immediate
+                DmaSpecialTiming::FifoA => todo!(),        // TODO: FIFO_A DMA start
+                DmaSpecialTiming::FifoB => todo!(),        // TODO: FIFO_B DMA start
+                DmaSpecialTiming::VideoCapture => todo!(), // TODO: Video capture DMA start
             },
         }
     }

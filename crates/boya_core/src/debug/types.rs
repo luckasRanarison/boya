@@ -1,5 +1,8 @@
 use crate::{
-    bus::{registers::dma::DmaResult, types::Cycle},
+    bus::{
+        registers::dma::DmaResult,
+        types::{Cycle, InterruptResult},
+    },
     cpu::{
         common::{AddrMode, Condition, NamedRegister, Operand},
         psr::{PsrField, PsrKind},
@@ -7,19 +10,23 @@ use crate::{
 };
 
 #[derive(Debug)]
+pub struct GbaStep {
+    pub value: GbaStepKind,
+}
+
+#[derive(Debug)]
 pub enum GbaStepKind {
-    PlainInstruction(Cycle),
-    DetailedInstruction(InstructionResult),
-    DirectMemoryAccess(DmaResult),
-    Interrupt(Cycle),
+    Instruction(InstructionResult),
+    Dma(DmaResult),
+    Interrupt(InterruptResult),
 }
 
 impl GbaStepKind {
     pub fn cycles(&self) -> Cycle {
         match self {
-            GbaStepKind::DetailedInstruction(data) => data.cycles,
-            GbaStepKind::DirectMemoryAccess(data) => data.cycles,
-            GbaStepKind::PlainInstruction(cycles) | GbaStepKind::Interrupt(cycles) => *cycles,
+            GbaStepKind::Instruction(data) => data.cycles,
+            GbaStepKind::Dma(data) => data.cycles,
+            GbaStepKind::Interrupt(data) => data.cycles,
         }
     }
 }

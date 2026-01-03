@@ -1,0 +1,12 @@
+[package]
+name = "boya_wasm"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+boya_core = { path = "../boya_core" }
+wasm-bindgen = "0.2.106"
+web-sys = "0.3.83"
+
+[lib]
+crate-type = ["cdylib"]
