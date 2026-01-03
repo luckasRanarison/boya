@@ -47,21 +47,21 @@ impl fmt::Display for InstructionParam {
 impl fmt::Display for RegisterOffsetData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let rn = match self.base {
-            RegisterOffsetBase::Plain(base) => format!("{:?}", base.reg()),
+            RegisterOffsetBase::Plain(base) => format!("{}", base.reg()),
             RegisterOffsetBase::Named(named) => format!("{named:?}"),
         };
 
         let addr = match &self.offset {
             Some(offset) => match self.amod {
                 AddrMode::IB | AddrMode::DB if offset.is_imm() && offset.value == 0 => {
-                    format!("[{rn:?}]")
+                    format!("[{rn}]")
                 }
-                AddrMode::IB => format!("[{rn}, {:?}]", offset),
-                AddrMode::DB if offset.is_imm() => format!("[{rn}, #-{:?}]", offset.value),
-                AddrMode::DB => format!("[{rn}, -{:?}]", offset),
-                AddrMode::IA => format!("[{rn}], {:?}", offset),
-                AddrMode::DA if offset.is_imm() => format!("[{rn}], #-{:?}", offset.value),
-                AddrMode::DA => format!("[{rn}], -{:?}", offset),
+                AddrMode::IB => format!("[{rn}, {}]", offset),
+                AddrMode::DB if offset.is_imm() => format!("[{rn}, #-{}]", offset.value),
+                AddrMode::DB => format!("[{rn}, -{}]", offset),
+                AddrMode::IA => format!("[{rn}], {}", offset),
+                AddrMode::DA if offset.is_imm() => format!("[{rn}], #-{}", offset.value),
+                AddrMode::DA => format!("[{rn}], -{}", offset),
             },
             _ => rn,
         };
@@ -117,6 +117,6 @@ impl fmt::Display for PsrField {
 
 impl fmt::Display for PsrUpdate {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}_{:?}", self.kind, self.fields)
+        write!(f, "{:?}_{}", self.kind, self.fields)
     }
 }

@@ -64,8 +64,8 @@ impl Gba {
         let value = self
             .cpu
             .try_irq()
-            .map(|irq| GbaStepKind::Interrupt(irq))
-            .or_else(|| self.cpu.bus.try_dma().map(|dma| GbaStepKind::Dma(dma)))
+            .map(GbaStepKind::Interrupt)
+            .or_else(|| self.cpu.bus.try_dma().map(GbaStepKind::Dma))
             .unwrap_or_else(|| GbaStepKind::Instruction(self.cpu.debug_step()));
 
         GbaStep { value }

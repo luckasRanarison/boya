@@ -60,7 +60,7 @@ impl Gba {
 
     #[wasm_bindgen]
     pub fn bios(&self) -> Uint8Array {
-        unsafe { Uint8Array::view(&self.core.bios()) }
+        unsafe { Uint8Array::view(self.core.bios()) }
     }
 
     #[wasm_bindgen]
@@ -75,7 +75,7 @@ impl Gba {
 
     #[wasm_bindgen]
     pub fn palette(&self) -> Uint8Array {
-        unsafe { Uint8Array::view(&self.core.palette()) }
+        unsafe { Uint8Array::view(self.core.palette()) }
     }
 
     #[wasm_bindgen]
@@ -85,6 +85,6 @@ impl Gba {
 
     #[wasm_bindgen]
     pub fn oam(&self) -> Uint8Array {
-        unsafe { Uint8Array::view(&self.core.oam()) }
+        unsafe { Uint8Array::view(self.core.oam()) }
     }
 }

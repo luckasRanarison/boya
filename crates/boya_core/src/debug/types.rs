@@ -74,7 +74,7 @@ impl InstructionData {
         let args = self
             .args
             .iter()
-            .map(|arg| format!("{arg:?}"))
+            .map(|arg| format!("{arg}"))
             .collect::<Vec<_>>()
             .join(", ");
         let arg_suffix = self.arg_suffix().unwrap_or_default();

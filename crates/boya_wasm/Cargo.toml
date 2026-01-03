@@ -10,3 +10,6 @@ web-sys = "0.3.83"
 
 [lib]
 crate-type = ["cdylib"]
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
