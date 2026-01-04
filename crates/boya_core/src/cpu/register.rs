@@ -3,13 +3,12 @@ use crate::cpu::{common::OperatingMode, psr::Psr};
 #[derive(Default)]
 pub struct Register {
     pub main: [u32; 16], // R0-R15
-
-    fiq: [u32; 7], // R08-R14
-    svc: [u32; 2], // R13-R14
-    abt: [u32; 2], // R13-R14
-    irq: [u32; 2], // R13-R14
-    und: [u32; 2], // R13-R14
-    psr: [Psr; 5],
+    pub fiq: [u32; 7],   // R08-R14
+    pub svc: [u32; 2],   // R13-R14
+    pub abt: [u32; 2],   // R13-R14
+    pub irq: [u32; 2],   // R13-R14
+    pub und: [u32; 2],   // R13-R14
+    pub psr: [Psr; 5],
 }
 
 impl Register {

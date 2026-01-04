@@ -1,15 +1,13 @@
-import { Stack } from "@mantine/core";
-import { useGba } from "../../contexts/gba-context";
-import ByteArray from "../ByteArray";
+import UploadArea from "../UploadArea";
+import { useView } from "../../stores/viewStore";
+import BiosView from "../views/BiosView";
 
 function Main() {
-  const { bios } = useGba();
+  const { view } = useView();
 
-  return (
-    <Stack justify="center">
-      <ByteArray data={bios.memory} baseAddress={0x0000_0000} />
-    </Stack>
-  );
+  if (view === "bios") return <BiosView />;
+
+  return <UploadArea />;
 }
 
 export default Main;

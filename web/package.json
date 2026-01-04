@@ -13,12 +13,14 @@
   "dependencies": {
     "@mantine/core": "^8.3.10",
     "@mantine/hooks": "^8.3.10",
+    "@mantine/notifications": "^8.3.10",
     "@tabler/icons-react": "^3.36.1",
     "boya_wasm": "file:pkg",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "vite-plugin-top-level-await": "^1.6.0",
-    "vite-plugin-wasm": "^3.5.0"
+    "vite-plugin-wasm": "^3.5.0",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

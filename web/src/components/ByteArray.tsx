@@ -1,59 +1,93 @@
-import { Group, ScrollArea, Stack, Text } from "@mantine/core";
-import { useMemo } from "react";
+import {
+  Group,
+  Pagination,
+  ScrollArea,
+  SimpleGrid,
+  Stack,
+  Text,
+} from "@mantine/core";
+import { useMemo, useState } from "react";
 
 type ByteLine = {
   address: number;
   columns: number[];
-};
-
-const convertToMatrix = (
-  array: Uint8Array,
-  baseAddress: number,
-  column = 16,
-) => {
-  const lines: ByteLine[] = [];
-
-  for (let i = 0; i < array.length; i += column) {
-    const slice = array.slice(i, i + column);
-
-    lines.push({
-      address: baseAddress + i,
-      columns: Array.from(slice),
-    });
-  }
-
-  return lines;
+  ascii: string;
 };
 
 function ByteArray(params: {
   data: Uint8Array;
   baseAddress: number;
+  pageSize?: number;
   column?: number;
 }) {
-  const matrix = useMemo(
-    () => convertToMatrix(params.data, params.baseAddress, params.column),
-    [params.data, params.column],
-  );
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const matrix = useMemo(() => {
+    const pageSize = params.pageSize ?? 1024;
+    const column = params.column ?? 16;
+    const start = (currentPage - 1) * pageSize;
+
+    const slice = params.data.slice(start, start + pageSize);
+    const lines: ByteLine[] = [];
+
+    for (let i = 0; i < slice.length; i += column) {
+      const row = slice.slice(i, i + column);
+      const bytes = Array.from(row);
+
+      lines.push({
+        address: params.baseAddress + start + i,
+        columns: bytes,
+        ascii: bytes
+          .map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : "."))
+          .join(""),
+      });
+    }
+
+    return lines;
+  }, [
+    currentPage,
+    params.data,
+    params.column,
+    params.baseAddress,
+    params.pageSize,
+  ]);
 
   return (
-    <ScrollArea w="100%" h="500" p="md">
-      <Stack ff={"monospace"}>
-        {matrix.map((line) => (
-          <Group key={line.address}>
-            <Text mr="xl" c="indigo" fw={600}>
-              0x{line.address.toString(16).padStart(8, "0")}
-            </Text>
-            <Group>
-              {line.columns.map((byte, idx) => (
-                <Text key={line.address + idx} w="30" c="gray">
-                  {byte.toString(16).padStart(2, "0")}
-                </Text>
-              ))}
+    <Stack flex={1} w="100%" p="xl" justify="center" align="center">
+      <ScrollArea w="100%" h="400">
+        <Stack w="100%" ff={"monospace"} align="center">
+          {matrix.map((line) => (
+            <Group key={line.address} w="100%" justify="space-between">
+              <Text c="indigo" fw={600}>
+                0x{line.address.toString(16).padStart(8, "0")}:
+              </Text>
+
+              <SimpleGrid
+                spacing="md"
+                cols={{ base: 8, sm: 16 }}
+                w={{ base: "100%", sm: "auto" }}
+              >
+                {line.columns.map((byte, idx) => (
+                  <Text key={line.address + idx} c="gray">
+                    {byte.toString(16).padStart(2, "0")}
+                  </Text>
+                ))}
+              </SimpleGrid>
+
+              <Text w={`${(params.column ?? 16) * 1}ch`} c="indigo.4">
+                {line.ascii}
+              </Text>
             </Group>
-          </Group>
-        ))}
-      </Stack>
-    </ScrollArea>
+          ))}
+        </Stack>
+      </ScrollArea>
+
+      <Pagination
+        value={currentPage}
+        onChange={setCurrentPage}
+        total={params.data.length / (params.pageSize ?? 1024)}
+      />
+    </Stack>
   );
 }
 

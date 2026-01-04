@@ -1,47 +1,49 @@
-import {
-  AppShell,
-  Text,
-  createTheme,
-  Flex,
-  MantineProvider,
-} from "@mantine/core";
+import { AppShell, createTheme, MantineProvider } from "@mantine/core";
 import Navbar from "./components/layout/Navbar";
 import Main from "./components/layout/Main";
-import Aside from "./components/layout/Aside";
+import { Notifications } from "@mantine/notifications";
+import Header from "./components/layout/Header";
+import { useEffect } from "react";
+import { usePersistantStore } from "./stores/persistantStore";
+import { instance } from "./lib/gba";
 
 function App() {
   const theme = createTheme({
     primaryColor: "indigo",
   });
 
+  const { bios } = usePersistantStore();
+
+  useEffect(() => {
+    if (bios) {
+      instance.loadBios(bios);
+    }
+  }, [bios]);
+
   return (
     <MantineProvider theme={theme} defaultColorScheme="light">
       <AppShell
-        padding={"xl"}
         header={{ height: 70 }}
-        navbar={{ width: 300, breakpoint: "sm" }}
-        aside={{ width: 400, breakpoint: "sm" }}
+        navbar={{
+          width: 350,
+          breakpoint: "sm",
+          collapsed: { mobile: true },
+        }}
       >
         <AppShell.Header py="md" px="xl">
-          <Flex h="100%" align="center">
-            <Text size="xl" c="indigo">
-              Bōya
-            </Text>
-          </Flex>
+          <Header />
         </AppShell.Header>
 
         <AppShell.Navbar p="md">
           <Navbar />
         </AppShell.Navbar>
 
-        <AppShell.Main>
+        <AppShell.Main display="flex">
           <Main />
         </AppShell.Main>
-
-        <AppShell.Aside p="md">
-          <Aside />
-        </AppShell.Aside>
       </AppShell>
+
+      <Notifications />
     </MantineProvider>
   );
 }

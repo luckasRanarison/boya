@@ -1,6 +1,6 @@
 use boya_core::Gba as GbaCore;
 use wasm_bindgen::prelude::*;
-use web_sys::js_sys::Uint8Array;
+use web_sys::js_sys::{Uint8Array, Uint32Array};
 
 #[wasm_bindgen]
 #[derive(Default)]
@@ -86,5 +86,55 @@ impl Gba {
     #[wasm_bindgen]
     pub fn oam(&self) -> Uint8Array {
         unsafe { Uint8Array::view(self.core.oam()) }
+    }
+
+    #[wasm_bindgen]
+    pub fn rom(&self) -> Uint8Array {
+        unsafe { Uint8Array::view(self.core.rom()) }
+    }
+
+    #[wasm_bindgen]
+    pub fn sram(&self) -> Uint8Array {
+        unsafe { Uint8Array::view(self.core.sram()) }
+    }
+
+    #[wasm_bindgen]
+    pub fn cpsr(&self) -> u32 {
+        self.core.cpu.cpsr.value()
+    }
+
+    #[wasm_bindgen(js_name = "getMainRegisters")]
+    pub fn get_main_registers(&self) -> Uint32Array {
+        unsafe { Uint32Array::view(&self.core.cpu.registers.main) }
+    }
+
+    #[wasm_bindgen(js_name = "getFiqRegisters")]
+    pub fn get_fiq_registers(&self) -> Uint32Array {
+        unsafe { Uint32Array::view(&self.core.cpu.registers.fiq) }
+    }
+
+    #[wasm_bindgen(js_name = "getSvcRegisters")]
+    pub fn get_svc_registers(&self) -> Uint32Array {
+        unsafe { Uint32Array::view(&self.core.cpu.registers.svc) }
+    }
+
+    #[wasm_bindgen(js_name = "getAbtRegisters")]
+    pub fn get_abt_registers(&self) -> Uint32Array {
+        unsafe { Uint32Array::view(&self.core.cpu.registers.abt) }
+    }
+
+    #[wasm_bindgen(js_name = "getIrqRegisters")]
+    pub fn get_irq_registers(&self) -> Uint32Array {
+        unsafe { Uint32Array::view(&self.core.cpu.registers.irq) }
+    }
+
+    #[wasm_bindgen(js_name = "getUndRegisters")]
+    pub fn get_und_registers(&self) -> Uint32Array {
+        unsafe { Uint32Array::view(&self.core.cpu.registers.und) }
+    }
+
+    #[wasm_bindgen(js_name = "getBankedPsr")]
+    pub fn get_banked_psr(&self) -> Vec<u32> {
+        self.core.cpu.registers.psr.map(|psr| psr.value()).to_vec()
     }
 }
