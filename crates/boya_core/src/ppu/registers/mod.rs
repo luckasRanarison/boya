@@ -11,6 +11,8 @@ pub mod dispstat;
 pub struct PpuRegister {
     /// 0x000: LCD Control (R/W)
     pub dispcnt: Dispcnt,
+    /// 0x002: Undocumented - Green Swap (R/W)
+    pub greenswap: u16,
     /// 0x004: General LCD Status (R/W)
     pub dispstat: Dispstat,
     /// 0x006: Vertical Counter (R)
@@ -45,6 +47,7 @@ impl Bus for PpuRegister {
     fn read_byte(&self, address: u32) -> u8 {
         match address % 0x0400_0000 {
             0x000..=0x001 => self.dispcnt.value.read_byte(address),
+            0x002..=0x003 => self.greenswap.read_byte(address),
             0x004 => self.dispstat.vcount,
             0x005 => self.dispstat.flags,
             0x006..=0x007 => self.vcount.read_byte(address),
@@ -52,13 +55,14 @@ impl Bus for PpuRegister {
             0x00A..=0x00B => self.bg1cnt.value.read_byte(address),
             0x00C..=0x00D => self.bg2cnt.value.read_byte(address),
             0x00E..=0x00F => self.bg3cnt.value.read_byte(address),
-            _ => todo!("LCD registers read: {address:#010X}"),
+            _ => 0, // TODO: open bus
         }
     }
 
     fn write_byte(&mut self, address: u32, value: u8) {
         match address % 0x0400_0000 {
             0x000..=0x001 => self.dispcnt.value.write_byte(address, value),
+            0x002..=0x003 => self.greenswap.write_byte(address, value),
             0x004 => self.dispstat.vcount = value,
             0x005 => self.dispstat.write_flags(value),
             0x008..=0x009 => self.bg0cnt.value.write_byte(address, value),
@@ -73,7 +77,7 @@ impl Bus for PpuRegister {
             0x01A..=0x01B => self.bg2vofs.write_byte(address, value),
             0x01C..=0x01D => self.bg3hofs.write_byte(address, value),
             0x01E..=0x01F => self.bg3vofs.write_byte(address, value),
-            _ => todo!("LCD registers write: {address:#010X}"),
+            _ => {}
         }
     }
 }

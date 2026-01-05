@@ -119,3 +119,23 @@ impl Gba {
         self.cpu.bus.sram.as_slice()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{Gba, bus::BIOS_SIZE};
+
+    const GBA_BIOS: &[u8; BIOS_SIZE] = include_bytes!("../../../gba_bios.bin");
+
+    #[test]
+    fn test_bios_load() {
+        let mut gba = Gba::default();
+
+        gba.load_bios(*GBA_BIOS);
+        gba.load_rom(&[0; 8]);
+        gba.boot();
+
+        while gba.cpu.pipeline.current_address() != 0x0800_0000 {
+            gba.synced_step();
+        }
+    }
+}

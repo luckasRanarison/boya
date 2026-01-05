@@ -26,6 +26,9 @@ jobs:
       - name: Initialize submodules
         run: git submodule update --init
 
+      - name: Download BIOS
+        run: curl https://github.com/ez-me/gba-bios/releases/download/1.0/gba_bios.bin -LO
+
       - name: Build
         run: cargo build --verbose
 
