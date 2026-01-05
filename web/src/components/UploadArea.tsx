@@ -1,10 +1,6 @@
 import { useRef } from "react";
 import { Button, Text, Stack, Mark, Paper, Group, Flex } from "@mantine/core";
-import {
-  IconAlertTriangle,
-  IconDragDrop,
-  IconUpload,
-} from "@tabler/icons-react";
+import { IconDragDrop, IconUpload } from "@tabler/icons-react";
 import { usePersistantStore } from "../stores/persistantStore";
 import notifications from "../lib/notifications";
 
@@ -45,7 +41,7 @@ function UploadArea() {
       <Paper
         p="xl"
         w="100%"
-        h={{ base: "100%", md: "80%" }}
+        h="80%"
         maw={{ base: "100%", sm: "65%" }}
         bd="2px dashed indigo"
         radius="md"
@@ -81,13 +77,6 @@ function UploadArea() {
               Upload BIOS
             </Button>
           </Group>
-
-          {!bios && (
-            <Stack mt="sm" c="red" align="center" gap="xs">
-              <IconAlertTriangle size={20} />
-              <Text>BIOS is required to run a game.</Text>
-            </Stack>
-          )}
         </Stack>
 
         <div hidden>

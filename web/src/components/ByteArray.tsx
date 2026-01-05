@@ -2,11 +2,15 @@ import {
   Group,
   Pagination,
   ScrollArea,
+  Select,
   SimpleGrid,
   Stack,
   Text,
+  ThemeIcon,
 } from "@mantine/core";
 import { useMemo, useState } from "react";
+import { formatHex } from "../utils";
+import { IconSortAscendingNumbers, IconStackFront } from "@tabler/icons-react";
 
 type ByteLine = {
   address: number;
@@ -22,13 +26,16 @@ function ByteArray(params: {
 }) {
   const [currentPage, setCurrentPage] = useState(1);
 
-  const matrix = useMemo(() => {
-    const pageSize = params.pageSize ?? 1024;
-    const column = params.column ?? 16;
-    const start = (currentPage - 1) * pageSize;
+  const pageSize = params.pageSize ?? 1024;
+  const column = params.column ?? 16;
+  const start = (currentPage - 1) * pageSize;
+  const total = Math.ceil(params.data.length / (params.pageSize ?? 1024));
+  const selectRegion = formatHex(params.baseAddress + start);
 
+  const { lines, addresses } = useMemo(() => {
     const slice = params.data.slice(start, start + pageSize);
     const lines: ByteLine[] = [];
+    const addresses: string[] = [];
 
     for (let i = 0; i < slice.length; i += column) {
       const row = slice.slice(i, i + column);
@@ -43,23 +50,29 @@ function ByteArray(params: {
       });
     }
 
-    return lines;
-  }, [
-    currentPage,
-    params.data,
-    params.column,
-    params.baseAddress,
-    params.pageSize,
-  ]);
+    for (let i = 0; i < total; i += 1) {
+      addresses.push(formatHex(params.baseAddress + i * pageSize));
+    }
+
+    return { lines, addresses };
+  }, [start, column, pageSize, total, params.data, params.baseAddress]);
+
+  const handleSelect = (value: string | null) => {
+    if (value) {
+      const basePageAddress = parseInt(value, 16) - params.baseAddress;
+      const newPage = basePageAddress / pageSize + 1;
+      setCurrentPage(newPage);
+    }
+  };
 
   return (
-    <Stack flex={1} w="100%" p="xl" justify="center" align="center">
-      <ScrollArea w="100%" h="400">
+    <Stack flex={1} w="100%" p="xl" justify="space-around" align="center">
+      <ScrollArea w="100%" h="65dvh">
         <Stack w="100%" ff={"monospace"} align="center">
-          {matrix.map((line) => (
+          {lines.map((line) => (
             <Group key={line.address} w="100%" justify="space-between">
               <Text c="indigo" fw={600}>
-                0x{line.address.toString(16).padStart(8, "0")}:
+                {formatHex(line.address)}
               </Text>
 
               <SimpleGrid
@@ -82,11 +95,35 @@ function ByteArray(params: {
         </Stack>
       </ScrollArea>
 
-      <Pagination
-        value={currentPage}
-        onChange={setCurrentPage}
-        total={params.data.length / (params.pageSize ?? 1024)}
-      />
+      <Group w="100%" justify="space-between">
+        <Group c="gray" visibleFrom="md">
+          <ThemeIcon variant="transparent">
+            <IconStackFront />
+          </ThemeIcon>
+          <Text ff="monospace">
+            {formatHex(params.baseAddress + start)} -{" "}
+            {formatHex(params.baseAddress + currentPage * pageSize)}
+          </Text>
+        </Group>
+        <Group w={{ base: "100%", md: "auto" }}>
+          <ThemeIcon variant="transparent">
+            <IconSortAscendingNumbers />
+          </ThemeIcon>
+          <Select
+            value={selectRegion}
+            data={addresses}
+            onChange={handleSelect}
+            flex={1}
+            searchable
+          />
+          <Pagination
+            value={currentPage}
+            onChange={setCurrentPage}
+            total={total}
+            withPages={false}
+          />
+        </Group>
+      </Group>
     </Stack>
   );
 }

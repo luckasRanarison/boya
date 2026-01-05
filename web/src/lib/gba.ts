@@ -30,3 +30,13 @@ export const memoryRegions = {
 };
 
 export type MemoryRegion = keyof typeof memoryRegions;
+
+export const psrFlags = {
+  N: 1 << 31,
+  Z: 1 << 30,
+  C: 1 << 29,
+  V: 1 << 28,
+  I: 1 << 7,
+  F: 1 << 6,
+  T: 1 << 5,
+};
