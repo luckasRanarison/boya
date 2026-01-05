@@ -95,6 +95,14 @@ impl Arm7tdmi {
         }
     }
 
+    pub fn lr(&self) -> u32 {
+        self.registers.get(Register::LR, self.cpsr.op_mode())
+    }
+
+    pub fn sp(&self) -> u32 {
+        self.registers.get(Register::SP, self.cpsr.op_mode())
+    }
+
     #[inline(always)]
     fn pc(&self) -> u32 {
         self.registers.pc()

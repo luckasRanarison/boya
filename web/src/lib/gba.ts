@@ -27,6 +27,10 @@ export const memoryRegions = {
     offset: 0x0700_0000,
     length: 0x400,
   },
+  sram: {
+    offset: 0x0e00_0000,
+    length: 0x1000,
+  },
 };
 
 export type MemoryRegion = keyof typeof memoryRegions;
@@ -40,3 +44,44 @@ export const psrFlags = {
   F: 1 << 6,
   T: 1 << 5,
 };
+
+export function getRegistersBank() {
+  const psr = instance.getSpsrBank();
+
+  return [
+    {
+      registers: instance.getMainRegisters(),
+      psr: instance.cpsr(),
+    },
+    {
+      label: "fiq",
+      registers: instance.getFiqRegisters(),
+      offset: 8,
+      psr: psr[0],
+    },
+    {
+      label: "svc",
+      registers: instance.getSvcRegisters(),
+      offset: 13,
+      psr: psr[1],
+    },
+    {
+      label: "abt",
+      registers: instance.getAbtRegisters(),
+      offset: 13,
+      psr: psr[2],
+    },
+    {
+      label: "irq",
+      registers: instance.getIrqRegisters(),
+      offset: 13,
+      psr: psr[3],
+    },
+    {
+      label: "und",
+      registers: instance.getUndRegisters(),
+      offset: 13,
+      psr: psr[4],
+    },
+  ];
+}

@@ -36,9 +36,9 @@ impl Gba {
         self.core.reset();
     }
 
-    #[wasm_bindgen(js_name = "syncedStep")]
-    pub fn synced_step(&mut self) {
-        self.core.synced_step();
+    #[wasm_bindgen(js_name = "debugSyncedStep")]
+    pub fn debug_synced_step(&mut self) -> u32 {
+        self.core.debug_synced_step().count()
     }
 
     #[wasm_bindgen]
@@ -46,16 +46,31 @@ impl Gba {
         self.core.cycles
     }
 
-    #[wasm_bindgen(js_name = "executionAddress")]
-    pub fn execution_address(&self) -> u32 {
+    #[wasm_bindgen(js_name = "pc")]
+    pub fn pc(&self) -> u32 {
         self.core.cpu.pipeline.current_address()
     }
 
+    #[wasm_bindgen(js_name = "lr")]
+    pub fn lr(&self) -> u32 {
+        self.core.cpu.lr()
+    }
+
+    #[wasm_bindgen(js_name = "sp")]
+    pub fn sp(&self) -> u32 {
+        self.core.cpu.lr()
+    }
+
+    #[wasm_bindgen]
+    pub fn cpsr(&self) -> u32 {
+        self.core.cpu.cpsr.value()
+    }
+
     #[wasm_bindgen(js_name = "currentInstruction")]
-    pub fn current_instruction(&self) -> String {
+    pub fn current_instruction(&self) -> Option<String> {
         let pipeline = &self.core.cpu.pipeline;
-        let instruction = pipeline.current_instruction().unwrap();
-        instruction.get_data().format(10)
+        let instruction = pipeline.current_instruction();
+        instruction.map(|instr| instr.get_data().format(10))
     }
 
     #[wasm_bindgen]
@@ -98,11 +113,6 @@ impl Gba {
         unsafe { Uint8Array::view(self.core.sram()) }
     }
 
-    #[wasm_bindgen]
-    pub fn cpsr(&self) -> u32 {
-        self.core.cpu.cpsr.value()
-    }
-
     #[wasm_bindgen(js_name = "getMainRegisters")]
     pub fn get_main_registers(&self) -> Uint32Array {
         unsafe { Uint32Array::view(&self.core.cpu.registers.main) }
@@ -133,8 +143,13 @@ impl Gba {
         unsafe { Uint32Array::view(&self.core.cpu.registers.und) }
     }
 
-    #[wasm_bindgen(js_name = "getBankedPsr")]
-    pub fn get_banked_psr(&self) -> Vec<u32> {
+    #[wasm_bindgen(js_name = "getSpsrBank")]
+    pub fn get_spsr_bank(&self) -> Vec<u32> {
         self.core.cpu.registers.psr.map(|psr| psr.value()).to_vec()
+    }
+
+    #[wasm_bindgen(js_name = "cpuOperatingMode")]
+    pub fn cpu_operating_mode(&self) -> String {
+        format!("{:?}", self.core.cpu.cpsr.op_mode())
     }
 }

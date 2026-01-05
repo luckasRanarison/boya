@@ -30,6 +30,9 @@ function UploadArea() {
         );
       } else {
         setBios(bytes);
+        notifications.info(
+          "The BIOS file has successfully been uploaded and saved to local storage!",
+        );
       }
     } else {
       // instance.loadRom(bytes);

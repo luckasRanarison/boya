@@ -96,6 +96,9 @@ impl Psr {
         self.0.set_bits(0, 4, mode as u32);
     }
 
+    /// # Panics
+    ///
+    /// if the function is called before reset handler
     pub fn op_mode(self) -> OperatingMode {
         match self.0.get_bits(0, 4) {
             0b10000 => OperatingMode::USR,
@@ -105,7 +108,7 @@ impl Psr {
             0b10111 => OperatingMode::ABT,
             0b11011 => OperatingMode::UND,
             0b11111 => OperatingMode::SYS,
-            value => unreachable!("invalid operating mode: {value:05b}"),
+            value => panic!("invalid operating mode: {value:05b}"),
         }
     }
 

@@ -1,6 +1,6 @@
 import { Box, Stack, Tabs } from "@mantine/core";
 import { IconBug, IconInfoCircle, IconSettings } from "@tabler/icons-react";
-import DebuggerView from "../views/DebuggerView";
+import DebuggerView from "../views/debugger/DebuggerView";
 import AppTitle from "../AppTitle";
 
 function Navbar() {

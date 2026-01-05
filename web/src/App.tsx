@@ -6,20 +6,7 @@ import Header from "./components/layout/Header";
 import { useEffect, useState } from "react";
 import { usePersistantStore } from "./stores/persistantStore";
 import { instance } from "./lib/gba";
-
-export type View =
-  | "main"
-  | "bios"
-  | "ewram"
-  | "iwram"
-  | "palette"
-  | "vram"
-  | "oam"
-  | "rom"
-  | "sram"
-  | "about"
-  | "debugger"
-  | "settings";
+import type { View } from "./components/views";
 
 function App() {
   const theme = createTheme({

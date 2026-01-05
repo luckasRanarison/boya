@@ -1,33 +1,7 @@
 import { Box, Button, Group, Menu, Text, ActionIcon } from "@mantine/core";
-import {
-  IconBrandGithub,
-  IconBug,
-  IconChevronDown,
-  IconCube,
-  IconFileDigit,
-  IconInfoCircle,
-  IconLayoutDashboard,
-  IconPalette,
-  IconPhoto,
-  IconSettings,
-  IconStack2,
-  IconStack3,
-} from "@tabler/icons-react";
-import type { View } from "../../App";
+import { IconBrandGithub, IconChevronDown } from "@tabler/icons-react";
 import AppTitle from "../AppTitle";
-
-const views = [
-  { name: "main", icon: IconLayoutDashboard },
-  { name: "bios", icon: IconFileDigit },
-  { name: "ewram", icon: IconStack3 },
-  { name: "iwram", icon: IconStack2 },
-  { name: "palette", icon: IconPalette },
-  { name: "vram", icon: IconPhoto },
-  { name: "oam", icon: IconCube },
-  { name: "about", icon: IconInfoCircle, mobileOnly: true },
-  { name: "debugger", icon: IconBug, mobileOnly: true },
-  { name: "settings", icon: IconSettings, mobileOnly: true },
-] as const;
+import { views, type View } from "../views";
 
 type Props = {
   view: View;
