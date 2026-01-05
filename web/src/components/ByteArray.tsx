@@ -1,7 +1,7 @@
 import {
+  AppShell,
   Group,
   Pagination,
-  ScrollArea,
   Select,
   SimpleGrid,
   Stack,
@@ -22,12 +22,12 @@ function ByteArray(params: {
   data: Uint8Array;
   baseAddress: number;
   pageSize?: number;
-  column?: number;
+  columns?: number;
 }) {
   const [currentPage, setCurrentPage] = useState(1);
 
   const pageSize = params.pageSize ?? 1024;
-  const column = params.column ?? 16;
+  const columns = params.columns ?? 16;
   const start = (currentPage - 1) * pageSize;
   const total = Math.ceil(params.data.length / (params.pageSize ?? 1024));
   const selectRegion = formatHex(params.baseAddress + start);
@@ -37,8 +37,8 @@ function ByteArray(params: {
     const lines: ByteLine[] = [];
     const addresses: string[] = [];
 
-    for (let i = 0; i < slice.length; i += column) {
-      const row = slice.slice(i, i + column);
+    for (let i = 0; i < slice.length; i += columns) {
+      const row = slice.slice(i, i + columns);
       const bytes = Array.from(row);
 
       lines.push({
@@ -55,7 +55,7 @@ function ByteArray(params: {
     }
 
     return { lines, addresses };
-  }, [start, column, pageSize, total, params.data, params.baseAddress]);
+  }, [start, columns, pageSize, total, params.data, params.baseAddress]);
 
   const handleSelect = (value: string | null) => {
     if (value) {
@@ -67,63 +67,63 @@ function ByteArray(params: {
 
   return (
     <Stack flex={1} w="100%" p="xl" justify="space-around" align="center">
-      <ScrollArea w="100%" h="65dvh">
-        <Stack w="100%" ff={"monospace"} align="center">
-          {lines.map((line) => (
-            <Group key={line.address} w="100%" justify="space-between">
-              <Text c="indigo" fw={600}>
-                {formatHex(line.address)}
-              </Text>
+      <Stack w="100%" ff={"monospace"} align="center">
+        {lines.map((line) => (
+          <Group key={line.address} w="100%" justify="space-between">
+            <Text c="indigo" fw={600}>
+              {formatHex(line.address)}:
+            </Text>
 
-              <SimpleGrid
-                spacing="md"
-                cols={{ base: 8, sm: 16 }}
-                w={{ base: "100%", sm: "auto" }}
-              >
-                {line.columns.map((byte, idx) => (
-                  <Text key={line.address + idx} c="gray">
-                    {byte.toString(16).padStart(2, "0")}
-                  </Text>
-                ))}
-              </SimpleGrid>
+            <SimpleGrid
+              spacing="md"
+              cols={{ base: 8, sm: 16 }}
+              w={{ base: "100%", sm: "auto" }}
+            >
+              {line.columns.map((byte, idx) => (
+                <Text key={line.address + idx} c="gray">
+                  {byte.toString(16).padStart(2, "0")}
+                </Text>
+              ))}
+            </SimpleGrid>
 
-              <Text w={`${(params.column ?? 16) * 1}ch`} c="indigo.4">
-                {line.ascii}
-              </Text>
-            </Group>
-          ))}
-        </Stack>
-      </ScrollArea>
+            <Text w={`${columns}ch`} c="indigo.4">
+              {line.ascii}
+            </Text>
+          </Group>
+        ))}
+      </Stack>
 
-      <Group w="100%" justify="space-between">
-        <Group c="gray" visibleFrom="md">
-          <ThemeIcon variant="transparent">
-            <IconStackFront />
-          </ThemeIcon>
-          <Text ff="monospace">
-            {formatHex(params.baseAddress + start)} -{" "}
-            {formatHex(params.baseAddress + currentPage * pageSize)}
-          </Text>
+      <AppShell.Footer p="md">
+        <Group w="100%" justify="space-between">
+          <Group c="gray" visibleFrom="md">
+            <ThemeIcon variant="transparent">
+              <IconStackFront />
+            </ThemeIcon>
+            <Text ff="monospace">
+              {formatHex(params.baseAddress + start)} -{" "}
+              {formatHex(params.baseAddress + currentPage * pageSize)}
+            </Text>
+          </Group>
+          <Group w={{ base: "100%", md: "auto" }}>
+            <ThemeIcon variant="transparent">
+              <IconSortAscendingNumbers />
+            </ThemeIcon>
+            <Select
+              value={selectRegion}
+              data={addresses}
+              onChange={handleSelect}
+              flex={1}
+              searchable
+            />
+            <Pagination
+              value={currentPage}
+              onChange={setCurrentPage}
+              total={total}
+              withPages={false}
+            />
+          </Group>
         </Group>
-        <Group w={{ base: "100%", md: "auto" }}>
-          <ThemeIcon variant="transparent">
-            <IconSortAscendingNumbers />
-          </ThemeIcon>
-          <Select
-            value={selectRegion}
-            data={addresses}
-            onChange={handleSelect}
-            flex={1}
-            searchable
-          />
-          <Pagination
-            value={currentPage}
-            onChange={setCurrentPage}
-            total={total}
-            withPages={false}
-          />
-        </Group>
-      </Group>
+      </AppShell.Footer>
     </Stack>
   );
 }

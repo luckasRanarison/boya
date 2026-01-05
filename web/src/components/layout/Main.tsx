@@ -1,11 +1,11 @@
 import UploadArea from "../UploadArea";
-import { useView } from "../../stores/viewStore";
 import BiosView from "../views/BiosView";
+import DebuggerView from "../views/DebuggerView";
+import type { View } from "../../App";
 
-function Main() {
-  const { view } = useView();
-
-  if (view === "bios") return <BiosView />;
+function Main(props: { view: View }) {
+  if (props.view === "bios") return <BiosView />;
+  if (props.view === "debugger") return <DebuggerView />;
 
   return <UploadArea />;
 }

@@ -3,15 +3,30 @@ import Navbar from "./components/layout/Navbar";
 import Main from "./components/layout/Main";
 import { Notifications } from "@mantine/notifications";
 import Header from "./components/layout/Header";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePersistantStore } from "./stores/persistantStore";
 import { instance } from "./lib/gba";
+
+export type View =
+  | "main"
+  | "bios"
+  | "ewram"
+  | "iwram"
+  | "palette"
+  | "vram"
+  | "oam"
+  | "rom"
+  | "sram"
+  | "about"
+  | "debugger"
+  | "settings";
 
 function App() {
   const theme = createTheme({
     primaryColor: "indigo",
   });
 
+  const [view, setView] = useState<View>("main");
   const { bios } = usePersistantStore();
 
   useEffect(() => {
@@ -23,6 +38,7 @@ function App() {
   return (
     <MantineProvider theme={theme} defaultColorScheme="light">
       <AppShell
+        layout="alt"
         header={{ height: 70 }}
         navbar={{
           width: 350,
@@ -30,16 +46,16 @@ function App() {
           collapsed: { mobile: true },
         }}
       >
-        <AppShell.Header py="md" px="xl">
-          <Header />
+        <AppShell.Header>
+          <Header view={view} onViewChange={(v) => setView(v)} />
         </AppShell.Header>
 
-        <AppShell.Navbar p="md">
+        <AppShell.Navbar display="flex">
           <Navbar />
         </AppShell.Navbar>
 
         <AppShell.Main display="flex">
-          <Main />
+          <Main view={view} />
         </AppShell.Main>
       </AppShell>
 
