@@ -3,8 +3,11 @@ import RegisterBankView from "./RegisterBankView";
 import DebuggerControls from "./DebuggerControls";
 import DebuggerStatus from "./DebuggerStatus";
 import InstructionPipeline from "./InstructionPipeline";
+import { useDebuggerStore } from "../../../stores/debuggerStore";
 
 function DebuggerView() {
+  const { cycles: _ } = useDebuggerStore(); // FIXME: hack to re-render the entire component
+
   return (
     <Stack
       w="100%"
