@@ -8,6 +8,7 @@ use crate::cpu::isa::prelude::*;
 /// |-----------------------------------------------------------------|
 /// |  Cond  |1 0 0|P|U|S|W|L|   Rn  |              RList             |
 /// +-----------------------------------------------------------------+
+#[derive(Debug)]
 pub struct Instruction {
     cd: Condition,
     op: Opcode,

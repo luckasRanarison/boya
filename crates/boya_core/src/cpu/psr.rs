@@ -98,7 +98,7 @@ impl Psr {
 
     /// # Panics
     ///
-    /// if the function is called before reset handler
+    /// If the function is called before reset handler.
     pub fn op_mode(self) -> OperatingMode {
         match self.0.get_bits(0, 4) {
             0b10000 => OperatingMode::USR,

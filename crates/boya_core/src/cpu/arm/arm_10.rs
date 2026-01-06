@@ -10,6 +10,7 @@ use crate::cpu::isa::prelude::*;
 /// |-----------------------------------------------------------------|
 /// |  Cond  |0 0 0|P|U|I|W|L|  Rn   |  Rd   | Offset|1|S|H|1| Offset |
 /// +-----------------------------------------------------------------+
+#[derive(Debug)]
 pub struct Instruction {
     op: Opcode,
     cd: Condition,
