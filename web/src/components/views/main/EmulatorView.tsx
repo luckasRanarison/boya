@@ -13,11 +13,11 @@ function EmulatorView() {
     const imageData = context.createImageData(240, 160);
 
     setCanvas({ context, imageData });
-  }, [canvasRef.current]);
+  }, [setCanvas]);
 
   useEffect(() => {
     run();
-  }, []);
+  }, [run]);
 
   return (
     <Stack flex={1}>
