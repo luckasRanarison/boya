@@ -16,18 +16,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install fasmarm
+      - name: Setup test dependencies
         run: |
+          # initialize submodules
+          git submodule update --init
+
+          # download bios & fasmarm
+          mkdir deps && cd bin
+
+          curl https://github.com/ez-me/gba-bios/releases/download/1.0/gba_bios.bin -LO
           curl https://arm.flatassembler.net/FASMARM_full.ZIP -o fasmarm.zip
+
           unzip fasmarm.zip -d fasmarm
           sudo chmod +x fasmarm/fasmarm.x64
           sudo cp fasmarm/fasmarm.x64 /usr/local/bin/fasmarm
-
-      - name: Initialize submodules
-        run: git submodule update --init
-
-      - name: Download BIOS
-        run: curl https://github.com/ez-me/gba-bios/releases/download/1.0/gba_bios.bin -LO
 
       - name: Build
         run: cargo build --verbose

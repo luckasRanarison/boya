@@ -124,7 +124,7 @@ impl Gba {
 mod tests {
     use crate::{Gba, bus::BIOS_SIZE};
 
-    const GBA_BIOS: &[u8; BIOS_SIZE] = include_bytes!("../../../gba_bios.bin");
+    const GBA_BIOS: &[u8; BIOS_SIZE] = include_bytes!("../../../bin/gba_bios.bin");
 
     #[test]
     fn test_bios_load() {
