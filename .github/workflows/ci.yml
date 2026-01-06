@@ -22,7 +22,7 @@ jobs:
           git submodule update --init
 
           # download bios & fasmarm
-          mkdir deps && cd bin
+          mkdir bin && cd bin
 
           curl https://github.com/ez-me/gba-bios/releases/download/1.0/gba_bios.bin -LO
           curl https://arm.flatassembler.net/FASMARM_full.ZIP -o fasmarm.zip
