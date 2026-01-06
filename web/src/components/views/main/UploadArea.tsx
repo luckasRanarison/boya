@@ -1,29 +1,19 @@
 import { useRef } from "react";
 import { Button, Text, Stack, Mark, Paper, Group, Flex } from "@mantine/core";
 import { IconDragDrop, IconUpload } from "@tabler/icons-react";
-import { usePersistantStore } from "../stores/persistantStore";
-import notifications from "../lib/notifications";
+import { usePersistantStore } from "@/stores/persistantStore";
+import notifications from "@/lib/notifications";
+import { useDebuggerStore } from "@/stores/debuggerStore";
 
 function UploadArea() {
-  const { bios, setBios } = usePersistantStore();
+  const { bios, theme, setBios } = usePersistantStore();
+  const { loadRom } = useDebuggerStore();
 
   const romInputRef = useRef<HTMLInputElement>(null);
   const biosInputRef = useRef<HTMLInputElement>(null);
 
-  const handleUpload = async (params: {
-    event: React.ChangeEvent<HTMLInputElement>;
-    file: "rom" | "bios";
-  }) => {
-    const { files } = params.event.target;
-
-    if (!files) {
-      throw new Error("No files uploaded");
-    }
-
-    const [file] = files;
-    const bytes = await file.bytes();
-
-    if (params.file === "bios") {
+  const handleUpload = (bytes: Uint8Array, type: "rom" | "bios") => {
+    if (type === "bios") {
       if (bytes.length !== 0x4000) {
         notifications.error(
           `Invalid BIOS file, expected size: ${0x4000} bytes`,
@@ -35,8 +25,34 @@ function UploadArea() {
         );
       }
     } else {
-      // instance.loadRom(bytes);
+      loadRom(bytes);
     }
+  };
+
+  const handleButtonUpload = async (params: {
+    event: React.ChangeEvent<HTMLInputElement>;
+    file: "rom" | "bios";
+  }) => {
+    const { files } = params.event.target;
+
+    if (files) {
+      const [file] = files;
+      const bytes = await file.bytes();
+      handleUpload(bytes, params.file);
+    }
+  };
+
+  const handleDropUpload: React.DragEventHandler<HTMLDivElement> = async (
+    event,
+  ) => {
+    event.preventDefault();
+    event.currentTarget.style.background = "none";
+
+    const file = event.dataTransfer.files[0];
+    const bytes = await file.bytes();
+    const type = bytes.length === 0x4000 ? "bios" : "rom";
+
+    handleUpload(bytes, type);
   };
 
   return (
@@ -48,6 +64,15 @@ function UploadArea() {
         maw={{ base: "100%", sm: "65%" }}
         bd="2px dashed indigo"
         radius="md"
+        onDragLeave={({ currentTarget }) => {
+          currentTarget.style.background = "none";
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+          event.currentTarget.style.background =
+            theme === "light" ? "#00000008" : "#FFFFFF08";
+        }}
+        onDrop={handleDropUpload}
       >
         <Stack h="100%" justify="center" align="center">
           <Text c="indigo">
@@ -86,12 +111,12 @@ function UploadArea() {
           <input
             type="file"
             ref={romInputRef}
-            onChange={(event) => handleUpload({ event, file: "rom" })}
+            onChange={(event) => handleButtonUpload({ event, file: "rom" })}
           />
           <input
             type="file"
             ref={biosInputRef}
-            onChange={(event) => handleUpload({ event, file: "bios" })}
+            onChange={(event) => handleButtonUpload({ event, file: "bios" })}
           />
         </div>
       </Paper>

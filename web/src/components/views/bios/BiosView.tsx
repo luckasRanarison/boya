@@ -1,6 +1,6 @@
-import { memoryRegions } from "../../../lib/gba";
-import { usePersistantStore } from "../../../stores/persistantStore";
-import ByteArray from "../../ByteArray";
+import { memoryRegions } from "@/lib/gba";
+import { usePersistantStore } from "@/stores/persistantStore";
+import ByteArray from "../../common/ByteArray";
 
 function BiosView() {
   const { bios } = usePersistantStore();

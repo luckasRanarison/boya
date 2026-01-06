@@ -1,7 +1,8 @@
 import { Box, Stack, Tabs } from "@mantine/core";
 import { IconBug, IconInfoCircle, IconSettings } from "@tabler/icons-react";
 import DebuggerView from "../views/debugger/DebuggerView";
-import AppTitle from "../AppTitle";
+import AppTitle from "./AppTitle";
+import SettingsView from "../views/settings/SettingsView";
 
 function Navbar() {
   return (
@@ -31,7 +32,7 @@ function Navbar() {
         </Tabs.Panel>
 
         <Tabs.Panel value="settings">
-          <div></div>
+          <SettingsView />
         </Tabs.Panel>
       </Tabs>
     </Stack>

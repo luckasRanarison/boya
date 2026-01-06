@@ -1,4 +1,5 @@
 import {
+  IconArrowsUpDown,
   IconBug,
   IconCube,
   IconDatabase,
@@ -18,6 +19,7 @@ export const views = [
   { name: "bios", icon: IconFileDigit },
   { name: "ewram", icon: IconStack3 },
   { name: "iwram", icon: IconStack2 },
+  { name: "i/o", icon: IconArrowsUpDown },
   { name: "palette", icon: IconPalette },
   { name: "vram", icon: IconPhoto },
   { name: "oam", icon: IconCube },

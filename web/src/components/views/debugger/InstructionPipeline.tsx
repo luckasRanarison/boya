@@ -1,6 +1,6 @@
 import { Group, Text } from "@mantine/core";
 import { IconCaretRight } from "@tabler/icons-react";
-import { instance } from "../../../lib/gba";
+import { instance } from "@/lib/gba";
 
 function InstructionPipeline() {
   const instruction = instance.currentInstruction();

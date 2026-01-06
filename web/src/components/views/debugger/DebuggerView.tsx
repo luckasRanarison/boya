@@ -6,7 +6,9 @@ import InstructionPipeline from "./InstructionPipeline";
 import { useDebuggerStore } from "../../../stores/debuggerStore";
 
 function DebuggerView() {
-  const { cycles: _ } = useDebuggerStore(); // FIXME: hack to re-render the entire component
+  // FIXME: hack to re-render the entire component
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { cycles: _ } = useDebuggerStore();
 
   return (
     <Stack

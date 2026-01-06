@@ -9,12 +9,12 @@ import { instance } from "./lib/gba";
 import type { View } from "./components/views";
 
 function App() {
-  const theme = createTheme({
+  const mantineTheme = createTheme({
     primaryColor: "indigo",
   });
 
   const [view, setView] = useState<View>("main");
-  const { bios } = usePersistantStore();
+  const { bios, theme: colorScheme } = usePersistantStore();
 
   useEffect(() => {
     if (bios) {
@@ -23,7 +23,7 @@ function App() {
   }, [bios]);
 
   return (
-    <MantineProvider theme={theme} defaultColorScheme="light">
+    <MantineProvider theme={mantineTheme} forceColorScheme={colorScheme}>
       <AppShell
         layout="alt"
         header={{ height: 70 }}

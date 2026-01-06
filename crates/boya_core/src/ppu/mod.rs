@@ -1,3 +1,4 @@
+pub mod background;
 pub mod registers;
 
 use crate::{
@@ -11,7 +12,7 @@ pub const VRAM_SIZE: usize = 0x18_000; // 96kb
 
 pub const LCD_WIDTH: usize = 240;
 pub const LCD_HEIGHT: usize = 160;
-pub const BUFFER_LEN: usize = LCD_WIDTH * LCD_HEIGHT;
+pub const BUFFER_LEN: usize = LCD_WIDTH * LCD_HEIGHT * 4;
 
 #[derive(Debug)]
 pub struct Ppu {
@@ -38,7 +39,7 @@ impl Default for Ppu {
             scanline: 0,
             divider: 0,
             pending_irq: None,
-            buffer: Box::new([0; BUFFER_LEN]),
+            buffer: Box::new([0xFF; BUFFER_LEN]),
         }
     }
 }

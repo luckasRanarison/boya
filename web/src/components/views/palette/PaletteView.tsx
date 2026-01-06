@@ -1,5 +1,5 @@
-import { instance, memoryRegions } from "../../../lib/gba";
-import ByteArray from "../../ByteArray";
+import { instance, memoryRegions } from "@/lib/gba";
+import ByteArray from "../../common/ByteArray";
 
 function PaletteView() {
   return (

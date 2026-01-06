@@ -1,5 +1,5 @@
 import { Text, Group, SimpleGrid, Stack, Divider } from "@mantine/core";
-import { getRegistersBank, psrFlags } from "../../../lib/gba";
+import { getRegistersBank, psrFlags } from "@/lib/gba";
 import { formatHex } from "../../../utils";
 
 function CpsrFlag(props: { label: string; value: number; flag: number }) {

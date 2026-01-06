@@ -1,7 +1,7 @@
 import { Group, Stack, Text } from "@mantine/core";
-import { instance } from "../../../lib/gba";
-import { useDebuggerStore } from "../../../stores/debuggerStore";
-import { formatHex } from "../../../utils";
+import { instance } from "@/lib/gba";
+import { useDebuggerStore } from "@/stores/debuggerStore";
+import { formatHex } from "@/utils";
 
 function DebuggerStatus() {
   const { cycles, lastCycle } = useDebuggerStore();

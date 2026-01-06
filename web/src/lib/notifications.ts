@@ -18,6 +18,7 @@ const notifications = {
   info: (message: string) => {
     show({
       title: "Info",
+      color: "green",
       icon: React.createElement(IconCheck, { size: 18 }),
       message,
     });

@@ -101,6 +101,11 @@ impl GbaBus {
         Some(DmaResult { data, cycles })
     }
 
+    #[inline(always)]
+    fn read_rom(&self, address: usize) -> u8 {
+        self.rom.get(address).copied().unwrap_or_default()
+    }
+
     fn region_data(&self, region: MemoryRegion) -> MemoryRegionData {
         let (width, waitstate) = match region {
             MemoryRegion::BIOS => (DataType::Word, WaitState::default()),
@@ -231,7 +236,7 @@ impl Bus for GbaBus {
             0x0500_0000..=0x0500_03FF => self.ppu.palette[address as usize - 0x0500_0000],
             0x0600_0000..=0x0617_FFFF => self.ppu.vram[address as usize - 0x0600_0000],
             0x0700_0000..=0x0700_03FF => self.ppu.oam[address as usize - 0x0700_0000],
-            0x0800_0000..=0x0DFF_FFFF => self.rom[address as usize - 0x0800_0000],
+            0x0800_0000..=0x0DFF_FFFF => self.read_rom(address as usize - 0x0800_0000),
             0x0E00_0000..=0x0E00_FFFF => self.sram[address as usize - 0x0E00_0000],
             _ => 0x0, // TODO: open bus
         }

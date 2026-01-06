@@ -38,7 +38,12 @@ impl Gba {
 
     #[wasm_bindgen(js_name = "debugSyncedStep")]
     pub fn debug_synced_step(&mut self) -> u32 {
-        self.core.debug_synced_step().count()
+        self.core.debug_step().cycles().count()
+    }
+
+    #[wasm_bindgen(js_name = "stepFrameWithBreakpoints")]
+    pub fn step_frame_with_breakpoints(&mut self, breakpoints: &[u32]) -> u32 {
+        self.core.step_frame_with_breakpoints(breakpoints).count()
     }
 
     #[wasm_bindgen]
@@ -71,6 +76,21 @@ impl Gba {
         let pipeline = &self.core.cpu.pipeline;
         let instruction = pipeline.current_instruction();
         instruction.map(|instr| instr.get_data().format(10))
+    }
+
+    #[wasm_bindgen(js_name = "stepFrame")]
+    pub fn step_frame(&mut self) {
+        self.core.step_frame();
+    }
+
+    #[wasm_bindgen(js_name = "updateFrameBuffer")]
+    pub fn update_frame_buffer(&mut self) {
+        self.core.update_frame_buffer();
+    }
+
+    #[wasm_bindgen(js_name = "writeFrameBuffer")]
+    pub fn write_frame_buffer(&self, image_data: &mut [u8]) {
+        image_data.copy_from_slice(self.core.frame_buffer());
     }
 
     #[wasm_bindgen]

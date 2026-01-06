@@ -6,6 +6,7 @@ import IwramView from "../views/iwram/IwramView";
 import MainView from "../views/main/MainView";
 import OamView from "../views/oam/OamView";
 import PaletteView from "../views/palette/PaletteView";
+import SettingsView from "../views/settings/SettingsView";
 import SramView from "../views/sram/SramView";
 import VramView from "../views/vram/VramView";
 
@@ -18,6 +19,7 @@ function Main(props: { view: View }) {
   if (props.view === "oam") return <OamView />;
   if (props.view === "sram") return <SramView />;
   if (props.view === "debugger") return <DebuggerView />;
+  if (props.view === "settings") return <SettingsView />;
 
   return <MainView />;
 }

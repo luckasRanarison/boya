@@ -14,21 +14,21 @@ pub struct GbaStep {
     pub value: GbaStepKind,
 }
 
-#[derive(Debug)]
-pub enum GbaStepKind {
-    Instruction(InstructionResult),
-    Dma(DmaResult),
-    Interrupt(InterruptResult),
-}
-
-impl GbaStepKind {
+impl GbaStep {
     pub fn cycles(&self) -> Cycle {
-        match self {
+        match &self.value {
             GbaStepKind::Instruction(data) => data.cycles,
             GbaStepKind::Dma(data) => data.cycles,
             GbaStepKind::Interrupt(data) => data.cycles,
         }
     }
+}
+
+#[derive(Debug)]
+pub enum GbaStepKind {
+    Instruction(InstructionResult),
+    Dma(DmaResult),
+    Interrupt(InterruptResult),
 }
 
 #[derive(Debug)]

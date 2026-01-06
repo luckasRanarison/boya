@@ -133,8 +133,8 @@ impl GbaTestBuilder {
         while func(&gba.cpu) {
             self.debug_instruction(&gba.cpu);
 
-            let step = gba.debug_synced_step();
-            let count = step.count();
+            let step = gba.debug_step();
+            let count = step.cycles().count();
 
             cycles.push(count);
         }

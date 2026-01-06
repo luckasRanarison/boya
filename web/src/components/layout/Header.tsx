@@ -1,6 +1,6 @@
 import { Box, Button, Group, Menu, Text, ActionIcon } from "@mantine/core";
 import { IconBrandGithub, IconChevronDown } from "@tabler/icons-react";
-import AppTitle from "../AppTitle";
+import AppTitle from "./AppTitle";
 import { views, type View } from "../views";
 
 type Props = {
@@ -16,12 +16,7 @@ function Header(props: Props) {
       </Box>
       <Menu width="150" position="bottom-start" offset={30}>
         <Menu.Target>
-          <Button
-            c="dark"
-            variant="subtle"
-            rightSection={<IconChevronDown />}
-            fz="md"
-          >
+          <Button variant="subtle" rightSection={<IconChevronDown />} fz="md">
             {props.view}
           </Button>
         </Menu.Target>
