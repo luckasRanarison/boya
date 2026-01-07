@@ -1,11 +1,17 @@
 import { Box, Button, Group, Menu, Text, ActionIcon } from "@mantine/core";
-import { IconBrandGithub, IconChevronDown } from "@tabler/icons-react";
+import {
+  IconBrandGithub,
+  IconChevronDown,
+  IconMenu2,
+} from "@tabler/icons-react";
 import AppTitle from "./AppTitle";
 import { views, type View } from "../views";
 
 type Props = {
   view: View;
+  navbarOpened: boolean;
   onViewChange: (value: View) => void;
+  onNavbarToggle: () => void;
 };
 
 function Header(props: Props) {
@@ -14,26 +20,40 @@ function Header(props: Props) {
       <Box px="md" hiddenFrom="sm">
         <AppTitle />
       </Box>
-      <Menu width="150" position="bottom-start" offset={30}>
-        <Menu.Target>
-          <Button variant="subtle" rightSection={<IconChevronDown />} fz="md">
-            {props.view}
-          </Button>
-        </Menu.Target>
 
-        <Menu.Dropdown>
-          {views.map((v) => (
-            <Menu.Item
-              key={v.name}
-              leftSection={<v.icon size={18} />}
-              onClick={() => props.onViewChange(v.name)}
-              hiddenFrom={"mobileOnly" in v ? "sm" : undefined}
-            >
-              <Text size="md">{v.name}</Text>
-            </Menu.Item>
-          ))}
-        </Menu.Dropdown>
-      </Menu>
+      <Box hiddenFrom="sm">
+        <ActionIcon variant="transparent" onClick={props.onNavbarToggle}>
+          <IconMenu2 />
+        </ActionIcon>
+      </Box>
+
+      <Box visibleFrom="sm">
+        <Menu width="175" position="bottom-start" offset={30}>
+          <Menu.Target>
+            <Button variant="subtle" rightSection={<IconChevronDown />} fz="md">
+              {props.view}
+            </Button>
+          </Menu.Target>
+
+          <Menu.Dropdown>
+            {views.map(
+              ({ name, icon: Icon, ...rest }) =>
+                !("mobileOnly" in rest) && (
+                  <Menu.Item
+                    key={name}
+                    leftSection={<Icon size={18} />}
+                    onClick={() => props.onViewChange(name)}
+                  >
+                    <Text ml="xs" size="md">
+                      {name}
+                    </Text>
+                  </Menu.Item>
+                ),
+            )}
+          </Menu.Dropdown>
+        </Menu>
+      </Box>
+
       <ActionIcon
         visibleFrom="md"
         component="a"

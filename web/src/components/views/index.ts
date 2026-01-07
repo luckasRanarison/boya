@@ -24,7 +24,7 @@ export const views = [
   { name: "vram", icon: IconPhoto },
   { name: "oam", icon: IconCube },
   { name: "rom", icon: IconSourceCode },
-  { name: "sram", icon: IconDatabase },
+  { name: "sram", icon: IconDatabase, mobileOnly: false },
   { name: "about", icon: IconInfoCircle, mobileOnly: true },
   { name: "debugger", icon: IconBug, mobileOnly: true },
   { name: "settings", icon: IconSettings, mobileOnly: true },

@@ -5,12 +5,12 @@ import { useState } from "react";
 import SettingsView from "../views/settings/SettingsView";
 import DebuggerView from "../views/debugger/DebuggerView";
 
-function Navbar() {
+function DesktopNavbar() {
   // use controlled state to load the debugger lazily and improve perf
   const [activeTab, setActiveTab] = useState("about");
 
   return (
-    <Stack h="100%" w="100%">
+    <Stack h="100%" w="100%" visibleFrom="sm">
       <Box py="md" px="xl">
         <AppTitle />
       </Box>
@@ -50,4 +50,4 @@ function Navbar() {
   );
 }
 
-export default Navbar;
+export default DesktopNavbar;

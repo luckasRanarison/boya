@@ -7,12 +7,9 @@ function EmulatorView() {
   const { running, fps, run, setCanvas } = useDebuggerStore();
 
   useEffect(() => {
-    if (!canvasRef.current) return;
-
-    const context = canvasRef.current.getContext("2d")!;
-    const imageData = context.createImageData(240, 160);
-
-    setCanvas({ context, imageData });
+    if (canvasRef.current) {
+      setCanvas(canvasRef.current);
+    }
   }, [setCanvas]);
 
   useEffect(() => {

@@ -8,7 +8,7 @@ import {
   Text,
   ThemeIcon,
 } from "@mantine/core";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatHex } from "../../utils";
 import { IconSortAscendingNumbers, IconStackFront } from "@tabler/icons-react";
 import { useDebuggerStore } from "@/stores/debuggerStore";
@@ -34,34 +34,34 @@ function ByteArray(params: {
   const total = Math.ceil(params.data.length / (params.pageSize ?? 1024));
   const selectRegion = formatHex(params.baseAddress + start);
 
-  const { lines, addresses } = useMemo(
-    () => {
-      const slice = params.data.slice(start, start + pageSize);
-      const lines: ByteLine[] = [];
-      const addresses: string[] = [];
+  useEffect(() => {
+    // re-render component on cycle update
+  }, [cycles]);
 
-      for (let i = 0; i < slice.length; i += columns) {
-        const row = slice.slice(i, i + columns);
-        const bytes = Array.from(row);
+  const { lines, addresses } = useMemo(() => {
+    const slice = params.data.slice(start, start + pageSize);
+    const lines: ByteLine[] = [];
+    const addresses: string[] = [];
 
-        lines.push({
-          address: params.baseAddress + start + i,
-          columns: bytes,
-          ascii: bytes
-            .map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : "."))
-            .join(""),
-        });
-      }
+    for (let i = 0; i < slice.length; i += columns) {
+      const row = slice.slice(i, i + columns);
+      const bytes = Array.from(row);
 
-      for (let i = 0; i < total; i += 1) {
-        addresses.push(formatHex(params.baseAddress + i * pageSize));
-      }
+      lines.push({
+        address: params.baseAddress + start + i,
+        columns: bytes,
+        ascii: bytes
+          .map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : "."))
+          .join(""),
+      });
+    }
 
-      return { lines, addresses };
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cycles, start, columns, pageSize, total, params.data, params.baseAddress],
-  );
+    for (let i = 0; i < total; i += 1) {
+      addresses.push(formatHex(params.baseAddress + i * pageSize));
+    }
+
+    return { lines, addresses };
+  }, [start, columns, pageSize, total, params.data, params.baseAddress]);
 
   const handleSelect = (value: string | null) => {
     if (value) {

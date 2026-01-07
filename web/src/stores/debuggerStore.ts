@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { instance } from "../lib/gba";
+import { instance } from "@/lib/gba";
+import { FrameCounter } from "@/utils";
 
 type DebuggerStore = {
   cycles: bigint;
@@ -9,15 +10,12 @@ type DebuggerStore = {
   running: boolean;
   canvas?: { context: CanvasRenderingContext2D; imageData: ImageData };
   fps: number;
-
-  setCanvas: (params: {
-    context: CanvasRenderingContext2D;
-    imageData: ImageData;
-  }) => void;
+  paused: boolean;
 
   run: () => void;
   pause: () => void;
   stepInto: () => void;
+  setCanvas: (canvas: HTMLCanvasElement) => void;
   setBreakpoints: (breakPoints: number[]) => void;
   loadRom: (rom: Uint8Array) => void;
 };
@@ -30,9 +28,16 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
   breakpoints: [],
   fps: 0,
 
-  setCanvas: (canvas) => set((prev) => ({ ...prev, canvas })),
-  setBreakpoints: (breakpoints) => set((prev) => ({ ...prev, breakpoints })),
-  pause: () => set((prev) => ({ ...prev, running: false, paused: true })),
+  setBreakpoints: (breakpoints) => {
+    set((prev) => ({ ...prev, breakpoints }));
+  },
+
+  setCanvas: (canvas: HTMLCanvasElement) => {
+    const context = canvas.getContext("2d")!;
+    const imageData = context.createImageData(240, 160);
+
+    set((prev) => ({ ...prev, canvas: { context, imageData } }));
+  },
 
   loadRom: (rom) => {
     instance.loadRom(rom);
@@ -40,34 +45,24 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
     set((prev) => ({ ...prev, cycles: instance.cycles(), romLoaded: true }));
   },
 
-  run: () => {
-    let frameCount = 0;
-    let lastTime = 0;
-    let lastFpsUpdate = 0;
+  pause: () => {
+    set((prev) => ({ ...prev, running: false, paused: true }));
+  },
 
+  run: () => {
     if (get().running) return;
+
+    const frameCounter = new FrameCounter();
 
     const renderingLoop = (timestamp: number) => {
       const { running, canvas, breakpoints } = get();
 
       if (!running) return;
 
-      if (!lastTime) {
-        lastTime = timestamp;
-      }
-
-      const delta = timestamp - lastFpsUpdate;
-
-      if (delta >= 1000) {
-        const fps = Math.ceil((frameCount * 1000) / delta);
-
-        lastFpsUpdate = timestamp;
-        frameCount = 0;
-        set((prev) => ({ ...prev, fps }));
-      }
-
-      lastTime = timestamp;
-      frameCount++;
+      frameCounter.onFrame(timestamp, {
+        interval: 1000,
+        callback: (fps) => set((prev) => ({ ...prev, fps })),
+      });
 
       if (breakpoints.length) {
         const cycles = instance.stepFrameWithBreakpoints(
@@ -82,6 +77,12 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
       } else {
         instance.stepFrame();
         instance.updateFrameBuffer();
+
+        set((prev) => ({
+          ...prev,
+          cycles: instance.cycles(),
+          lastCycle: undefined,
+        }));
       }
 
       if (canvas) {
@@ -90,16 +91,11 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
         canvas.context.putImageData(canvas.imageData, 0, 0);
       }
 
-      set((prev) => ({
-        ...prev,
-        cycles: instance.cycles(),
-        lastCycle: undefined,
-      }));
       requestAnimationFrame(renderingLoop);
     };
 
     set((prev) => ({ ...prev, running: true }));
-    renderingLoop(lastTime);
+    renderingLoop(0);
   },
 
   stepInto: () => {

@@ -5,7 +5,7 @@ function AppTitle() {
   return (
     <Group c="indigo">
       <IconDeviceGamepadFilled size={30} />
-      <Text size="xl" fw={700} mt="6">
+      <Text size="xl" fw={700}>
         Bōya
       </Text>
     </Group>

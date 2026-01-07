@@ -4,11 +4,14 @@ import DebuggerControls from "./DebuggerControls";
 import DebuggerStatus from "./DebuggerStatus";
 import InstructionPipeline from "./InstructionPipeline";
 import { useDebuggerStore } from "../../../stores/debuggerStore";
+import { useEffect } from "react";
 
 function DebuggerView() {
-  // FIXME: hack to re-render the entire component
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { cycles: _ } = useDebuggerStore();
+  const { cycles } = useDebuggerStore();
+
+  useEffect(() => {
+    // re-render the component on cycle update
+  }, [cycles]);
 
   return (
     <Stack
