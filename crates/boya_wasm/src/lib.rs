@@ -83,11 +83,6 @@ impl Gba {
         self.core.step_frame();
     }
 
-    #[wasm_bindgen(js_name = "updateFrameBuffer")]
-    pub fn update_frame_buffer(&mut self) {
-        self.core.update_frame_buffer();
-    }
-
     #[wasm_bindgen(js_name = "writeFrameBuffer")]
     pub fn write_frame_buffer(&self, image_data: &mut [u8]) {
         image_data.copy_from_slice(self.core.frame_buffer());

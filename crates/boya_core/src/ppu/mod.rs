@@ -1,9 +1,13 @@
+#[allow(unused)]
 pub mod background;
 pub mod registers;
 
 use crate::{
     bus::types::Interrupt,
-    ppu::registers::{PpuRegister, dispstat::Dispstat},
+    ppu::{
+        background::BgPipeline,
+        registers::{PpuRegister, dispcnt::Background, dispstat::Dispstat},
+    },
 };
 
 pub const PALETTE_RAM_SIZE: usize = 0x400; // 1kb
@@ -25,6 +29,7 @@ pub struct Ppu {
     pub divider: u32,
 
     pending_irq: Option<Interrupt>,
+    pipeline: RenderPipeline,
     buffer: Box<[u8; BUFFER_LEN]>,
 }
 
@@ -39,6 +44,7 @@ impl Default for Ppu {
             scanline: 0,
             divider: 0,
             pending_irq: None,
+            pipeline: RenderPipeline::default(),
             buffer: Box::new([0xFF; BUFFER_LEN]),
         }
     }
@@ -67,23 +73,32 @@ impl Ppu {
     }
 
     pub fn step(&mut self) {
+        self.handle_bg_pipeline();
         self.handle_dot();
         self.registers.vcount = self.scanline.into();
         self.handle_scanline();
         self.dot += 1;
     }
 
-    fn handle_dot(&mut self) {
-        let dispstat = &mut self.registers.dispstat;
+    fn handle_bg_pipeline(&mut self) {
+        if self.scanline == 0 && self.dot == 0 {
+            self.sort_bg();
+        }
 
+        if self.scanline < 160 && self.dot < 240 {
+            self.load_bg_screen();
+        }
+    }
+
+    fn handle_dot(&mut self) {
         match self.dot {
             0 => {
-                dispstat.clear(Dispstat::HBLANK);
+                self.registers.dispstat.clear(Dispstat::HBLANK);
             }
             239 => {
-                dispstat.set(Dispstat::HBLANK);
+                self.registers.dispstat.set(Dispstat::HBLANK);
 
-                if dispstat.has(Dispstat::HBLANK_IRQ) {
+                if self.registers.dispstat.has(Dispstat::HBLANK_IRQ) {
                     self.pending_irq = Some(Interrupt::HBlank);
                 }
             }
@@ -93,34 +108,54 @@ impl Ppu {
             }
             _ => {}
         }
+
+        self.write_bg_dot();
     }
 
     fn handle_scanline(&mut self) {
-        let dispstat = &mut self.registers.dispstat;
-
         match self.scanline {
             159 if self.dot == 0 => {
-                dispstat.set(Dispstat::VBLANK);
+                self.registers.dispstat.set(Dispstat::VBLANK);
 
-                if dispstat.has(Dispstat::VBLANK_IRQ) {
+                if self.registers.dispstat.has(Dispstat::VBLANK_IRQ) {
                     self.pending_irq = Some(Interrupt::VBlank);
                 }
             }
             228 => {
                 self.scanline = 0;
-                dispstat.clear(Dispstat::VBLANK);
+                self.registers.dispstat.clear(Dispstat::VBLANK);
             }
             _ => {}
         }
 
-        if self.scanline == dispstat.vcount {
-            dispstat.set(Dispstat::VCOUNT);
+        if self.scanline == self.registers.dispstat.vcount {
+            self.registers.dispstat.set(Dispstat::VCOUNT);
 
-            if dispstat.has(Dispstat::VCOUNT_IRQ) {
+            if self.registers.dispstat.has(Dispstat::VCOUNT_IRQ) {
                 self.pending_irq = Some(Interrupt::VCount);
             }
         } else {
-            dispstat.clear(Dispstat::VCOUNT);
+            self.registers.dispstat.clear(Dispstat::VCOUNT);
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct RenderPipeline {
+    bg: [Option<BgPipeline>; 4],
+    bg_priority: [Background; 4],
+}
+
+impl Default for RenderPipeline {
+    fn default() -> Self {
+        Self {
+            bg: [const { None }; 4],
+            bg_priority: [
+                Background::Bg0,
+                Background::Bg1,
+                Background::Bg2,
+                Background::Bg3,
+            ],
         }
     }
 }

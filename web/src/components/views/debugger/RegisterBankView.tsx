@@ -40,7 +40,7 @@ function RegisterView(props: {
     <Stack>
       <SimpleGrid cols={props.label ? 1 : 2}>
         {Array.from(props.values).map((r, i) => (
-          <Group>
+          <Group key={i}>
             <Text size="sm" w={`${props.label ? props.label.length + 5 : 4}ch`}>
               R{i + (props.offset ?? 0)}
               {props.label && `_${props.label}`}:

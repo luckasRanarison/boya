@@ -229,7 +229,7 @@ mod tests {
                 cpu.bus.io.enable_irq(Interrupt::Dma0);
             })
             .assert_fn(move |cpu| {
-                let dma0 = &cpu.bus.io.dma0;
+                let dma0 = &cpu.bus.io.dma[0];
 
                 assert_eq!(0x0800_0004, dma0.sad, "DMA0 source address");
                 assert_eq!(0x0300_0000, dma0.dad, "DMA0 destination address");

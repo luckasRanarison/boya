@@ -173,8 +173,8 @@ mod tests {
                 cpu.bus.io.enable_irq(Interrupt::Timer0);
             })
             .assert_fn(|cpu| {
-                let timer0 = &cpu.bus.io.timer0;
-                let timer1 = &cpu.bus.io.timer1;
+                let timer0 = &cpu.bus.io.timer[0];
+                let timer1 = &cpu.bus.io.timer[1];
 
                 assert_eq!(0xFF00 + 19, timer0.counter, "timer 0 counter"); // + wrapped 20 cycles
                 assert_eq!(0x1, timer1.counter, "timer 1 counter"); // + count-up cycle

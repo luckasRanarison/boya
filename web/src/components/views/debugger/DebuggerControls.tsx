@@ -83,8 +83,8 @@ function DebuggerControls() {
   return (
     <Stack mb="md">
       <Group w="100%" justify="center">
-        {actions.map(({ icon: Icon, label, disabled, onClick }, i) => (
-          <Tooltip key={i} label={label}>
+        {actions.map(({ icon: Icon, label, disabled, onClick }) => (
+          <Tooltip key={label} label={label}>
             <ActionIcon
               variant="subtle"
               onClick={onClick}

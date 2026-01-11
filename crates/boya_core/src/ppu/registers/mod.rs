@@ -1,9 +1,10 @@
 use crate::{
     bus::Bus,
-    ppu::registers::{bgcnt::Bgcnt, dispcnt::Dispcnt, dispstat::Dispstat},
+    ppu::registers::{bgcnt::Bgcnt, bgofs::BgOfs, dispcnt::Dispcnt, dispstat::Dispstat},
 };
 
 pub mod bgcnt;
+pub mod bgofs;
 pub mod dispcnt;
 pub mod dispstat;
 
@@ -17,30 +18,10 @@ pub struct PpuRegister {
     pub dispstat: Dispstat,
     /// 0x006: Vertical Counter (R)
     pub vcount: u16,
-    /// 0x008: Background 0 Control (R/W)
-    pub bg0cnt: Bgcnt,
-    /// 0x00A: Background 1 Control (R/W)
-    pub bg1cnt: Bgcnt,
-    /// 0x00C: Background 2 Control (R/W)
-    pub bg2cnt: Bgcnt,
-    /// 0x00E: Background 3 Control (R/W)
-    pub bg3cnt: Bgcnt,
+    /// 0x008: Background 0-3 Control (R/W)
+    pub bgcnt: [Bgcnt; 4],
     /// 0x010: Background 0 X-Offset (W)
-    pub bg0hofs: u16,
-    /// 0x012: Background 0 Y-Offset (W)
-    pub bg0vofs: u16,
-    /// 0x014: Background 1 X-Offset (W)
-    pub bg1hofs: u16,
-    /// 0x016: Background 1 Y-Offset (W)
-    pub bg1vofs: u16,
-    /// 0x018: Background 2 X-Offset (W)
-    pub bg2hofs: u16,
-    /// 0x01A: Background 2 Y-Offset (W)
-    pub bg2vofs: u16,
-    /// 0x01C: Background 3 X-Offset (W)
-    pub bg3hofs: u16,
-    /// 0x01E: Background 3 Y-Offset (W)
-    pub bg3vofs: u16,
+    pub bgofs: [BgOfs; 4],
 }
 
 impl Bus for PpuRegister {
@@ -51,10 +32,10 @@ impl Bus for PpuRegister {
             0x004 => self.dispstat.vcount,
             0x005 => self.dispstat.flags,
             0x006..=0x007 => self.vcount.read_byte(address),
-            0x008..=0x009 => self.bg0cnt.value.read_byte(address),
-            0x00A..=0x00B => self.bg1cnt.value.read_byte(address),
-            0x00C..=0x00D => self.bg2cnt.value.read_byte(address),
-            0x00E..=0x00F => self.bg3cnt.value.read_byte(address),
+            0x008..=0x009 => self.bgcnt[0].value.read_byte(address),
+            0x00A..=0x00B => self.bgcnt[1].value.read_byte(address),
+            0x00C..=0x00D => self.bgcnt[2].value.read_byte(address),
+            0x00E..=0x00F => self.bgcnt[3].value.read_byte(address),
             _ => 0, // TODO: open bus
         }
     }
@@ -65,18 +46,14 @@ impl Bus for PpuRegister {
             0x002..=0x003 => self.greenswap.write_byte(address, value),
             0x004 => self.dispstat.vcount = value,
             0x005 => self.dispstat.write_flags(value),
-            0x008..=0x009 => self.bg0cnt.value.write_byte(address, value),
-            0x00A..=0x00B => self.bg1cnt.value.write_byte(address, value),
-            0x00C..=0x00D => self.bg2cnt.value.write_byte(address, value),
-            0x00E..=0x00F => self.bg3cnt.value.write_byte(address, value),
-            0x010..=0x011 => self.bg0hofs.write_byte(address, value),
-            0x012..=0x013 => self.bg0vofs.write_byte(address, value),
-            0x014..=0x015 => self.bg1hofs.write_byte(address, value),
-            0x016..=0x017 => self.bg1vofs.write_byte(address, value),
-            0x018..=0x019 => self.bg2hofs.write_byte(address, value),
-            0x01A..=0x01B => self.bg2vofs.write_byte(address, value),
-            0x01C..=0x01D => self.bg3hofs.write_byte(address, value),
-            0x01E..=0x01F => self.bg3vofs.write_byte(address, value),
+            0x008..=0x009 => self.bgcnt[0].value.write_byte(address, value),
+            0x00A..=0x00B => self.bgcnt[1].value.write_byte(address, value),
+            0x00C..=0x00D => self.bgcnt[2].value.write_byte(address, value),
+            0x00E..=0x00F => self.bgcnt[3].value.write_byte(address, value),
+            0x010..=0x013 => self.bgofs[0].write_byte(address, value),
+            0x014..=0x017 => self.bgofs[1].write_byte(address, value),
+            0x018..=0x01B => self.bgofs[2].write_byte(address, value),
+            0x01C..=0x01F => self.bgofs[3].write_byte(address, value),
             _ => {}
         }
     }

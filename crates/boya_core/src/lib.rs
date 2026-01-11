@@ -83,10 +83,6 @@ impl Gba {
         }
     }
 
-    pub fn update_frame_buffer(&mut self) {
-        self.cpu.bus.ppu.update_buffer();
-    }
-
     #[inline(always)]
     pub fn is_rendering(&self) -> bool {
         self.cpu.bus.ppu.is_rendering()

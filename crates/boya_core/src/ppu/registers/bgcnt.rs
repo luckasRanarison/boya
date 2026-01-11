@@ -1,6 +1,6 @@
 use crate::utils::bitflags::Bitflag;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct Bgcnt {
     pub value: u16,
 }
@@ -10,8 +10,8 @@ impl Bgcnt {
         self.value.get_bits_u8(0, 1)
     }
 
-    pub fn char_base_block(&self) -> u8 {
-        self.value.get_bits_u8(2, 3)
+    pub fn char_block_offset(&self) -> u32 {
+        self.value.get_bits(2, 3) as u32 * 0x4000
     }
 
     pub fn mosaic_enabled(&self) -> bool {
@@ -25,11 +25,11 @@ impl Bgcnt {
         }
     }
 
-    pub fn screen_base_block(&self) -> u8 {
-        self.value.get_bits_u8(8, 12)
+    pub fn screen_block_offset(&self) -> u32 {
+        self.value.get_bits(8, 12) as u32 * 0x400
     }
 
-    pub fn screen_size(&self) -> ScreenSize {
+    pub fn screen_mode(&self) -> ScreenSize {
         match self.value.get_bits(14, 15) {
             0 => ScreenSize::Mode0,
             1 => ScreenSize::Mode1,
@@ -45,10 +45,30 @@ pub enum ColorMode {
     Palette256,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum ScreenSize {
     Mode0,
     Mode1,
     Mode2,
     Mode3,
+}
+
+impl ScreenSize {
+    pub fn text_size(self) -> (u16, u16) {
+        match self {
+            ScreenSize::Mode0 => (256, 256),
+            ScreenSize::Mode1 => (512, 256),
+            ScreenSize::Mode2 => (256, 512),
+            ScreenSize::Mode3 => (512, 512),
+        }
+    }
+
+    pub fn alt_size(self) -> (u16, u16) {
+        match self {
+            ScreenSize::Mode0 => (128, 128),
+            ScreenSize::Mode1 => (256, 256),
+            ScreenSize::Mode2 => (512, 512),
+            ScreenSize::Mode3 => (1024, 1024),
+        }
+    }
 }

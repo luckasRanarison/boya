@@ -76,7 +76,6 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
         }
       } else {
         instance.stepFrame();
-        instance.updateFrameBuffer();
 
         set((prev) => ({
           ...prev,

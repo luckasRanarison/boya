@@ -84,12 +84,19 @@ pub enum ObjMemoryMap {
     Map2D,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Background {
     Bg0,
     Bg1,
     Bg2,
     Bg3,
+}
+
+impl Background {
+    #[inline(always)]
+    pub fn as_index(self) -> usize {
+        self as usize
+    }
 }
 
 #[derive(Debug)]

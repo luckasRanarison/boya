@@ -51,19 +51,15 @@ impl GbaBus {
     pub fn tick(&mut self, cycles: u32) {
         self.ppu.tick(cycles);
 
-        let timer0_ovf = self.io.timer0.tick(cycles, false);
-        let timer1_ovf = self.io.timer1.tick(cycles, timer0_ovf);
-        let timer2_ovf = self.io.timer2.tick(cycles, timer1_ovf);
-        let _timer3_ovf = self.io.timer3.tick(cycles, timer2_ovf);
+        self.io
+            .timer
+            .iter_mut()
+            .fold(false, |ovf, timer| timer.tick(cycles, ovf));
 
         let interrupt = self
             .ppu
             .poll_interrupt()
-            .or_else(|| self.io.timer0.poll_interrupt())
-            .or_else(|| self.io.timer1.poll_interrupt())
-            .or_else(|| self.io.timer2.poll_interrupt())
-            .or_else(|| self.io.timer3.poll_interrupt())
-            .or_else(|| self.io.keypad.poll_interrupt());
+            .or_else(|| self.io.poll_interrupt());
 
         if let Some(interrupt) = interrupt {
             self.send_interrupt(interrupt);
@@ -182,16 +178,18 @@ impl GbaBus {
     }
 
     fn get_active_dma(&mut self) -> Option<&mut Dma> {
-        match true {
-            _ if self.should_start_dma(&self.io.dma0) => Some(&mut self.io.dma0),
-            _ if self.should_start_dma(&self.io.dma1) => Some(&mut self.io.dma1),
-            _ if self.should_start_dma(&self.io.dma2) => Some(&mut self.io.dma2),
-            _ if self.should_start_dma(&self.io.dma3) => Some(&mut self.io.dma3),
-            _ => None,
+        for (channel, _) in self.io.dma.iter().enumerate() {
+            if self.should_start_dma(channel) {
+                return Some(&mut self.io.dma[channel]);
+            }
         }
+
+        None
     }
 
-    fn should_start_dma(&self, dma: &Dma) -> bool {
+    fn should_start_dma(&self, channel: usize) -> bool {
+        let dma = &self.io.dma[channel];
+
         if !dma.dma_enable() {
             return false;
         }
@@ -322,6 +320,16 @@ impl Bus for u32 {
 
         bytes[index as usize] = value;
         *self = u32::from_le_bytes(bytes);
+    }
+}
+
+impl<const N: usize> Bus for [u8; N] {
+    fn read_byte(&self, address: u32) -> u8 {
+        self[address as usize]
+    }
+
+    fn write_byte(&mut self, address: u32, value: u8) {
+        self[address as usize] = value;
     }
 }
 
