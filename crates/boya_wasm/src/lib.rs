@@ -1,6 +1,10 @@
+pub mod types;
+
 use boya_core::{Gba as GbaCore, ppu::color::Color24};
 use wasm_bindgen::prelude::*;
 use web_sys::js_sys::{Uint8Array, Uint32Array};
+
+use crate::types::ColorMode;
 
 #[wasm_bindgen]
 #[derive(Default)]
@@ -175,5 +179,17 @@ impl Gba {
             .into_iter()
             .map(|c| Color24::from(c).into())
             .collect()
+    }
+
+    #[wasm_bindgen(js_name = "writeTileBuffer")]
+    pub fn write_tile_buffer(
+        &self,
+        image_data: &mut [u8],
+        tile: &[u8],
+        color_mode: ColorMode,
+        palette_id: usize,
+    ) {
+        let buffer = self.core.render_tile(tile, color_mode.into(), palette_id);
+        image_data.copy_from_slice(buffer.as_slice());
     }
 }

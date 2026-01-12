@@ -27,6 +27,9 @@ export const memoryRegions = {
     offset: 0x0700_0000,
     length: 0x400,
   },
+  rom: {
+    offset: 0x0800_0000,
+  },
   sram: {
     offset: 0x0e00_0000,
     length: 0x1000,

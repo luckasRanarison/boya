@@ -1,12 +1,11 @@
 import { instance, memoryRegions } from "@/lib/gba";
-import ByteArray from "../../common/ByteArray";
+import MemoryView from "../../common/MemoryView";
 
 function EwramView() {
   return (
-    <ByteArray
+    <MemoryView
       data={instance.ewram()}
       baseAddress={memoryRegions.ewram.offset}
-      pageSize={1024}
     />
   );
 }

@@ -1,13 +1,9 @@
 import { instance, memoryRegions } from "@/lib/gba";
-import ByteArray from "../../common/ByteArray";
+import MemoryView from "../../common/MemoryView";
 
 function OamView() {
   return (
-    <ByteArray
-      data={instance.oam()}
-      baseAddress={memoryRegions.oam.offset}
-      pageSize={1024}
-    />
+    <MemoryView data={instance.oam()} baseAddress={memoryRegions.oam.offset} />
   );
 }
 

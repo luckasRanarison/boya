@@ -5,7 +5,7 @@ use crate::{
         common::Exception,
         debug::types::{GbaStep, GbaStepKind},
     },
-    ppu::color::Color15,
+    ppu::{color::Color15, debug::TILE_BUFFER_SIZE, registers::bgcnt::ColorMode},
 };
 
 #[allow(clippy::all)]
@@ -131,10 +131,6 @@ impl Gba {
         self.cpu.bus.sram.as_slice()
     }
 
-    pub fn color_palette(&self) -> Vec<Color15> {
-        self.cpu.bus.ppu.color_palette()
-    }
-
     fn sync(&mut self, cycles: Cycle) {
         let count = cycles.count();
 
@@ -163,6 +159,19 @@ impl Gba {
         }
 
         cycles
+    }
+
+    pub fn color_palette(&self) -> Vec<Color15> {
+        self.cpu.bus.ppu.color_palette()
+    }
+
+    pub fn render_tile(
+        &self,
+        tile: &[u8],
+        color_mode: ColorMode,
+        palette_id: usize,
+    ) -> Box<[u8; TILE_BUFFER_SIZE]> {
+        self.cpu.bus.ppu.render_tile(tile, color_mode, palette_id)
     }
 }
 

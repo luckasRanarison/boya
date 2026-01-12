@@ -1,15 +1,14 @@
 import { memoryRegions } from "@/lib/gba";
 import { usePersistantStore } from "@/stores/persistantStore";
-import ByteArray from "../../common/ByteArray";
+import MemoryView from "../../common/MemoryView";
 
 function BiosView() {
   const { bios } = usePersistantStore();
 
   return (
-    <ByteArray
+    <MemoryView
       data={bios ?? new Uint8Array(memoryRegions.bios.length)}
       baseAddress={memoryRegions.bios.offset}
-      pageSize={1024}
     />
   );
 }
