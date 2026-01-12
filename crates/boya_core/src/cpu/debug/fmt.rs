@@ -3,9 +3,9 @@ use std::fmt;
 use crate::{
     cpu::{
         common::*,
+        debug::types::*,
         psr::{Psr, PsrField},
     },
-    debug::types::*,
     utils::bitflags::BitIter,
 };
 

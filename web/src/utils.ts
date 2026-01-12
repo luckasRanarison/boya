@@ -1,5 +1,8 @@
-export function formatHex(value: number, width = 8) {
-  return `0x${value.toString(16).padStart(width, "0")}`;
+export function formatHex(
+  value: number,
+  params?: { width?: number; prefix?: string },
+) {
+  return `${params?.prefix ?? "0x"}${value.toString(16).padStart(params?.width ?? 8, "0")}`;
 }
 
 export class FrameCounter {
@@ -14,28 +17,28 @@ export class FrameCounter {
   }
 
   onFrame(
-    timestamp: number,
+    ellapsed: number,
     {
       interval,
       callback,
     }: { interval: number; callback: (fps: number) => void },
   ) {
     if (this.lastTime === 0) {
-      this.lastTime = timestamp;
+      this.lastTime = ellapsed;
     }
 
-    const delta = timestamp - this.lastFpsUpdate;
+    const delta = ellapsed - this.lastFpsUpdate;
 
     if (delta >= interval) {
       const fps = Math.ceil((this.frameCount * interval) / delta);
 
-      this.lastFpsUpdate = timestamp;
+      this.lastFpsUpdate = ellapsed;
       this.frameCount = 0;
 
       callback(fps);
     }
 
-    this.lastTime = timestamp;
+    this.lastTime = ellapsed;
     this.frameCount += 1;
   }
 }

@@ -1,5 +1,6 @@
 pub mod arm;
 pub mod common;
+pub mod debug;
 pub mod isa;
 pub mod ops;
 pub mod pipeline;
@@ -18,10 +19,10 @@ use crate::{
     },
     cpu::{
         common::{Exception, NamedRegister, Shift},
+        debug::types::InstructionResult,
         isa::Instruction,
         register::Register,
     },
-    debug::types::InstructionResult,
     utils::bitflags::BitIter,
 };
 

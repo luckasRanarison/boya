@@ -4,10 +4,10 @@ pub mod prelude {
     pub use crate::bus::types::Cycle;
     pub use crate::cpu::Arm7tdmi;
     pub use crate::cpu::common::*;
+    pub use crate::cpu::debug::types::*;
     pub use crate::cpu::isa::Executable;
     pub use crate::cpu::psr::*;
     pub use crate::cpu::register::Register;
-    pub use crate::debug::types::*;
     pub use crate::utils::bitflags::Bitflag;
 
     #[cfg(test)]

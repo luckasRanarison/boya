@@ -7,6 +7,7 @@ function PaletteView() {
       data={instance.palette()}
       baseAddress={memoryRegions.palette.offset}
       pageSize={1024}
+      rightSection="color"
     />
   );
 }

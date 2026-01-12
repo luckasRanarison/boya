@@ -21,7 +21,10 @@ function EmulatorView() {
       <Flex h="100%" p="xl" align="center" justify="center">
         <canvas
           ref={canvasRef}
-          style={{ imageRendering: "pixelated", border: "1px solid red" }}
+          style={{
+            imageRendering: "pixelated",
+            border: "1px solid red",
+          }}
           width={240}
           height={160}
         />

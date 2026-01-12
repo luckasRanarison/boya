@@ -1,4 +1,4 @@
-use boya_core::Gba as GbaCore;
+use boya_core::{Gba as GbaCore, ppu::color::Color24};
 use wasm_bindgen::prelude::*;
 use web_sys::js_sys::{Uint8Array, Uint32Array};
 
@@ -166,5 +166,14 @@ impl Gba {
     #[wasm_bindgen(js_name = "cpuOperatingMode")]
     pub fn cpu_operating_mode(&self) -> String {
         format!("{:?}", self.core.cpu.cpsr.op_mode())
+    }
+
+    #[wasm_bindgen(js_name = "colorPalette")]
+    pub fn color_palette(&self) -> Vec<u32> {
+        self.core
+            .color_palette()
+            .into_iter()
+            .map(|c| Color24::from(c).into())
+            .collect()
     }
 }

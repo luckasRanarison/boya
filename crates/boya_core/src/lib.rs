@@ -1,10 +1,12 @@
 use crate::{
     bus::{BIOS_SIZE, types::Cycle},
-    cpu::{Arm7tdmi, common::Exception},
-    debug::types::{GbaStep, GbaStepKind},
+    cpu::{
+        Arm7tdmi,
+        common::Exception,
+        debug::types::{GbaStep, GbaStepKind},
+    },
+    ppu::color::Color15,
 };
-
-pub mod debug;
 
 #[allow(clippy::all)]
 pub mod apu; // TODO: APU implmentation
@@ -127,6 +129,10 @@ impl Gba {
 
     pub fn sram(&self) -> &[u8] {
         self.cpu.bus.sram.as_slice()
+    }
+
+    pub fn color_palette(&self) -> Vec<Color15> {
+        self.cpu.bus.ppu.color_palette()
     }
 
     fn sync(&mut self, cycles: Cycle) {

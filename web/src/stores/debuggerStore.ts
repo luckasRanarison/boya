@@ -53,13 +53,16 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
     if (get().running) return;
 
     const frameCounter = new FrameCounter();
+    const startTime = Date.now();
 
-    const renderingLoop = (timestamp: number) => {
+    setInterval(() => {
       const { running, canvas, breakpoints } = get();
 
       if (!running) return;
 
-      frameCounter.onFrame(timestamp, {
+      const ellapsed = Date.now() - startTime;
+
+      frameCounter.onFrame(ellapsed, {
         interval: 1000,
         callback: (fps) => set((prev) => ({ ...prev, fps })),
       });
@@ -89,12 +92,9 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
         instance.writeFrameBuffer(pixels as unknown as Uint8Array);
         canvas.context.putImageData(canvas.imageData, 0, 0);
       }
-
-      requestAnimationFrame(renderingLoop);
-    };
+    }, 1000 / 60);
 
     set((prev) => ({ ...prev, running: true }));
-    renderingLoop(0);
   },
 
   stepInto: () => {

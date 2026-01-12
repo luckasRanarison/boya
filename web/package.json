@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "wasm:build": "wasm-pack build ../crates/boya_wasm --out-dir ../../web/pkg && npm install ./pkg"
+    "preview": "vite preview --host",
+    "build": "npm run wasm:build && tsc -b && vite build",
+    "wasm:build": "wasm-pack build ../crates/boya_wasm --out-dir ../../web/pkg && npm install ./pkg",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@mantine/core": "^8.3.10",

@@ -2,6 +2,7 @@ use crate::{
     bus::Bus,
     ppu::{
         LCD_WIDTH, Ppu,
+        color::{Color15, Color24},
         registers::{
             bgcnt::{Bgcnt, ColorMode},
             dispcnt::{Background, BgMode},
@@ -69,28 +70,20 @@ impl Ppu {
     pub fn write_bg_dot(&mut self) {
         for bg_prio in self.pipeline.bg_priority {
             if let Some(pixel) = self.get_bg_pixel(bg_prio) {
-                let r5 = pixel.color.get_bits_u8(0, 4);
-                let g5 = pixel.color.get_bits_u8(5, 9);
-                let b5 = pixel.color.get_bits_u8(10, 14);
-
-                let r8 = (r5 << 3) | (r5 >> 2);
-                let g8 = (g5 << 3) | (g5 >> 2);
-                let b8 = (b5 << 3) | (b5 >> 2);
+                let pixel = Color24::from(pixel);
 
                 let idx = self.scanline as usize * LCD_WIDTH * 4 + self.dot as usize * 4;
 
-                if idx < self.buffer.len() {
-                    self.buffer[idx] = r8;
-                    self.buffer[idx + 1] = g8;
-                    self.buffer[idx + 2] = b8;
-                }
+                self.buffer[idx] = pixel.r;
+                self.buffer[idx + 1] = pixel.g;
+                self.buffer[idx + 2] = pixel.b;
             }
         }
 
         self.flush_bg_pipeline();
     }
 
-    pub fn get_bg_pixel(&self, bg: Background) -> Option<Pixel> {
+    pub fn get_bg_pixel(&self, bg: Background) -> Option<Color15> {
         let bg_idx = bg.as_index();
         let pipeline = self.pipeline.bg[bg_idx].as_ref()?;
         let bgcnt = self.registers.bgcnt[bg_idx];
@@ -125,7 +118,7 @@ impl Ppu {
             }
         };
 
-        Some(Pixel { color })
+        Some(color.into())
     }
 
     pub fn load_text_bg_screen(&mut self, bg: Background) {
@@ -137,21 +130,25 @@ impl Ppu {
 
         let bgcnt = self.registers.bgcnt[bg_idx];
         let bgofs = self.registers.bgofs[bg_idx];
-        let rel_offset_x = if self.dot == 0 { bgofs.x % 8 } else { 0 };
-        let rel_offset_y = if self.scanline == 0 { bgofs.y % 8 } else { 0 };
+
+        let rel_offset_x = if self.dot == 0 { bgofs.x } else { 0 };
+        let rel_offset_y = if self.scanline == 0 { bgofs.y } else { 0 };
+
+        let x = self.dot + bgofs.x;
+        let y = self.scanline as u16 + bgofs.y;
+        let tile_x = (x / 8) as u32;
+        let tile_y = (y / 8) as u32;
         let (width, _height) = bgcnt.screen_mode().text_size();
 
-        let screen_block_offset = bgcnt.screen_block_offset()
-            + ((self.dot + bgofs.x) / 8) as u32 * 2
-            + ((self.scanline as u16 + bgofs.y) / 8) as u32 * width as u32 * 2
-            + ((self.scanline as u32 * (width - self.dot) as u32) / 8) * 2;
+        let screen_block_offset =
+            bgcnt.screen_block_offset() + tile_x * 2 + tile_y * (width / 8) as u32 * 2;
 
         let raw_bg_screen = self.vram.read_hword(screen_block_offset);
 
         let buffer = BgCharacterBuffer {
             bg_screen: TextBgScreen::from(raw_bg_screen),
-            offset_x: ((self.dot % 8) + rel_offset_x) as u8,
-            offset_y: ((self.scanline as u16 % 8) + rel_offset_y) as u8,
+            offset_x: ((self.dot + rel_offset_x) % 8) as u8,
+            offset_y: ((self.scanline as u16 + rel_offset_y) % 8) as u8,
         };
 
         self.pipeline.bg[bg_idx] = Some(BgPipeline::Screen(buffer));
@@ -172,7 +169,7 @@ impl Ppu {
                     BgPipeline::Screen(screen) => {
                         screen.offset_x += 1;
 
-                        if screen.offset_x > 8 {
+                        if screen.offset_x > 7 {
                             bg_pipeline.take();
                         }
                     }

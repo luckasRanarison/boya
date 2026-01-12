@@ -1,5 +1,7 @@
 #[allow(unused)]
 pub mod background;
+pub mod color;
+pub mod debug;
 pub mod registers;
 
 use crate::{
@@ -13,6 +15,7 @@ use crate::{
 pub const PALETTE_RAM_SIZE: usize = 0x400; // 1kb
 pub const OAM_SIZE: usize = 0x400; // 1kb
 pub const VRAM_SIZE: usize = 0x18_000; // 96kb
+pub const PALETTE_SIZE: usize = 16 * 2;
 
 pub const LCD_WIDTH: usize = 240;
 pub const LCD_HEIGHT: usize = 160;
@@ -73,24 +76,18 @@ impl Ppu {
     }
 
     pub fn step(&mut self) {
-        self.handle_bg_pipeline();
         self.handle_dot();
         self.registers.vcount = self.scanline.into();
         self.handle_scanline();
         self.dot += 1;
     }
 
-    fn handle_bg_pipeline(&mut self) {
-        if self.scanline == 0 && self.dot == 0 {
-            self.sort_bg();
-        }
-
+    fn handle_dot(&mut self) {
         if self.scanline < 160 && self.dot < 240 {
             self.load_bg_screen();
+            self.write_bg_dot();
         }
-    }
 
-    fn handle_dot(&mut self) {
         match self.dot {
             0 => {
                 self.registers.dispstat.clear(Dispstat::HBLANK);
@@ -108,12 +105,13 @@ impl Ppu {
             }
             _ => {}
         }
-
-        self.write_bg_dot();
     }
 
     fn handle_scanline(&mut self) {
         match self.scanline {
+            0 if self.dot == 0 => {
+                self.sort_bg();
+            }
             159 if self.dot == 0 => {
                 self.registers.dispstat.set(Dispstat::VBLANK);
 

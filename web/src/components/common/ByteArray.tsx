@@ -1,5 +1,6 @@
 import {
   AppShell,
+  Card,
   Group,
   Pagination,
   Select,
@@ -7,16 +8,20 @@ import {
   Stack,
   Text,
   ThemeIcon,
+  Tooltip,
 } from "@mantine/core";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { formatHex } from "../../utils";
 import { IconSortAscendingNumbers, IconStackFront } from "@tabler/icons-react";
 import { useDebuggerStore } from "@/stores/debuggerStore";
+import { instance } from "@/lib/gba";
 
 type ByteLine = {
   address: number;
   columns: number[];
-  ascii: string;
+  right:
+    | { type: "color"; value: number[] }
+    | { type: "ascii"; value: number[] };
 };
 
 function ByteArray(params: {
@@ -24,6 +29,7 @@ function ByteArray(params: {
   baseAddress: number;
   pageSize?: number;
   columns?: number;
+  rightSection?: "ascii" | "color";
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const { cycles } = useDebuggerStore();
@@ -33,12 +39,9 @@ function ByteArray(params: {
   const start = (currentPage - 1) * pageSize;
   const total = Math.ceil(params.data.length / (params.pageSize ?? 1024));
   const selectRegion = formatHex(params.baseAddress + start);
+  const colors = params.rightSection === "color" && instance.colorPalette();
 
-  useEffect(() => {
-    // re-render component on cycle update
-  }, [cycles]);
-
-  const { lines, addresses } = useMemo(() => {
+  const generateLines = () => {
     const slice = params.data.slice(start, start + pageSize);
     const lines: ByteLine[] = [];
     const addresses: string[] = [];
@@ -50,9 +53,12 @@ function ByteArray(params: {
       lines.push({
         address: params.baseAddress + start + i,
         columns: bytes,
-        ascii: bytes
-          .map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : "."))
-          .join(""),
+        right: colors
+          ? {
+              type: "color",
+              value: Array.from(colors.slice(i / 2, i / 2 + 8)),
+            }
+          : { type: "ascii", value: bytes },
       });
     }
 
@@ -61,7 +67,7 @@ function ByteArray(params: {
     }
 
     return { lines, addresses };
-  }, [start, columns, pageSize, total, params.data, params.baseAddress]);
+  };
 
   const handleSelect = (value: string | null) => {
     if (value) {
@@ -71,6 +77,12 @@ function ByteArray(params: {
     }
   };
 
+  const { lines, addresses } = generateLines();
+
+  useEffect(() => {
+    // re-render component on cycle update
+  }, [cycles]);
+
   return (
     <Stack flex={1} w="100%" p="xl" justify="space-around" align="center">
       <Stack w="100%" ff={"monospace"} align="center">
@@ -79,22 +91,45 @@ function ByteArray(params: {
             <Text c="indigo" fw={600}>
               {formatHex(line.address)}:
             </Text>
-
             <SimpleGrid
               spacing="md"
               cols={{ base: 8, sm: 16 }}
               w={{ base: "100%", sm: "auto" }}
             >
               {line.columns.map((byte, idx) => (
-                <Text key={line.address + idx} c="gray">
+                <Text key={line.address + idx} c="gray" ta="center">
                   {byte.toString(16).padStart(2, "0")}
                 </Text>
               ))}
             </SimpleGrid>
 
-            <Text w={`${columns}ch`} c="indigo.4">
-              {line.ascii}
-            </Text>
+            {line.right.type === "color" && (
+              <Group
+                w={{ base: "100%", xl: "unset" }}
+                wrap="nowrap"
+                justify="space-around"
+                gap="xs"
+              >
+                {line.right.value.map((color, i) => {
+                  const hex = formatHex(color, { prefix: "#", width: 6 });
+                  return (
+                    <Tooltip key={i} label={hex}>
+                      <Card p="xs" withBorder radius="sm" bg={hex} />
+                    </Tooltip>
+                  );
+                })}
+              </Group>
+            )}
+
+            {line.right.type === "ascii" && (
+              <Text w={`${columns}ch`} c="indigo.4">
+                {line.right.value
+                  .map((b) =>
+                    b >= 32 && b <= 126 ? String.fromCharCode(b) : ".",
+                  )
+                  .join("")}
+              </Text>
+            )}
           </Group>
         ))}
       </Stack>
