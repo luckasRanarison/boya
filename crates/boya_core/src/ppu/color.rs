@@ -1,6 +1,6 @@
 use crate::utils::bitflags::Bitflag;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct Color15 {
     pub r: u8,
     pub g: u8,
@@ -23,7 +23,7 @@ impl From<Color15> for u16 {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct Color24 {
     pub r: u8,
     pub g: u8,

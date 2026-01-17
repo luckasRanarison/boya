@@ -1,17 +1,14 @@
 use crate::bus::Bus;
 
 #[derive(Debug, Default, Clone, Copy)]
-pub struct BgOfs {
+pub struct Bgofs {
     pub x: u16,
     pub y: u16,
 }
 
-impl Bus for BgOfs {
-    fn read_byte(&self, address: u32) -> u8 {
-        match address % 4 {
-            0..1 => self.x.read_byte(address),
-            _ => self.y.read_byte(address),
-        }
+impl Bus for Bgofs {
+    fn read_byte(&self, _address: u32) -> u8 {
+        0 // TODO: open bus
     }
 
     fn write_byte(&mut self, address: u32, value: u8) {

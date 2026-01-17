@@ -1,4 +1,3 @@
-#[allow(unused)]
 pub mod background;
 pub mod color;
 pub mod debug;
@@ -7,9 +6,10 @@ pub mod registers;
 use crate::{
     bus::types::Interrupt,
     ppu::{
-        background::BgPipeline,
+        color::Color15,
         registers::{PpuRegister, dispcnt::Background, dispstat::Dispstat},
     },
+    utils::bitflags::Bitflag,
 };
 
 pub const PALETTE_RAM_SIZE: usize = 0x400; // 1kb
@@ -19,7 +19,8 @@ pub const PALETTE_SIZE: usize = 16 * 2;
 
 pub const LCD_WIDTH: usize = 240;
 pub const LCD_HEIGHT: usize = 160;
-pub const BUFFER_LEN: usize = LCD_WIDTH * LCD_HEIGHT * 4;
+pub const FRAME_BUFFER_LEN: usize = LCD_WIDTH * LCD_HEIGHT * 4;
+pub const TRANS_BUFFER_LEN: usize = 160 * 128 * 2;
 
 #[derive(Debug)]
 pub struct Ppu {
@@ -33,7 +34,7 @@ pub struct Ppu {
 
     pending_irq: Option<Interrupt>,
     pipeline: RenderPipeline,
-    buffer: Box<[u8; BUFFER_LEN]>,
+    frame_buffer: Box<[u8; FRAME_BUFFER_LEN]>,
 }
 
 impl Default for Ppu {
@@ -48,7 +49,7 @@ impl Default for Ppu {
             divider: 0,
             pending_irq: None,
             pipeline: RenderPipeline::default(),
-            buffer: Box::new([0xFF; BUFFER_LEN]),
+            frame_buffer: Box::new([0xFF; FRAME_BUFFER_LEN]),
         }
     }
 }
@@ -67,8 +68,8 @@ impl Ppu {
         self.pending_irq.take()
     }
 
-    pub fn get_frame_buffer(&self) -> &[u8; BUFFER_LEN] {
-        &self.buffer
+    pub fn get_frame_buffer(&self) -> &[u8; FRAME_BUFFER_LEN] {
+        &self.frame_buffer
     }
 
     pub fn is_rendering(&self) -> bool {
@@ -84,8 +85,7 @@ impl Ppu {
 
     fn handle_dot(&mut self) {
         if self.scanline < 160 && self.dot < 240 {
-            self.load_bg_screen();
-            self.write_bg_dot();
+            self.write_pixel();
         }
 
         match self.dot {
@@ -111,6 +111,7 @@ impl Ppu {
         match self.scanline {
             0 if self.dot == 0 => {
                 self.sort_bg();
+                self.apply_bg_transform();
             }
             159 if self.dot == 0 => {
                 self.registers.dispstat.set(Dispstat::VBLANK);
@@ -138,22 +139,41 @@ impl Ppu {
     }
 }
 
+#[derive(Debug, Default, Clone, Copy)]
+pub struct Pixel(u16);
+
+impl Pixel {
+    pub fn is_transparent(self) -> bool {
+        self.0.has(15)
+    }
+
+    pub fn get_color(self) -> Color15 {
+        Color15::from(self.0 & 0x7FFF)
+    }
+}
+
 #[derive(Debug)]
 pub struct RenderPipeline {
-    bg: [Option<BgPipeline>; 4],
-    bg_priority: [Background; 4],
+    bg_prio: [Background; 4],
+    bg2_buffer: Box<[Pixel; TRANS_BUFFER_LEN]>,
+    bg3_buffer: Box<[Pixel; TRANS_BUFFER_LEN]>,
+    bg2_buffer_enabled: bool,
+    bg3_buffer_enabled: bool,
 }
 
 impl Default for RenderPipeline {
     fn default() -> Self {
         Self {
-            bg: [const { None }; 4],
-            bg_priority: [
+            bg_prio: [
                 Background::Bg0,
                 Background::Bg1,
                 Background::Bg2,
                 Background::Bg3,
             ],
+            bg2_buffer: Box::new([Pixel(0); TRANS_BUFFER_LEN]),
+            bg3_buffer: Box::new([Pixel(0); TRANS_BUFFER_LEN]),
+            bg2_buffer_enabled: false,
+            bg3_buffer_enabled: false,
         }
     }
 }

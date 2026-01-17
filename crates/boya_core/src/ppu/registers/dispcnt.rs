@@ -68,7 +68,7 @@ pub enum FrameBuffer {
     Buffer1,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum BgMode {
     Mode0,
     Mode1,
@@ -76,6 +76,16 @@ pub enum BgMode {
     Mode3,
     Mode4,
     Mode5,
+}
+
+impl BgMode {
+    pub fn is_tile(self) -> bool {
+        matches!(self, BgMode::Mode0 | BgMode::Mode1 | BgMode::Mode2)
+    }
+
+    pub fn is_bitmap(self) -> bool {
+        matches!(self, BgMode::Mode3 | BgMode::Mode4 | BgMode::Mode5)
+    }
 }
 
 #[derive(Debug)]
@@ -92,9 +102,24 @@ pub enum Background {
     Bg3,
 }
 
+impl From<TransBackground> for Background {
+    fn from(value: TransBackground) -> Self {
+        match value {
+            TransBackground::Bg2 => Background::Bg2,
+            TransBackground::Bg3 => Background::Bg3,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum TransBackground {
+    Bg2,
+    Bg3,
+}
+
 impl Background {
     #[inline(always)]
-    pub fn as_index(self) -> usize {
+    pub fn to_index(self) -> usize {
         self as usize
     }
 }

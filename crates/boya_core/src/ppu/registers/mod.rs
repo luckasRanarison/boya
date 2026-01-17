@@ -1,10 +1,13 @@
 use crate::{
     bus::Bus,
-    ppu::registers::{bgcnt::Bgcnt, bgofs::BgOfs, dispcnt::Dispcnt, dispstat::Dispstat},
+    ppu::registers::{
+        bgcnt::Bgcnt, bgofs::Bgofs, bgtrans::Bgtrans, dispcnt::Dispcnt, dispstat::Dispstat,
+    },
 };
 
 pub mod bgcnt;
 pub mod bgofs;
+pub mod bgtrans;
 pub mod dispcnt;
 pub mod dispstat;
 
@@ -21,7 +24,11 @@ pub struct PpuRegister {
     /// 0x008: Background 0-3 Control (R/W)
     pub bgcnt: [Bgcnt; 4],
     /// 0x010: Background 0 X-Offset (W)
-    pub bgofs: [BgOfs; 4],
+    pub bgofs: [Bgofs; 4],
+    /// 0x020: Background 2 Transform parameters (W)
+    pub bg2trans: Bgtrans,
+    /// 0x030: Background 2 Transform parameters (W)
+    pub bg3trans: Bgtrans,
 }
 
 impl Bus for PpuRegister {
@@ -54,6 +61,8 @@ impl Bus for PpuRegister {
             0x014..=0x017 => self.bgofs[1].write_byte(address, value),
             0x018..=0x01B => self.bgofs[2].write_byte(address, value),
             0x01C..=0x01F => self.bgofs[3].write_byte(address, value),
+            0x020..=0x02F => self.bg2trans.write_byte(address, value),
+            0x030..=0x03F => self.bg3trans.write_byte(address, value),
             _ => {}
         }
     }

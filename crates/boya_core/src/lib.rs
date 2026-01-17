@@ -12,6 +12,7 @@ use crate::{
 pub mod apu; // TODO: APU implmentation
 pub mod bus;
 pub mod cpu;
+#[allow(unused)]
 pub mod ppu;
 pub mod utils;
 
