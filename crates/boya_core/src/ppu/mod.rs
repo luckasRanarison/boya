@@ -20,7 +20,6 @@ pub const PALETTE_SIZE: usize = 16 * 2;
 pub const LCD_WIDTH: usize = 240;
 pub const LCD_HEIGHT: usize = 160;
 pub const FRAME_BUFFER_LEN: usize = LCD_WIDTH * LCD_HEIGHT * 4;
-pub const TRANS_BUFFER_LEN: usize = 160 * 128 * 2;
 
 #[derive(Debug)]
 pub struct Ppu {
@@ -111,7 +110,6 @@ impl Ppu {
         match self.scanline {
             0 if self.dot == 0 => {
                 self.sort_bg();
-                self.apply_bg_transform();
             }
             159 if self.dot == 0 => {
                 self.registers.dispstat.set(Dispstat::VBLANK);
@@ -155,10 +153,6 @@ impl Pixel {
 #[derive(Debug)]
 pub struct RenderPipeline {
     bg_prio: [Background; 4],
-    bg2_buffer: Box<[Pixel; TRANS_BUFFER_LEN]>,
-    bg3_buffer: Box<[Pixel; TRANS_BUFFER_LEN]>,
-    bg2_buffer_enabled: bool,
-    bg3_buffer_enabled: bool,
 }
 
 impl Default for RenderPipeline {
@@ -170,10 +164,6 @@ impl Default for RenderPipeline {
                 Background::Bg2,
                 Background::Bg3,
             ],
-            bg2_buffer: Box::new([Pixel(0); TRANS_BUFFER_LEN]),
-            bg3_buffer: Box::new([Pixel(0); TRANS_BUFFER_LEN]),
-            bg2_buffer_enabled: false,
-            bg3_buffer_enabled: false,
         }
     }
 }

@@ -11,7 +11,7 @@ use crate::{
     utils::bitflags::Bitflag,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum BitmapColor {
     Palette,
     RGB,
@@ -20,18 +20,23 @@ pub enum BitmapColor {
 impl Ppu {
     pub fn write_pixel(&mut self) {
         for bg in self.pipeline.bg_prio {
-            if let Some(pixel15) = self.get_bg_pixel(bg) {
+            let x = self.dot;
+            let y = self.scanline as u16;
+
+            if let Some(pixel15) = self.get_bg_pixel(x, y, bg) {
                 let Color24 { r, g, b } = pixel15.into();
                 let idx = (self.scanline as usize * LCD_WIDTH + self.dot as usize) * 4;
 
                 self.frame_buffer[idx] = r;
                 self.frame_buffer[idx + 1] = g;
                 self.frame_buffer[idx + 2] = b;
+
+                break;
             }
         }
     }
 
-    pub fn get_bg_pixel(&mut self, bg: Background) -> Option<Color15> {
+    pub fn get_bg_pixel(&mut self, x: u16, y: u16, bg: Background) -> Option<Color15> {
         if !self.registers.dispcnt.is_bg_enabled(bg) {
             return None;
         }
@@ -40,14 +45,16 @@ impl Ppu {
             BgMode::Mode0 => Color15::default().into(), //
             BgMode::Mode1 => Color15::default().into(), //
             BgMode::Mode2 => Color15::default().into(), // TODO: implementation
-            BgMode::Mode3 => self.get_bg_pixel_bitmap(bg, BitmapColor::RGB, 1),
-            BgMode::Mode4 => self.get_bg_pixel_bitmap(bg, BitmapColor::Palette, 2),
-            BgMode::Mode5 => self.get_bg_pixel_bitmap(bg, BitmapColor::RGB, 2),
+            BgMode::Mode3 => self.get_bg_bitmap_pixel(x, y, bg, BitmapColor::RGB, 1),
+            BgMode::Mode4 => self.get_bg_bitmap_pixel(x, y, bg, BitmapColor::Palette, 2),
+            BgMode::Mode5 => self.get_bg_bitmap_pixel(x, y, bg, BitmapColor::RGB, 2),
         }
     }
 
-    pub fn get_bg_pixel_bitmap(
+    pub fn get_bg_bitmap_pixel(
         &self,
+        x: u16,
+        y: u16,
         bg: Background,
         color_mode: BitmapColor,
         buffer_count: u8,
@@ -56,21 +63,29 @@ impl Ppu {
             return None;
         }
 
+        let (width, height, pixel_size) = match (color_mode, buffer_count) {
+            (BitmapColor::RGB, 2) => (160, 128, 2),
+            (BitmapColor::RGB, _) => (160, 128, 2),
+            (BitmapColor::Palette, _) => (240, 160, 1),
+        };
+
+        let t = &self.registers.bg2trans;
         let frame_buffer = self.registers.dispcnt.frame_buffer();
+        let buffer_size = width * height * pixel_size;
+        let buffer_start = frame_buffer as usize * pixel_size;
+        let buffer_slice = &self.vram[buffer_start..buffer_start + buffer_size];
+        let tx = t.pa as u32 * x as u32 + t.pb as u32 * x as u32 + t.x;
+        let ty = t.pc as u32 * y as u32 + t.pd as u32 * y as u32 + t.y;
+        let sx = (tx >> 8) as usize;
+        let sy = (tx >> 8) as usize;
+        let idx = (sy * width + sx) * pixel_size;
+        let entry_lo = buffer_slice[idx];
+        let entry_hi = buffer_slice[idx + 1];
+        let entry = u16::from_le_bytes([entry_lo, entry_hi]);
 
-        Color15::default().into() // TODO: implementation
-    }
-
-    pub fn apply_bg_transform(&mut self) {
-        self.pipeline.bg2_buffer_enabled = self.check_bg_transform(TransBackground::Bg2);
-        self.pipeline.bg3_buffer_enabled = self.check_bg_transform(TransBackground::Bg3);
-
-        if self.pipeline.bg2_buffer_enabled {
-            self.tranform_bg(TransBackground::Bg2);
-        }
-
-        if self.pipeline.bg3_buffer_enabled {
-            self.tranform_bg(TransBackground::Bg3);
+        match color_mode {
+            BitmapColor::RGB => Some(entry.into()),
+            BitmapColor::Palette => Some(self.palette.read_hword(entry as u32 * 2).into()),
         }
     }
 
@@ -80,26 +95,5 @@ impl Ppu {
             let b_prio = self.registers.bgcnt[b.to_index()].bg_priority();
             b_prio.cmp(&a_prio)
         });
-    }
-
-    fn tranform_bg(&mut self, trans_bg: TransBackground) {
-        // TODO: implementation
-        // let bg = Background::from(trans_bg);
-    }
-
-    fn check_bg_transform(&self, bg: TransBackground) -> bool {
-        let bgtrans = match bg {
-            TransBackground::Bg2 => &self.registers.bg2trans,
-            TransBackground::Bg3 => &self.registers.bg3trans,
-        };
-
-        if bgtrans.zero_transform() {
-            return false;
-        }
-
-        match self.registers.dispcnt.bg_mode() {
-            BgMode::Mode0 => false,
-            _ => self.registers.dispcnt.is_bg_enabled(bg.into()),
-        }
     }
 }
