@@ -79,13 +79,13 @@ impl Ppu {
         let buffer_size = width * height * pixel_size;
         let buffer_start = frame_buffer as usize * pixel_size;
         let buffer_slice = &self.vram[buffer_start..buffer_start + buffer_size];
-        let tx = t.pa as u32 * x as u32 + t.pb as u32 * x as u32 + t.x;
-        let ty = t.pc as u32 * y as u32 + t.pd as u32 * y as u32 + t.y;
+        let tx = t.pa as i32 * x as i32 + t.pb as i32 * y as i32 + t.x as i32;
+        let ty = t.pc as i32 * x as i32 + t.pd as i32 * y as i32 + t.y as i32;
         let sx = (tx >> 8) as usize;
         let sy = (ty >> 8) as usize;
         let idx = (sy * width + sx) * pixel_size;
 
-        if idx > buffer_size && !bgcnt.overflow_wrap() {
+        if (sx >= width || sy >= height) && !bgcnt.overflow_wrap() {
             return None;
         }
 

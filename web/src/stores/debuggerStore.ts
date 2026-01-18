@@ -59,10 +59,12 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
     const frameCounter = new FrameCounter();
     const startTime = Date.now();
 
-    setInterval(() => {
-      const { running, canvas, breakpoints } = get();
+    const intervalId = setInterval(() => {
+      const { running, canvas, breakpoints, paused } = get();
 
-      if (!running) return;
+      if (!running || paused) {
+        return clearInterval(intervalId);
+      }
 
       const ellapsed = Date.now() - startTime;
 
@@ -98,7 +100,7 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
       }
     }, 1000 / 60);
 
-    set((prev) => ({ ...prev, running: true }));
+    set((prev) => ({ ...prev, running: true, paused: false }));
   },
 
   stepInto: () => {

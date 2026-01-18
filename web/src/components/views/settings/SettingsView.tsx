@@ -24,7 +24,7 @@ function SettingsView() {
     if (keyEditId === targetId) return;
 
     const handler = (event: KeyboardEvent) => {
-      if (!keymap[event.code]) {
+      if (event.code !== "Escape" && !keymap[event.code]) {
         const newKeymap = Object.entries(keymap).map(([key, value], id) =>
           targetId === id ? [event.code, value] : [key, value],
         );
@@ -45,6 +45,7 @@ function SettingsView() {
       pt="md"
       pb="20dvh"
       mah="90dvh"
+      gap="xl"
       style={{ overflow: "scroll" }}
       w={{ base: "100%", md: undefined }}
     >

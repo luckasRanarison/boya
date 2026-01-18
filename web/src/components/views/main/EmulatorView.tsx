@@ -6,7 +6,7 @@ import EmulatorFooter from "./EmulatorFooter";
 
 function EmulatorView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { run, setCanvas, createKeyHandler } = useDebuggerStore();
+  const { paused, run, setCanvas, createKeyHandler } = useDebuggerStore();
   const { keymap } = usePersistantStore();
 
   const handleKey = createKeyHandler(keymap);
@@ -20,7 +20,10 @@ function EmulatorView() {
   useEffect(() => {
     document.addEventListener("keydown", handleKey);
     document.addEventListener("keyup", handleKey);
-    run();
+
+    if (!paused) {
+      run();
+    }
 
     return () => {
       document.removeEventListener("keydown", handleKey);
