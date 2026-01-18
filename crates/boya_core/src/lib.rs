@@ -95,6 +95,10 @@ impl Gba {
         self.cpu.bus.ppu.get_frame_buffer()
     }
 
+    pub fn set_keyinput(&mut self, value: u16) {
+        self.cpu.bus.io.keypad.keyinput = value;
+    }
+
     pub fn bios(&self) -> &[u8] {
         &self.cpu.bus.bios
     }

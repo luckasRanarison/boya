@@ -92,6 +92,11 @@ impl Gba {
         image_data.copy_from_slice(self.core.frame_buffer());
     }
 
+    #[wasm_bindgen(js_name = "setKeyinput")]
+    pub fn set_keyinput(&mut self, value: u16) {
+        self.core.set_keyinput(value);
+    }
+
     #[wasm_bindgen]
     pub fn bios(&self) -> Uint8Array {
         unsafe { Uint8Array::view(self.core.bios()) }

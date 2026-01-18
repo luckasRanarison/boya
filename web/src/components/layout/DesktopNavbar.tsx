@@ -36,9 +36,11 @@ function DesktopNavbar() {
           <div></div>
         </Tabs.Panel>
 
-        <Tabs.Panel value="settings">
-          <SettingsView />
-        </Tabs.Panel>
+        {activeTab === "settings" && (
+          <Tabs.Panel value="settings">
+            <SettingsView />
+          </Tabs.Panel>
+        )}
 
         {activeTab === "debugger" && (
           <Tabs.Panel value="debugger">

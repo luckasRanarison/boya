@@ -17,7 +17,7 @@ function DebuggerView() {
     <Stack
       w="100%"
       pt="xl"
-      pb="10dvh"
+      pb="20dvh"
       px="md"
       mah="90dvh"
       style={{ overflow: "scroll" }}

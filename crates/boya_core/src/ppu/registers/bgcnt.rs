@@ -29,6 +29,10 @@ impl Bgcnt {
         self.value.get_bits(8, 12) as u32 * 0x400
     }
 
+    pub fn overflow_wrap(&self) -> bool {
+        self.value.has(13)
+    }
+
     pub fn screen_mode(&self) -> ScreenSize {
         match self.value.get_bits(14, 15) {
             0 => ScreenSize::Mode0,

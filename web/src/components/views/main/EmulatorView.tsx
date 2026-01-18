@@ -1,10 +1,15 @@
 import { useDebuggerStore } from "@/stores/debuggerStore";
-import { AppShell, Flex, Group, Stack, Text } from "@mantine/core";
+import { usePersistantStore } from "@/stores/persistantStore";
+import { Flex, Stack } from "@mantine/core";
 import { useEffect, useRef } from "react";
+import EmulatorFooter from "./EmulatorFooter";
 
 function EmulatorView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { running, fps, run, setCanvas } = useDebuggerStore();
+  const { run, setCanvas, createKeyHandler } = useDebuggerStore();
+  const { keymap } = usePersistantStore();
+
+  const handleKey = createKeyHandler(keymap);
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -13,8 +18,15 @@ function EmulatorView() {
   }, [setCanvas]);
 
   useEffect(() => {
+    document.addEventListener("keydown", handleKey);
+    document.addEventListener("keyup", handleKey);
     run();
-  }, [run]);
+
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.removeEventListener("keyup", handleKey);
+    };
+  }, [run, handleKey]);
 
   return (
     <Stack flex={1}>
@@ -29,19 +41,7 @@ function EmulatorView() {
           height={160}
         />
       </Flex>
-      <AppShell.Footer p="md">
-        <Group justify="space-between">
-          {running ? (
-            <Text c="green">Running</Text>
-          ) : (
-            <Text c="yellow">Paused</Text>
-          )}
-          <Text c="gray">
-            {fps}
-            /60 FPS
-          </Text>
-        </Group>
-      </AppShell.Footer>
+      <EmulatorFooter />
     </Stack>
   );
 }

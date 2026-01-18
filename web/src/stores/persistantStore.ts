@@ -1,3 +1,4 @@
+import { defaultKeymaps, type Keymap } from "@/lib/keymap";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -5,9 +6,12 @@ export type ColorTheme = "light" | "dark";
 
 type UploadStore = {
   bios?: Uint8Array | null;
+  keymap: Keymap;
   theme: ColorTheme;
+
   setBios: (value: Uint8Array) => void;
   setTheme: (theme: ColorTheme) => void;
+  setKeymap: (value: Keymap) => void;
 };
 
 export const usePersistantStore = create(
@@ -15,8 +19,11 @@ export const usePersistantStore = create(
     (set) => ({
       bios: null,
       theme: "light",
+      keymap: defaultKeymaps,
+
       setBios: (bios) => set((prev) => ({ ...prev, bios })),
       setTheme: (theme) => set((prev) => ({ ...prev, theme })),
+      setKeymap: (keymap) => set((prev) => ({ ...prev, keymap })),
     }),
     {
       name: "boya_data",

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { instance } from "@/lib/gba";
 import { FrameCounter } from "@/utils";
+import type { Keymap } from "@/lib/keymap";
 
 type DebuggerStore = {
   cycles: bigint;
@@ -8,6 +9,7 @@ type DebuggerStore = {
   breakpoints: number[];
   romLoaded: boolean;
   running: boolean;
+  keypad: number;
   canvas?: { context: CanvasRenderingContext2D; imageData: ImageData };
   fps: number;
   paused: boolean;
@@ -18,6 +20,7 @@ type DebuggerStore = {
   setCanvas: (canvas: HTMLCanvasElement) => void;
   setBreakpoints: (breakPoints: number[]) => void;
   loadRom: (rom: Uint8Array) => void;
+  createKeyHandler: (keymap: Keymap) => (event: KeyboardEvent) => void;
 };
 
 export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
@@ -25,6 +28,7 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
   running: false,
   paused: false,
   romLoaded: false,
+  keypad: 0x3ff,
   breakpoints: [],
   fps: 0,
 
@@ -105,5 +109,23 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
       lastCycle: count,
       cycles: prev.cycles + BigInt(count),
     }));
+  },
+
+  createKeyHandler: (keymap) => (event) => {
+    const key = keymap[event.code];
+
+    if (!key) return;
+
+    switch (event.type) {
+      case "keyup":
+        set((prev) => ({ ...prev, keypad: prev.keypad | key }));
+        break;
+      case "keydown":
+        set((prev) => ({ ...prev, keypad: prev.keypad & ~key }));
+        break;
+      default:
+    }
+
+    instance.setKeyinput(get().keypad);
   },
 }));

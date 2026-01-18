@@ -1,6 +1,6 @@
 use crate::bus::Bus;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Bgtrans {
     pub pa: u16,
     pub pb: u16,
@@ -10,9 +10,16 @@ pub struct Bgtrans {
     pub y: u32,
 }
 
-impl Bgtrans {
-    pub fn zero_transform(&self) -> bool {
-        ((self.pa + self.pb + self.pc + self.pd) as u32 + self.x + self.y) == 0
+impl Default for Bgtrans {
+    fn default() -> Self {
+        Self {
+            pa: 256,
+            pb: 0,
+            pc: 0,
+            pd: 256,
+            x: 0,
+            y: 0,
+        }
     }
 }
 
@@ -30,14 +37,5 @@ impl Bus for Bgtrans {
             8..=11 => self.x.write_byte(address, value),
             _ => self.y.write_byte(address, value),
         }
-    }
-}
-
-#[derive(Default, Clone, Copy)]
-pub struct Float16(u16);
-
-impl Float16 {
-    pub fn as_f32(self) -> f32 {
-        todo!()
     }
 }
