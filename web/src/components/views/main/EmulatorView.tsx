@@ -21,15 +21,17 @@ function EmulatorView() {
     document.addEventListener("keydown", handleKey);
     document.addEventListener("keyup", handleKey);
 
-    if (!paused) {
-      run();
-    }
-
     return () => {
       document.removeEventListener("keydown", handleKey);
       document.removeEventListener("keyup", handleKey);
     };
   }, [run, handleKey]);
+
+  useEffect(() => {
+    if (!paused) {
+      run();
+    }
+  }, [paused, run]);
 
   return (
     <Stack flex={1}>

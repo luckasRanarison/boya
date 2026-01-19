@@ -4,11 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
+    "dev": "npm run wasm:watch & vite --host --clearScreen false",
     "preview": "vite preview --host",
     "build": "npm run wasm:build && tsc -b && vite build",
-    "wasm:build": "wasm-pack build ../crates/boya_wasm --out-dir ../../web/pkg && npm install ./pkg",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "wasm:watch": "node ./scripts/wasm-watch.mjs",
+    "wasm:build": "wasm-pack build ../crates/boya_wasm --out-dir ../../web/pkg && npm install ./pkg"
   },
   "dependencies": {
     "@mantine/core": "^8.3.10",
@@ -28,6 +29,7 @@
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "chalk": "^5.6.2",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
