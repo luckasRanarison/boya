@@ -1,3 +1,4 @@
+pub mod debug;
 pub mod registers;
 pub mod types;
 

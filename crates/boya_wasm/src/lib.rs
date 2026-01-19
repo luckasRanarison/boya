@@ -1,4 +1,3 @@
-pub mod io_map;
 pub mod types;
 
 use boya_core::{Gba as GbaCore, bus::Bus, ppu::color::Color24};

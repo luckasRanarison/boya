@@ -130,7 +130,7 @@ impl Ppu {
         let color_addr = base_palette + rel_color_id;
         let color = self.read_bg_palette(color_addr);
 
-        Some(color.into())
+        Some(color)
     }
 
     pub fn get_bg_bmp_pixel(
