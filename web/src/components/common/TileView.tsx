@@ -71,6 +71,7 @@ function TileView(props: { pageData: Uint8Array }) {
           <Stack gap="0" mah="200" style={{ overflow: "scroll" }}>
             {palettes.map((p, id) => (
               <Box
+                key={id}
                 onClick={() => setCurrentPaletteId(id)}
                 style={{ cursor: "pointer" }}
               >

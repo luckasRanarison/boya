@@ -5,7 +5,7 @@ use crate::{
         common::Exception,
         debug::types::{GbaStep, GbaStepKind},
     },
-    ppu::{color::Color15, debug::TILE_BUFFER_SIZE, registers::bgcnt::ColorMode},
+    ppu::{background::TILE_BUFFER_SIZE, color::Color15, registers::bgcnt::ColorMode},
 };
 
 #[allow(clippy::all)]

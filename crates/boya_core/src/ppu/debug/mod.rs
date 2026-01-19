@@ -2,15 +2,12 @@ use crate::{
     bus::Bus,
     ppu::{
         PALETTE_SIZE, Ppu,
+        background::TILE_BUFFER_SIZE,
         color::{Color15, Color24},
         registers::bgcnt::ColorMode,
     },
     utils::bitflags::Bitflag,
 };
-
-pub const TILE_BUFFER_SIZE: usize = 8 * 8 * 4;
-pub const TILE4BPP_SIZE: usize = 32;
-pub const TILE8BPP_SIZE: usize = 64;
 
 impl Ppu {
     pub fn color_palette(&self) -> Vec<Color15> {

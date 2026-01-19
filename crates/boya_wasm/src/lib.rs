@@ -1,10 +1,11 @@
+pub mod io_map;
 pub mod types;
 
-use boya_core::{Gba as GbaCore, ppu::color::Color24};
+use boya_core::{Gba as GbaCore, bus::Bus, ppu::color::Color24};
 use wasm_bindgen::prelude::*;
 use web_sys::js_sys::{Uint8Array, Uint32Array};
 
-use crate::types::ColorMode;
+use crate::types::{ColorMode, IOMap};
 
 #[wasm_bindgen]
 #[derive(Default)]
@@ -196,5 +197,25 @@ impl Gba {
     ) {
         let buffer = self.core.render_tile(tile, color_mode.into(), palette_id);
         image_data.copy_from_slice(buffer.as_slice());
+    }
+
+    #[wasm_bindgen(js_name = "generateIOMap")]
+    pub fn generate_io_map(&self) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(&IOMap::default())?)
+    }
+
+    #[wasm_bindgen(js_name = "writeByte")]
+    pub fn write_byte(&mut self, address: u32, value: u8) {
+        self.core.cpu.bus.write_byte(address, value);
+    }
+
+    #[wasm_bindgen(js_name = "readHWord")]
+    pub fn read_hword(&self, address: u32) -> u16 {
+        self.core.cpu.bus.read_hword(address)
+    }
+
+    #[wasm_bindgen(js_name = "readWord")]
+    pub fn read_word(&self, address: u32) -> u32 {
+        self.core.cpu.bus.read_word(address)
     }
 }

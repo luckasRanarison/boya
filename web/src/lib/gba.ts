@@ -2,6 +2,8 @@ import { Gba } from "boya_wasm";
 
 export const instance = new Gba();
 
+console.log(instance.generateIOMap());
+
 export const memoryRegions = {
   bios: {
     offset: 0x0000_0000,
@@ -14,6 +16,9 @@ export const memoryRegions = {
   iwram: {
     offset: 0x0300_0000,
     length: 0x8000,
+  },
+  io: {
+    offset: 0x0400_0000,
   },
   palette: {
     offset: 0x0500_0000,
