@@ -12,11 +12,7 @@ function Main({ view }: { view: MenuView }) {
   if (view.name === "Registers") return <IORegisterView />;
 
   if (view.name === "Memory" && view.sub) {
-    return <MemoryView mode="hex" region={view.sub as MemoryRegion} />;
-  }
-
-  if (view.name === "Tiles" && view.sub) {
-    return <MemoryView mode="tile" region={view.sub as MemoryRegion} />;
+    return <MemoryView region={view.sub as MemoryRegion} />;
   }
 
   return <MainView />;

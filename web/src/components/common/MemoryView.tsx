@@ -1,12 +1,13 @@
 import {
+  ActionIcon,
   AppShell,
-  Box,
   Group,
   Pagination,
   Select,
   Stack,
   Text,
   ThemeIcon,
+  Tooltip,
 } from "@mantine/core";
 import { useEffect, useState } from "react";
 import { formatHex } from "../../utils";
@@ -21,22 +22,19 @@ import HexView from "./HexView";
 import TileView from "./TileView";
 import { memoryRegions, type MemoryRegion } from "@/lib/gba";
 
-const viewModes = {
-  hex: { pageSize: 1024 },
-  tile: { pageSize: 2048 },
-} as const;
+const viewModes = [
+  { name: "hex", pageSize: 1024 },
+  { name: "tile", pageSize: 2048 },
+] as const;
 
-function MemoryView(props: {
-  region: MemoryRegion;
-  columns?: number;
-  mode: "hex" | "tile";
-}) {
+function MemoryView(props: { region: MemoryRegion; columns?: number }) {
   const [currentPageId, setCurrentPageId] = useState(1);
+  const [currentModeId, setCurrentModeId] = useState(0);
   const { cycles } = useDebuggerStore();
 
   const currentEntry = memoryRegions[props.region];
   const data = currentEntry.getData();
-  const { pageSize } = viewModes[props.mode];
+  const { name: currentMode, pageSize } = viewModes[currentModeId];
   const columns = props.columns ?? 16;
   const pageStart = (currentPageId - 1) * pageSize;
   const total = Math.ceil(data.length / pageSize);
@@ -73,7 +71,7 @@ function MemoryView(props: {
     <Stack flex={1} w="100%" align="center">
       {data.length ? (
         <>
-          {props.mode === "hex" && (
+          {currentMode === "hex" && (
             <HexView
               pageData={currentPage}
               baseAddress={currentEntry.offset}
@@ -83,7 +81,7 @@ function MemoryView(props: {
             />
           )}
 
-          {props.mode === "tile" && <TileView pageData={currentPage} />}
+          {currentMode === "tile" && <TileView pageData={currentPage} />}
         </>
       ) : (
         <Stack flex={1} justify="center" align="center" c="gray">
@@ -110,10 +108,18 @@ function MemoryView(props: {
             </Text>
           </Group>
           <Group w={{ base: "100%", md: "auto" }}>
-            <Box c="indigo">
-              {props.mode === "hex" && <IconSortAscendingNumbers />}
-              {props.mode === "tile" && <IconGridDots />}
-            </Box>
+            <Tooltip label={`Toggle ${currentMode} mode`}>
+              <ActionIcon
+                size="input-sm"
+                variant="outline"
+                onClick={() =>
+                  setCurrentModeId((prev) => (prev + 1) % viewModes.length)
+                }
+              >
+                {currentMode === "hex" && <IconSortAscendingNumbers />}
+                {currentMode === "tile" && <IconGridDots />}
+              </ActionIcon>
+            </Tooltip>
             <Select
               value={selectRegion}
               data={addresses}
