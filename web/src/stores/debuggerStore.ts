@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { instance } from "@/lib/gba";
 import { FrameCounter } from "@/utils";
-import type { Keymap } from "@/lib/keymap";
 
 type DebuggerStore = {
   cycles: bigint;
@@ -13,14 +12,17 @@ type DebuggerStore = {
   canvas?: { context: CanvasRenderingContext2D; imageData: ImageData };
   fps: number;
   paused: boolean;
+  instructionCache: Record<number, string | undefined>;
 
   run: () => void;
   pause: () => void;
+  reset: () => void;
   stepInto: () => void;
   setCanvas: (canvas: HTMLCanvasElement) => void;
   setBreakpoints: (breakPoints: number[]) => void;
   loadRom: (rom: Uint8Array) => void;
-  createKeyHandler: (keymap: Keymap) => (event: KeyboardEvent) => void;
+  unloadRom: () => void;
+  decode: () => void;
 };
 
 export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
@@ -31,6 +33,7 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
   keypad: 0x3ff,
   breakpoints: [],
   fps: 0,
+  instructionCache: {},
 
   setBreakpoints: (breakpoints) => {
     set((prev) => ({ ...prev, breakpoints }));
@@ -44,9 +47,26 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
   },
 
   loadRom: (rom) => {
+    instance.reset();
     instance.loadRom(rom);
     instance.boot();
     set((prev) => ({ ...prev, cycles: instance.cycles(), romLoaded: true }));
+  },
+
+  unloadRom: () => {
+    set((prev) => ({
+      ...prev,
+      running: false,
+      paused: false,
+      romLoaded: false,
+    }));
+  },
+
+  reset: () => {
+    instance.reset();
+    instance.boot();
+    set((prev) => ({ ...prev, cycles: instance.cycles() }));
+    get().run();
   },
 
   pause: () => {
@@ -55,6 +75,8 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
 
   run: () => {
     if (get().running) return;
+
+    set((prev) => ({ ...prev, running: true, paused: false }));
 
     const frameCounter = new FrameCounter();
     const startTime = Date.now();
@@ -99,8 +121,6 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
         canvas.context.putImageData(canvas.imageData, 0, 0);
       }
     }, 1000 / 60);
-
-    set((prev) => ({ ...prev, running: true, paused: false }));
   },
 
   stepInto: () => {
@@ -113,21 +133,15 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
     }));
   },
 
-  createKeyHandler: (keymap) => (event) => {
-    const key = keymap[event.code];
+  decode: () => {
+    const instructions = instance.nextInstructions();
 
-    if (!key) return;
-
-    switch (event.type) {
-      case "keyup":
-        set((prev) => ({ ...prev, keypad: prev.keypad | key }));
-        break;
-      case "keydown":
-        set((prev) => ({ ...prev, keypad: prev.keypad & ~key }));
-        break;
-      default:
-    }
-
-    instance.setKeyinput(get().keypad);
+    set((prev) => ({
+      ...prev,
+      instructionCache: {
+        ...prev.instructionCache,
+        ...Object.fromEntries(instructions),
+      },
+    }));
   },
 }));

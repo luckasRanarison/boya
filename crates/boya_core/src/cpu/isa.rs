@@ -35,6 +35,18 @@ impl Instruction {
             Instruction::Thumb(op) => op.get_data(),
         }
     }
+
+    pub fn is_branch(&self) -> bool {
+        match self {
+            Instruction::Arm(Arm::Arm03(_))
+            | Instruction::Arm(Arm::Arm04(_))
+            | Instruction::Thumb(Thumb::Format16(_))
+            | Instruction::Thumb(Thumb::Format18(_))
+            | Instruction::Thumb(Thumb::Format19(_)) => true,
+            Instruction::Thumb(Thumb::Format05(instr)) => instr.is_branch(),
+            _ => false,
+        }
+    }
 }
 
 pub trait Executable: Sized {

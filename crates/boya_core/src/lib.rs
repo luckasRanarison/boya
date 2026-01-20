@@ -6,6 +6,7 @@ use crate::{
         debug::types::{GbaStep, GbaStepKind},
     },
     ppu::{background::TILE_BUFFER_SIZE, color::Color15, registers::bgcnt::ColorMode},
+    utils::Reset,
 };
 
 #[allow(clippy::all)]
@@ -32,10 +33,6 @@ impl Gba {
 
     pub fn load_rom(&mut self, rom: &[u8]) {
         self.cpu.bus.rom = rom.to_vec();
-    }
-
-    pub fn reset(&mut self) {
-        *self = Self::default()
     }
 
     pub fn boot(&mut self) -> Cycle {
@@ -177,6 +174,13 @@ impl Gba {
         palette_id: usize,
     ) -> Box<[u8; TILE_BUFFER_SIZE]> {
         self.cpu.bus.ppu.render_tile(tile, color_mode, palette_id)
+    }
+}
+
+impl Reset for Gba {
+    fn reset(&mut self) {
+        self.cpu.reset();
+        self.cycles = 0;
     }
 }
 

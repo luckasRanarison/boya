@@ -23,7 +23,7 @@ use crate::{
         isa::Instruction,
         register::Register,
     },
-    utils::bitflags::BitIter,
+    utils::{Reset, bitflags::BitIter},
 };
 
 #[derive(Default)]
@@ -234,6 +234,15 @@ impl Arm7tdmi {
         self.sync_pipeline();
 
         InstructionResult { data, cycles }
+    }
+}
+
+impl Reset for Arm7tdmi {
+    fn reset(&mut self) {
+        self.registers = Register::default();
+        self.cpsr = Psr::default();
+        self.pipeline = Pipeline::default();
+        self.bus.reset();
     }
 }
 

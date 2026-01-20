@@ -14,6 +14,7 @@ use crate::{
         },
     },
     ppu::{Ppu, registers::dispstat::Dispstat},
+    utils::Reset,
 };
 
 pub const BIOS_SIZE: usize = 0x04000; // 16kb
@@ -254,6 +255,17 @@ impl Bus for GbaBus {
             0x0E00_0000..=0x0E00_FFFF => self.sram[address as usize - 0x0E00_0000] = value,
             _ => {}
         };
+    }
+}
+
+impl Reset for GbaBus {
+    fn reset(&mut self) {
+        self.iwram.fill(0);
+        self.ewram.fill(0);
+        self.sram.fill(0);
+        self.io = IORegister::default();
+        self.ppu.reset();
+        self.apu.reset()
     }
 }
 

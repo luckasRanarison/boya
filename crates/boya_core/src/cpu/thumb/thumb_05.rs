@@ -73,6 +73,12 @@ impl Executable for Instruction {
     }
 }
 
+impl Instruction {
+    pub fn is_branch(&self) -> bool {
+        matches!(self.op, Opcode::BX)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

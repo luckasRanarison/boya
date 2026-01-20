@@ -1,15 +1,13 @@
 import { useDebuggerStore } from "@/stores/debuggerStore";
-import { usePersistantStore } from "@/stores/persistantStore";
 import { Flex, Stack } from "@mantine/core";
 import { useEffect, useRef } from "react";
 import EmulatorFooter from "./EmulatorFooter";
+import { useKeyHandler } from "@/hooks/keymap";
 
 function EmulatorView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { paused, run, setCanvas, createKeyHandler } = useDebuggerStore();
-  const { keymap } = usePersistantStore();
-
-  const handleKey = createKeyHandler(keymap);
+  const { paused, run, setCanvas } = useDebuggerStore();
+  const handleKey = useKeyHandler();
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -46,7 +44,7 @@ function EmulatorView() {
           height={160}
         />
       </Flex>
-      <EmulatorFooter />
+      <EmulatorFooter canvas={() => canvasRef.current} />
     </Stack>
   );
 }

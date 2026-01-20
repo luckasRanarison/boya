@@ -9,7 +9,7 @@ use crate::{
         color::Color15,
         registers::{PpuRegister, dispcnt::Background, dispstat::Dispstat},
     },
-    utils::bitflags::Bitflag,
+    utils::{Reset, bitflags::Bitflag},
 };
 
 pub const PALETTE_RAM_SIZE: usize = 0x400; // 1kb
@@ -135,6 +135,21 @@ impl Ppu {
         } else {
             self.registers.dispstat.clear(Dispstat::VCOUNT);
         }
+    }
+}
+
+impl Reset for Ppu {
+    fn reset(&mut self) {
+        self.palette.fill(0);
+        self.oam.fill(0);
+        self.vram.fill(0);
+        self.registers = PpuRegister::default();
+        self.dot = 0;
+        self.scanline = 0;
+        self.divider = 0;
+        self.pending_irq = None;
+        self.pipeline = RenderPipeline::default();
+        self.frame_buffer.fill(0xFF);
     }
 }
 

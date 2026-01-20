@@ -1,4 +1,4 @@
-use crate::apu::registers::ApuRegister;
+use crate::{apu::registers::ApuRegister, utils::Reset};
 
 pub mod registers;
 
@@ -17,4 +17,8 @@ impl Default for Apu {
 
 impl Apu {
     pub fn step(&mut self) {}
+}
+
+impl Reset for Apu {
+    fn reset(&mut self) {}
 }

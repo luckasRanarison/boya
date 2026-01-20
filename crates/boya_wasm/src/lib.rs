@@ -1,6 +1,6 @@
 pub mod types;
 
-use boya_core::{Gba as GbaCore, bus::Bus, ppu::color::Color24};
+use boya_core::{Gba as GbaCore, bus::Bus, ppu::color::Color24, utils::Reset};
 use wasm_bindgen::prelude::*;
 use web_sys::js_sys::{Uint8Array, Uint32Array};
 
@@ -80,6 +80,19 @@ impl Gba {
         let pipeline = &self.core.cpu.pipeline;
         let instruction = pipeline.current_instruction();
         instruction.map(|instr| instr.get_data().format(10))
+    }
+
+    #[wasm_bindgen(js_name = "nextInstructions")]
+    pub fn next_instructions(&self) -> Result<JsValue, JsValue> {
+        let instructions = self
+            .core
+            .cpu
+            .decode_until_branch()
+            .into_iter()
+            .map(|(addr, instr)| (addr, instr.format(10)))
+            .collect::<Vec<_>>();
+
+        Ok(serde_wasm_bindgen::to_value(&instructions)?)
     }
 
     #[wasm_bindgen(js_name = "stepFrame")]

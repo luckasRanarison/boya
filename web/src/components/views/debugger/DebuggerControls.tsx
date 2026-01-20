@@ -9,75 +9,63 @@ import {
   IconStepInto,
   IconStepOut,
 } from "@tabler/icons-react";
-import { useMemo } from "react";
 import { useDebuggerStore } from "../../../stores/debuggerStore";
 import { formatHex } from "@/utils";
 
 function DebuggerControls() {
-  const {
-    breakpoints,
-    romLoaded,
-    running,
-    pause,
-    stepInto,
-    setBreakpoints,
-    run,
-  } = useDebuggerStore();
+  const dbg = useDebuggerStore();
 
-  const actions = useMemo(
-    () => [
-      {
-        icon: IconRestore,
-        label: "Reset",
-        onClick: () => console.log("reset"),
-        disabled: running || !romLoaded,
-      },
-      {
-        icon: IconArrowBackUp,
-        label: "Undo",
-        onClick: () => console.log("undo"),
-        disabled: true,
-      },
-      {
-        icon: IconArrowBack,
-        label: "Step back",
-        onClick: () => console.log("step back"),
-        disabled: true,
-      },
-      {
-        icon: running ? IconPlayerPause : IconPlayerPlay,
-        label: running ? "Pause" : "Continue",
-        onClick: () => (running ? pause() : run()),
-        disabled: !romLoaded,
-      },
-      {
-        icon: IconStepInto,
-        label: "Step into",
-        onClick: () => stepInto(),
-        disabled: running || !romLoaded,
-      },
-      {
-        icon: IconStepOut,
-        label: "Step out",
-        onClick: () => console.log("step out"),
-        disabled: true,
-      },
-      {
-        icon: IconClockPlay,
-        label: "Run",
-        onClick: () => console.log("run"),
-        disabled: true,
-      },
-    ],
-    [running, romLoaded, stepInto, pause, run],
-  );
+  const actions = [
+    {
+      icon: IconRestore,
+      label: "Reset",
+      onClick: () => dbg.reset(),
+      disabled: dbg.running || !dbg.romLoaded,
+    },
+    {
+      icon: IconArrowBackUp,
+      label: "Undo",
+      onClick: () => console.log("undo"),
+      disabled: true,
+    },
+    {
+      icon: IconArrowBack,
+      label: "Step back",
+      onClick: () => console.log("step back"),
+      disabled: true,
+    },
+    {
+      icon: dbg.running ? IconPlayerPause : IconPlayerPlay,
+      label: dbg.running ? "Pause" : "Continue",
+      onClick: () => (dbg.running ? dbg.pause() : dbg.run()),
+      disabled: !dbg.romLoaded,
+    },
+    {
+      icon: IconStepInto,
+      label: "Step into",
+      onClick: () => dbg.stepInto(),
+      disabled: dbg.running || !dbg.romLoaded,
+    },
+    {
+      icon: IconStepOut,
+      label: "Step out",
+      onClick: () => console.log("step out"),
+      disabled: true,
+    },
+    {
+      icon: IconClockPlay,
+      label: "Run",
+      onClick: () => console.log("run"),
+      disabled: true,
+    },
+  ];
 
   const handleBreakpointUpdate = (breakpoints: string[]) => {
     const newBreakpoints = breakpoints
       .map((b) => (b.startsWith("0x") ? parseInt(b.slice(2), 16) : parseInt(b)))
       .filter((b) => !isNaN(b));
 
-    setBreakpoints(newBreakpoints);
+    dbg.setBreakpoints(newBreakpoints);
   };
 
   return (
@@ -99,7 +87,7 @@ function DebuggerControls() {
       <TagsInput
         label="breakpoints"
         placeholder="Enter breakpoint address..."
-        value={breakpoints.map((b) => formatHex(b))}
+        value={dbg.breakpoints.map((b) => formatHex(b))}
         variant="filled"
         onChange={handleBreakpointUpdate}
       />
