@@ -5,12 +5,12 @@ import {
   IconMenu2,
 } from "@tabler/icons-react";
 import AppTitle from "./AppTitle";
-import { views, type View } from "../views";
+import { views, type MenuView } from "../views";
 
 type Props = {
-  view: View;
+  view: MenuView;
   navbarOpened: boolean;
-  onViewChange: (value: View) => void;
+  onViewChange: (value: MenuView) => void;
   onNavbarToggle: () => void;
 };
 
@@ -21,34 +21,63 @@ function Header(props: Props) {
         <AppTitle />
       </Box>
 
-      <Box hiddenFrom="sm">
-        <ActionIcon variant="transparent" onClick={props.onNavbarToggle}>
-          <IconMenu2 />
-        </ActionIcon>
-      </Box>
-
-      <Box visibleFrom="sm">
+      <Box>
         <Menu width="175" position="bottom-start" offset={30}>
           <Menu.Target>
-            <Button variant="subtle" rightSection={<IconChevronDown />} fz="md">
-              {props.view}
-            </Button>
+            <Box>
+              <ActionIcon hiddenFrom="sm" variant="transparent">
+                <IconMenu2 />
+              </ActionIcon>
+              <Button
+                visibleFrom="sm"
+                variant="subtle"
+                rightSection={<IconChevronDown />}
+                fz="md"
+              >
+                {props.view.name}
+              </Button>
+            </Box>
           </Menu.Target>
 
           <Menu.Dropdown>
-            {views.map(
-              ({ name, icon: Icon, ...rest }) =>
-                !("mobileOnly" in rest) && (
-                  <Menu.Item
-                    key={name}
-                    leftSection={<Icon size={18} />}
-                    onClick={() => props.onViewChange(name)}
-                  >
-                    <Text ml="xs" size="md">
-                      {name}
-                    </Text>
-                  </Menu.Item>
-                ),
+            {views.map(({ name, icon: Icon, ...rest }) =>
+              "sub" in rest ? (
+                <Menu key={name} width="175" position="right-start" offset={15}>
+                  <Menu.Target>
+                    <Menu.Sub.Item leftSection={<Icon size={18} />}>
+                      <Text ml="xs" size="md">
+                        {name}
+                      </Text>
+                    </Menu.Sub.Item>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    {rest.sub.map(({ name: subName, icon: Icon }) => (
+                      <Menu.Item
+                        key={subName}
+                        leftSection={<Icon size={18} />}
+                        onClick={() =>
+                          props.onViewChange({ name, sub: subName })
+                        }
+                      >
+                        <Text ml="xs" size="md">
+                          {subName}
+                        </Text>
+                      </Menu.Item>
+                    ))}
+                  </Menu.Dropdown>
+                </Menu>
+              ) : (
+                <Menu.Item
+                  key={name}
+                  leftSection={<Icon size={18} />}
+                  onClick={() => props.onViewChange({ name })}
+                  hiddenFrom={"mobileOnly" in rest ? "sm" : undefined}
+                >
+                  <Text ml="xs" size="md">
+                    {name}
+                  </Text>
+                </Menu.Item>
+              ),
             )}
           </Menu.Dropdown>
         </Menu>

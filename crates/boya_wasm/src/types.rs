@@ -50,7 +50,7 @@ impl From<&bus::debug::types::RegisterEntry> for RegisterEntry {
             name: value.name,
             address: value.address,
             size: value.size.into(),
-            flags: value.flags.iter().map(|f| f.into()).collect(),
+            flags: value.flags.iter().rev().map(|f| f.into()).collect(),
         }
     }
 }

@@ -1,0 +1,51 @@
+import { getFlagValue } from "@/lib/bitflap";
+import { formatHex } from "@/utils";
+import { Table, Tooltip } from "@mantine/core";
+import type { RegisterEntry } from "boya_wasm";
+
+export function FlagBits({
+  value,
+  register,
+}: {
+  value: number;
+  register: RegisterEntry;
+}) {
+  return (
+    <Table w="0" fz="xs" withTableBorder withColumnBorders>
+      <Table.Tbody>
+        <Table.Tr>
+          {register.flags.map((f) =>
+            getFlagValue(value, f)
+              .toString(10)
+              .padStart(f.length, "0")
+              .split("")
+              .map((b, i) => (
+                <Tooltip label={f.name}>
+                  {f.name === "unused" ? (
+                    <Table.Td key={i} c="gray">
+                      -
+                    </Table.Td>
+                  ) : (
+                    <Table.Td
+                      key={i}
+                      style={{
+                        borderColor:
+                          f.length > 1 && i !== f.length - 1
+                            ? "transparent"
+                            : undefined,
+                      }}
+                    >
+                      {b}
+                    </Table.Td>
+                  )}
+                </Tooltip>
+              )),
+          )}
+          <Table.Td c="gray">
+            {formatHex(value, { width: register.size === "HWord" ? 4 : 8 })}
+          </Table.Td>
+        </Table.Tr>
+      </Table.Tbody>
+    </Table>
+  );
+}

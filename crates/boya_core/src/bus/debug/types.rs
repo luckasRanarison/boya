@@ -30,6 +30,15 @@ impl Flag {
         }
     }
 
+    pub const fn unused(start: u8, length: u8) -> Self {
+        Self {
+            name: "unused",
+            start,
+            length,
+            mappings: None,
+        }
+    }
+
     pub const fn map(mut self, mappings: &'static [(u8, &'static str)]) -> Self {
         self.mappings = Some(mappings);
         self

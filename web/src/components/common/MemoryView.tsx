@@ -1,13 +1,12 @@
 import {
-  ActionIcon,
   AppShell,
+  Box,
   Group,
   Pagination,
   Select,
   Stack,
   Text,
   ThemeIcon,
-  Tooltip,
 } from "@mantine/core";
 import { useEffect, useState } from "react";
 import { formatHex } from "../../utils";
@@ -20,34 +19,35 @@ import {
 import { useDebuggerStore } from "@/stores/debuggerStore";
 import HexView from "./HexView";
 import TileView from "./TileView";
+import { memoryRegions, type MemoryRegion } from "@/lib/gba";
 
-const viewModes = [
-  { name: "hex", pageSize: 1024 },
-  { name: "tile", pageSize: 2048 },
-] as const;
+const viewModes = {
+  hex: { pageSize: 1024 },
+  tile: { pageSize: 2048 },
+} as const;
 
 function MemoryView(props: {
-  data: Uint8Array;
-  baseAddress: number;
+  region: MemoryRegion;
   columns?: number;
-  rightSection?: "ascii" | "color";
+  mode: "hex" | "tile";
 }) {
   const [currentPageId, setCurrentPageId] = useState(1);
-  const [currentModeId, setCurrentModeId] = useState(0);
   const { cycles } = useDebuggerStore();
 
-  const { name: currentMode, pageSize } = viewModes[currentModeId];
+  const currentEntry = memoryRegions[props.region];
+  const data = currentEntry.getData();
+  const { pageSize } = viewModes[props.mode];
   const columns = props.columns ?? 16;
   const pageStart = (currentPageId - 1) * pageSize;
-  const total = Math.ceil(props.data.length / pageSize);
-  const selectRegion = formatHex(props.baseAddress + pageStart);
-  const currentPage = props.data.slice(pageStart, pageStart + pageSize);
+  const total = Math.ceil(data.length / pageSize);
+  const selectRegion = formatHex(currentEntry.offset + pageStart);
+  const currentPage = data.slice(pageStart, pageStart + pageSize);
 
   const generateAddresses = () => {
     const addresses: string[] = [];
 
     for (let i = 0; i < total; i += 1) {
-      const rawAddr = props.baseAddress + i * pageSize;
+      const rawAddr = currentEntry.offset + i * pageSize;
       const hexaddr = formatHex(rawAddr);
       addresses.push(hexaddr);
     }
@@ -57,7 +57,7 @@ function MemoryView(props: {
 
   const handleSelect = (value: string | null) => {
     if (value) {
-      const basePageAddress = parseInt(value, 16) - props.baseAddress;
+      const basePageAddress = parseInt(value, 16) - currentEntry.offset;
       const newPage = basePageAddress / pageSize + 1;
       setCurrentPageId(newPage);
     }
@@ -71,19 +71,19 @@ function MemoryView(props: {
 
   return (
     <Stack flex={1} w="100%" align="center">
-      {props.data.length ? (
+      {data.length ? (
         <>
-          {currentMode === "hex" && (
+          {props.mode === "hex" && (
             <HexView
               pageData={currentPage}
-              baseAddress={props.baseAddress}
+              baseAddress={currentEntry.offset}
               columns={columns}
               pageStart={pageStart}
-              rightSection={props.rightSection}
+              rightSection={props.region === "palette" ? "color" : "ascii"}
             />
           )}
 
-          {currentMode === "tile" && <TileView pageData={currentPage} />}
+          {props.mode === "tile" && <TileView pageData={currentPage} />}
         </>
       ) : (
         <Stack flex={1} justify="center" align="center" c="gray">
@@ -101,25 +101,19 @@ function MemoryView(props: {
               <IconStackFront />
             </ThemeIcon>
             <Text ff="monospace">
-              {formatHex(props.baseAddress + pageStart)}{" "}
-              {props.data.length ? (
-                <>- {formatHex(props.baseAddress + currentPageId * pageSize)}</>
+              {formatHex(currentEntry.offset + pageStart)}{" "}
+              {data.length ? (
+                <>
+                  - {formatHex(currentEntry.offset + currentPageId * pageSize)}
+                </>
               ) : undefined}
             </Text>
           </Group>
           <Group w={{ base: "100%", md: "auto" }}>
-            <Tooltip label={`Toggle ${currentMode} mode`}>
-              <ActionIcon
-                size="input-sm"
-                variant="outline"
-                onClick={() =>
-                  setCurrentModeId((prev) => (prev + 1) % viewModes.length)
-                }
-              >
-                {currentMode === "hex" && <IconSortAscendingNumbers />}
-                {currentMode === "tile" && <IconGridDots />}
-              </ActionIcon>
-            </Tooltip>
+            <Box c="indigo">
+              {props.mode === "hex" && <IconSortAscendingNumbers />}
+              {props.mode === "tile" && <IconGridDots />}
+            </Box>
             <Select
               value={selectRegion}
               data={addresses}

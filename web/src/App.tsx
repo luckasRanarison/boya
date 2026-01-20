@@ -1,21 +1,20 @@
 import { AppShell, createTheme, MantineProvider } from "@mantine/core";
-import DesktopNavbar from "./components/layout/DesktopNavbar";
+import Navbar from "./components/layout/Navbar";
 import Main from "./components/layout/Main";
 import { Notifications } from "@mantine/notifications";
 import Header from "./components/layout/Header";
 import { useEffect, useState } from "react";
 import { usePersistantStore } from "./stores/persistantStore";
 import { instance } from "./lib/gba";
-import type { View } from "./components/views";
+import type { MenuView } from "./components/views";
 import { useDisclosure } from "@mantine/hooks";
-import MobileNavbar from "./components/layout/MobileNavbar";
 
 function App() {
   const mantineTheme = createTheme({
     primaryColor: "indigo",
   });
 
-  const [view, setView] = useState<View>("main");
+  const [view, setView] = useState<MenuView>({ name: "Main" });
   const [opened, { toggle }] = useDisclosure();
   const { bios, theme: colorScheme } = usePersistantStore();
 
@@ -46,12 +45,7 @@ function App() {
         </AppShell.Header>
 
         <AppShell.Navbar display="flex">
-          <DesktopNavbar />
-          <MobileNavbar
-            view={view}
-            onViewChange={setView}
-            onNavbarToggle={toggle}
-          />
+          <Navbar />
         </AppShell.Navbar>
 
         <AppShell.Main display="flex">

@@ -1,9 +1,11 @@
 import {
+  IconArrowsSort,
   IconArrowsUpDown,
   IconBug,
   IconCube,
   IconDatabase,
   IconFileDigit,
+  IconGridDots,
   IconInfoCircle,
   IconLayoutDashboard,
   IconPalette,
@@ -14,20 +16,31 @@ import {
   IconStack3,
 } from "@tabler/icons-react";
 
-export const views = [
-  { name: "main", icon: IconLayoutDashboard },
+const memorySubs = [
   { name: "bios", icon: IconFileDigit },
   { name: "ewram", icon: IconStack3 },
   { name: "iwram", icon: IconStack2 },
-  { name: "i/o", icon: IconArrowsUpDown },
+  { name: "io", icon: IconArrowsUpDown },
   { name: "palette", icon: IconPalette },
   { name: "vram", icon: IconPhoto },
   { name: "oam", icon: IconCube },
   { name: "rom", icon: IconSourceCode },
-  { name: "sram", icon: IconDatabase, mobileOnly: false },
-  { name: "about", icon: IconInfoCircle, mobileOnly: true },
-  { name: "debugger", icon: IconBug, mobileOnly: true },
-  { name: "settings", icon: IconSettings, mobileOnly: true },
+  { name: "sram", icon: IconDatabase },
+] as const;
+
+export const views = [
+  { name: "Main", icon: IconLayoutDashboard },
+  { name: "Memory", icon: IconStack3, sub: memorySubs },
+  { name: "Tiles", icon: IconGridDots, sub: memorySubs },
+  { name: "Registers", icon: IconArrowsSort },
+  { name: "About", icon: IconInfoCircle, mobileOnly: true },
+  { name: "Debugger", icon: IconBug, mobileOnly: true },
+  { name: "Settings", icon: IconSettings, mobileOnly: true },
 ] as const;
 
 export type View = (typeof views)[number]["name"];
+
+export type MenuView = {
+  name: View;
+  sub?: string;
+};

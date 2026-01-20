@@ -2,42 +2,49 @@ import { Gba } from "boya_wasm";
 
 export const instance = new Gba();
 
-console.log(instance.generateIOMap());
-
 export const memoryRegions = {
   bios: {
     offset: 0x0000_0000,
     length: 0x4000,
+    getData: () => instance.bios(),
   },
   ewram: {
     offset: 0x0200_0000,
     length: 0x40000,
+    getData: () => instance.ewram(),
   },
   iwram: {
     offset: 0x0300_0000,
     length: 0x8000,
+    getData: () => instance.iwram(),
   },
   io: {
     offset: 0x0400_0000,
+    getData: () => new Uint8Array(),
   },
   palette: {
     offset: 0x0500_0000,
     length: 0x400,
+    getData: () => instance.palette(),
   },
   vram: {
     offset: 0x0600_0000,
     length: 0x18000,
+    getData: () => instance.vram(),
   },
   oam: {
     offset: 0x0700_0000,
     length: 0x400,
+    getData: () => instance.oam(),
   },
   rom: {
     offset: 0x0800_0000,
+    getData: () => instance.rom(),
   },
   sram: {
     offset: 0x0e00_0000,
     length: 0x1000,
+    getData: () => instance.sram(),
   },
 };
 
