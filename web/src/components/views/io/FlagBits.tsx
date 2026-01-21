@@ -20,14 +20,14 @@ export function FlagBits({
               .padStart(f.length, "0")
               .split("")
               .map((b, i) => (
-                <Tooltip label={f.name}>
+                <Tooltip
+                  key={register.name + f.name + (f.start + i)}
+                  label={f.name}
+                >
                   {f.name === "unused" ? (
-                    <Table.Td key={i} c="gray">
-                      -
-                    </Table.Td>
+                    <Table.Td c="gray">-</Table.Td>
                   ) : (
                     <Table.Td
-                      key={i}
                       style={{
                         borderColor:
                           f.length > 1 && i !== f.length - 1

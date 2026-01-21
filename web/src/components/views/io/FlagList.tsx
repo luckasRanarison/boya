@@ -11,7 +11,7 @@ export function FlagList({ flags, value }: { value: number; flags: Flag[] }) {
           const flagValue = getFlagValue(value, flag);
 
           return (
-            <Group>
+            <Group key={flag.name + flag.start}>
               <Text c="indigo" size="sm" w="7ch">
                 [
                 {flag.length === 1

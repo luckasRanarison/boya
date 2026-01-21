@@ -2,7 +2,7 @@ import { useDebuggerStore } from "@/stores/debuggerStore";
 import { Flex, Stack } from "@mantine/core";
 import { useEffect, useRef } from "react";
 import EmulatorFooter from "./EmulatorFooter";
-import { useKeyHandler } from "@/hooks/keymap";
+import { useKeyHandler } from "@/hooks/useKeyHandler";
 
 function EmulatorView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);

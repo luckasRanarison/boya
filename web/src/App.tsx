@@ -3,19 +3,15 @@ import Navbar from "./components/layout/Navbar";
 import Main from "./components/layout/Main";
 import { Notifications } from "@mantine/notifications";
 import Header from "./components/layout/Header";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { usePersistantStore } from "./stores/persistantStore";
 import { instance } from "./lib/gba";
-import type { MenuView } from "./components/views";
-import { useDisclosure } from "@mantine/hooks";
 
 function App() {
   const mantineTheme = createTheme({
     primaryColor: "indigo",
   });
 
-  const [view, setView] = useState<MenuView>({ name: "Main" });
-  const [opened, { toggle }] = useDisclosure();
   const { bios, theme: colorScheme } = usePersistantStore();
 
   useEffect(() => {
@@ -32,16 +28,11 @@ function App() {
         navbar={{
           width: 350,
           breakpoint: "sm",
-          collapsed: { mobile: !opened },
+          collapsed: { mobile: true },
         }}
       >
         <AppShell.Header>
-          <Header
-            view={view}
-            navbarOpened={opened}
-            onViewChange={setView}
-            onNavbarToggle={toggle}
-          />
+          <Header />
         </AppShell.Header>
 
         <AppShell.Navbar display="flex">
@@ -49,7 +40,7 @@ function App() {
         </AppShell.Navbar>
 
         <AppShell.Main display="flex">
-          <Main view={view} />
+          <Main />
         </AppShell.Main>
       </AppShell>
 

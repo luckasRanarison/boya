@@ -13,7 +13,7 @@ impl fmt::Display for Operand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let lhs = match self.kind {
             OperandKind::Imm if self.negate => format!("#-{}", self.value),
-            OperandKind::Imm => format!("#{}", self.value),
+            OperandKind::Imm => format!("#{:#02X}", self.value),
             OperandKind::Reg => format!("R{}", self.value),
         };
 

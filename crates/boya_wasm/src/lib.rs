@@ -55,9 +55,9 @@ impl Gba {
         self.core.cycles
     }
 
-    #[wasm_bindgen(js_name = "pc")]
-    pub fn pc(&self) -> u32 {
-        self.core.cpu.pipeline.current_address()
+    #[wasm_bindgen(js_name = "execAddress")]
+    pub fn exec_address(&self) -> u32 {
+        self.core.cpu.exec_address()
     }
 
     #[wasm_bindgen(js_name = "lr")]
@@ -83,16 +83,21 @@ impl Gba {
     }
 
     #[wasm_bindgen(js_name = "nextInstructions")]
-    pub fn next_instructions(&self) -> Result<JsValue, JsValue> {
+    pub fn next_instructions(&self, max_length: u16) -> Result<JsValue, JsValue> {
         let instructions = self
             .core
             .cpu
-            .decode_until_branch()
+            .decode_until_branch(max_length)
             .into_iter()
             .map(|(addr, instr)| (addr, instr.format(10)))
             .collect::<Vec<_>>();
 
         Ok(serde_wasm_bindgen::to_value(&instructions)?)
+    }
+
+    #[wasm_bindgen(js_name = "instructionSize")]
+    pub fn instruction_size(&self) -> u8 {
+        self.core.cpu.instr_size()
     }
 
     #[wasm_bindgen(js_name = "stepFrame")]

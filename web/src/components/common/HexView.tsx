@@ -47,7 +47,12 @@ function HexView(props: {
   return (
     <Stack p="xl" w="100%" ff={"monospace"} align="center">
       {lines.map((line) => (
-        <Group key={line.address} w="100%" justify="space-between">
+        <Group
+          key={line.address}
+          id={`${formatHex(line.address)}`}
+          w="100%"
+          justify="space-between"
+        >
           <Text c="indigo" fw={600}>
             {formatHex(line.address)}:
           </Text>

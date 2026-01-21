@@ -5,16 +5,11 @@ import {
   IconMenu2,
 } from "@tabler/icons-react";
 import AppTitle from "./AppTitle";
-import { views, type MenuView } from "../views";
+import { views, useView } from "@/stores/viewStore";
 
-type Props = {
-  view: MenuView;
-  navbarOpened: boolean;
-  onViewChange: (value: MenuView) => void;
-  onNavbarToggle: () => void;
-};
+function Header() {
+  const { view, setView } = useView();
 
-function Header(props: Props) {
   return (
     <Group p="md" h="100%" justify="space-between" align="center">
       <Box px="md" hiddenFrom="sm">
@@ -34,7 +29,7 @@ function Header(props: Props) {
                 rightSection={<IconChevronDown />}
                 fz="md"
               >
-                {props.view.name}
+                {view.name}
               </Button>
             </Box>
           </Menu.Target>
@@ -51,16 +46,14 @@ function Header(props: Props) {
                     </Menu.Sub.Item>
                   </Menu.Target>
                   <Menu.Dropdown>
-                    {rest.sub.map(({ name: subName, icon: Icon }) => (
+                    {rest.sub.map(({ icon: Icon, ...sub }) => (
                       <Menu.Item
-                        key={subName}
+                        key={sub.name}
                         leftSection={<Icon size={18} />}
-                        onClick={() =>
-                          props.onViewChange({ name, sub: subName })
-                        }
+                        onClick={() => setView({ name, sub })}
                       >
                         <Text ml="xs" size="md">
-                          {subName}
+                          {sub.name}
                         </Text>
                       </Menu.Item>
                     ))}
@@ -70,7 +63,7 @@ function Header(props: Props) {
                 <Menu.Item
                   key={name}
                   leftSection={<Icon size={18} />}
-                  onClick={() => props.onViewChange({ name })}
+                  onClick={() => setView({ name })}
                   hiddenFrom={"mobileOnly" in rest ? "sm" : undefined}
                 >
                   <Text ml="xs" size="md">

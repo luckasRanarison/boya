@@ -7,7 +7,7 @@ import { useEffect, useMemo } from "react";
 import { FlagBits } from "./FlagBits";
 import { FlagList } from "./FlagList";
 
-function IORegisterView() {
+function IORegisterView(props: { style: "simple" | "full" }) {
   const { cycles } = useDebuggerStore();
   const registerMap = useMemo<IOMap>(() => instance.generateIOMap(), []);
 
@@ -16,7 +16,7 @@ function IORegisterView() {
   }, [cycles]);
 
   return (
-    <Stack w="100%" p={{ base: "md", sm: "xl" }} ff="monospace">
+    <Stack w="100%" p={0} ff="monospace">
       <Accordion>
         {registerMap.map((register) => {
           const address = memoryRegions.io.offset + register.address;
@@ -31,13 +31,28 @@ function IORegisterView() {
                 <Group justify="space-between" pr="md">
                   <Group gap="xl">
                     <Text c="indigo" fw={600}>
-                      {formatHex(address)}
+                      {formatHex(
+                        props.style === "simple"
+                          ? address - memoryRegions.io.offset
+                          : address,
+                        { width: 3 },
+                      )}
                     </Text>
-                    <Text>{register.name}</Text>
+                    <Text size={props.style === "simple" ? "sm" : "md"}>
+                      {register.name}
+                    </Text>
                   </Group>
-                  <Group style={{ overflow: "scroll" }}>
-                    <FlagBits value={value} register={register} />
-                  </Group>
+                  {props.style === "simple" ? (
+                    <Text c="gray">
+                      {formatHex(value, {
+                        width: register.size === "HWord" ? 4 : 8,
+                      })}
+                    </Text>
+                  ) : (
+                    <Group style={{ overflow: "scroll" }}>
+                      <FlagBits value={value} register={register} />
+                    </Group>
+                  )}
                 </Group>
               </Accordion.Control>
               <Accordion.Panel>

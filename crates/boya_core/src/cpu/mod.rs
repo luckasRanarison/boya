@@ -96,12 +96,21 @@ impl Arm7tdmi {
         }
     }
 
+    #[inline(always)]
+    pub fn instr_size(&self) -> u8 {
+        if self.cpsr.thumb() { 2 } else { 4 }
+    }
+
     pub fn lr(&self) -> u32 {
         self.registers.get(Register::LR, self.cpsr.op_mode())
     }
 
     pub fn sp(&self) -> u32 {
         self.registers.get(Register::SP, self.cpsr.op_mode())
+    }
+
+    pub fn exec_address(&self) -> u32 {
+        self.pc().saturating_sub(self.instr_size() as u32 * 2)
     }
 
     #[inline(always)]
@@ -123,11 +132,6 @@ impl Arm7tdmi {
         };
 
         self.bus.rw_cycle(self.pc(), dt, access_kind)
-    }
-
-    #[inline(always)]
-    fn instr_size(&self) -> u8 {
-        if self.cpsr.thumb() { 2 } else { 4 }
     }
 
     fn count_rlist(&self, rlist: u16) -> u8 {

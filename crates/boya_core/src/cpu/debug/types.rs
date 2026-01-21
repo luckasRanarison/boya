@@ -80,7 +80,7 @@ impl InstructionData {
         let arg_suffix = self.arg_suffix().unwrap_or_default();
 
         let cased_args = match self.kind {
-            InstructionKind::Arm(_) => args.to_uppercase(),
+            InstructionKind::Arm(_) => args,
             InstructionKind::Thumb(_) => args.to_lowercase(),
         };
 

@@ -1,4 +1,4 @@
-import { ActionIcon, Group, Stack, TagsInput, Tooltip } from "@mantine/core";
+import { ActionIcon, Group, Stack, Tooltip } from "@mantine/core";
 import {
   IconArrowBack,
   IconArrowBackUp,
@@ -10,10 +10,20 @@ import {
   IconStepOut,
 } from "@tabler/icons-react";
 import { useDebuggerStore } from "../../../stores/debuggerStore";
-import { formatHex } from "@/utils";
+import { useView } from "@/stores/viewStore";
+import { instance } from "@/lib/gba";
 
 function DebuggerControls() {
   const dbg = useDebuggerStore();
+  const { view, gotoMemory } = useView();
+
+  const handleStepInto = () => {
+    dbg.stepInto();
+
+    if (view.name === "memory") {
+      gotoMemory(instance.execAddress(), "code");
+    }
+  };
 
   const actions = [
     {
@@ -43,7 +53,7 @@ function DebuggerControls() {
     {
       icon: IconStepInto,
       label: "Step into",
-      onClick: () => dbg.stepInto(),
+      onClick: handleStepInto,
       disabled: dbg.running || !dbg.romLoaded,
     },
     {
@@ -60,16 +70,8 @@ function DebuggerControls() {
     },
   ];
 
-  const handleBreakpointUpdate = (breakpoints: string[]) => {
-    const newBreakpoints = breakpoints
-      .map((b) => (b.startsWith("0x") ? parseInt(b.slice(2), 16) : parseInt(b)))
-      .filter((b) => !isNaN(b));
-
-    dbg.setBreakpoints(newBreakpoints);
-  };
-
   return (
-    <Stack mb="md">
+    <Stack mb="md" px="md">
       <Group w="100%" justify="center">
         {actions.map(({ icon: Icon, label, disabled, onClick }) => (
           <Tooltip key={label} label={label}>
@@ -84,13 +86,6 @@ function DebuggerControls() {
           </Tooltip>
         ))}
       </Group>
-      <TagsInput
-        label="breakpoints"
-        placeholder="Enter breakpoint address..."
-        value={dbg.breakpoints.map((b) => formatHex(b))}
-        variant="filled"
-        onChange={handleBreakpointUpdate}
-      />
     </Stack>
   );
 }

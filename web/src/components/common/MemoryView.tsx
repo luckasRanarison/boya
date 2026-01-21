@@ -25,36 +25,51 @@ import HexView from "./HexView";
 import TileView from "./TileView";
 import { memoryRegions, type MemoryRegion } from "@/lib/gba";
 import CodeView from "./CodeView";
+import { useMemoryPage } from "@/hooks/useMemoryPageReducer";
 
-const viewModes = [
-  { name: "hex", pageSize: 1024, icon: IconSortAscendingNumbers },
-  { name: "tile", pageSize: 2048, icon: IconGridDots },
-  { name: "code", pageSize: 1024, icon: IconSourceCode },
-] as const;
+const viewModes = {
+  hex: {
+    pageSize: 1024,
+    icon: IconSortAscendingNumbers,
+  },
+  tile: {
+    pageSize: 2048,
+    icon: IconGridDots,
+  },
+  code: {
+    pageSize: 512,
+    icon: IconSourceCode,
+  },
+};
 
-function MemoryView(props: { region: MemoryRegion; columns?: number }) {
-  const [currentPageId, setCurrentPageId] = useState(1);
-  const [currentModeId, setCurrentModeId] = useState(0);
+export type MemoryViewMode = keyof typeof viewModes;
+
+function MemoryView(props: {
+  region: MemoryRegion;
+  mode: MemoryViewMode;
+  targetAddress?: number;
+  columns?: number;
+}) {
+  const [currentMode, setCurrentMode] = useState(props.mode ?? "hex");
   const { cycles } = useDebuggerStore();
 
-  const currentEntry = memoryRegions[props.region];
-  const data = currentEntry.getData();
-  const {
-    name: currentMode,
-    pageSize,
-    icon: ModeIcon,
-  } = viewModes[currentModeId];
+  const { offset, getData } = memoryRegions[props.region];
+  const { pageSize, icon: ModeIcon } = viewModes[currentMode];
+
+  const [{ pageId }, dispatch] = useMemoryPage({ offset, pageSize });
+
+  const data = getData();
   const columns = props.columns ?? 16;
-  const pageStart = (currentPageId - 1) * pageSize;
+  const pageStart = (pageId - 1) * pageSize;
   const total = Math.ceil(data.length / pageSize);
-  const selectRegion = formatHex(currentEntry.offset + pageStart);
+  const selectRegion = formatHex(offset + pageStart);
   const currentPage = data.slice(pageStart, pageStart + pageSize);
 
   const generateAddresses = () => {
     const addresses: string[] = [];
 
     for (let i = 0; i < total; i += 1) {
-      const rawAddr = currentEntry.offset + i * pageSize;
+      const rawAddr = offset + i * pageSize;
       const hexaddr = formatHex(rawAddr);
       addresses.push(hexaddr);
     }
@@ -64,26 +79,32 @@ function MemoryView(props: { region: MemoryRegion; columns?: number }) {
 
   const handleSelect = (value: string | null) => {
     if (value) {
-      const basePageAddress = parseInt(value, 16) - currentEntry.offset;
+      const basePageAddress = parseInt(value, 16) - offset;
       const newPage = basePageAddress / pageSize + 1;
-      setCurrentPageId(newPage);
+      dispatch({ type: "select", pageId: newPage });
     }
   };
 
   const addresses = generateAddresses();
 
   useEffect(() => {
+    if (props.targetAddress) {
+      dispatch({ type: "jump", address: props.targetAddress });
+    }
+  }, [props.targetAddress, dispatch]);
+
+  useEffect(() => {
     // re-render component on cycle update
   }, [cycles]);
 
   return (
-    <Stack flex={1} w="100%" align="center">
+    <Stack flex={1} mb="80px" align="center">
       {data.length ? (
         <>
           {currentMode === "hex" && (
             <HexView
               pageData={currentPage}
-              baseAddress={currentEntry.offset}
+              baseAddress={offset}
               columns={columns}
               pageStart={pageStart}
               rightSection={props.region === "palette" ? "color" : "ascii"}
@@ -94,7 +115,7 @@ function MemoryView(props: { region: MemoryRegion; columns?: number }) {
 
           {currentMode === "code" && (
             <CodeView
-              baseAddress={currentEntry.offset}
+              baseAddress={offset}
               pageStart={pageStart}
               pageSize={pageSize}
             />
@@ -119,13 +140,15 @@ function MemoryView(props: { region: MemoryRegion; columns?: number }) {
                 </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown>
-                {viewModes.map(({ icon: Icon, ...mode }, id) => (
+                {Object.entries(viewModes).map(([name, { icon: Icon }]) => (
                   <Menu.Item
-                    key={mode.name}
+                    key={name}
                     leftSection={<Icon size={16} />}
-                    onClick={() => setCurrentModeId(id)}
+                    onClick={() => setCurrentMode(name as MemoryViewMode)}
                   >
-                    {mode.name}
+                    <Text ml="xs" size="md">
+                      {name}
+                    </Text>
                   </Menu.Item>
                 ))}
               </Menu.Dropdown>
@@ -135,12 +158,9 @@ function MemoryView(props: { region: MemoryRegion; columns?: number }) {
                 <IconStackFront />
               </ThemeIcon>
               <Text ff="monospace">
-                {formatHex(currentEntry.offset + pageStart)}{" "}
+                {formatHex(offset + pageStart)}{" "}
                 {data.length ? (
-                  <>
-                    -{" "}
-                    {formatHex(currentEntry.offset + currentPageId * pageSize)}
-                  </>
+                  <>- {formatHex(offset + pageId * pageSize)}</>
                 ) : undefined}
               </Text>
             </Group>
@@ -160,8 +180,8 @@ function MemoryView(props: { region: MemoryRegion; columns?: number }) {
               searchable
             />
             <Pagination
-              value={currentPageId}
-              onChange={setCurrentPageId}
+              value={pageId}
+              onChange={(pageId) => dispatch({ type: "select", pageId })}
               total={total}
               withPages={false}
             />

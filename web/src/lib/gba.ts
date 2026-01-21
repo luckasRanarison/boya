@@ -20,6 +20,7 @@ export const memoryRegions = {
   },
   io: {
     offset: 0x0400_0000,
+    length: 0x210,
     getData: () => new Uint8Array(),
   },
   palette: {
@@ -39,6 +40,7 @@ export const memoryRegions = {
   },
   rom: {
     offset: 0x0800_0000,
+    length: 0xffff_ffff,
     getData: () => instance.rom(),
   },
   sram: {
