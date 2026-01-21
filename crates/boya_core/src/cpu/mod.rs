@@ -96,6 +96,11 @@ impl Arm7tdmi {
         }
     }
 
+    #[inline(always)]
+    pub fn instr_size(&self) -> u8 {
+        if self.cpsr.thumb() { 2 } else { 4 }
+    }
+
     pub fn lr(&self) -> u32 {
         self.registers.get(Register::LR, self.cpsr.op_mode())
     }
@@ -123,11 +128,6 @@ impl Arm7tdmi {
         };
 
         self.bus.rw_cycle(self.pc(), dt, access_kind)
-    }
-
-    #[inline(always)]
-    fn instr_size(&self) -> u8 {
-        if self.cpsr.thumb() { 2 } else { 4 }
     }
 
     fn count_rlist(&self, rlist: u16) -> u8 {

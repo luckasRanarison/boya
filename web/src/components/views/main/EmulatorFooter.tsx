@@ -28,6 +28,35 @@ function EmulatorFooter(props: { canvas: () => HTMLCanvasElement | null }) {
     link.remove();
   };
 
+  const menuItems = [
+    {
+      name: "Screenshot",
+      icon: IconPhoto,
+      action: handleScreenshot,
+    },
+    {
+      name: "Restart",
+      icon: IconRestore,
+      action: dbg.reset,
+    },
+    dbg.running
+      ? {
+          name: "Pause",
+          icon: IconPlayerPause,
+          action: dbg.pause,
+        }
+      : {
+          name: "Continue",
+          icon: IconPlayerPlay,
+          action: dbg.run,
+        },
+    {
+      name: "Stop",
+      icon: IconX,
+      action: dbg.unloadRom,
+    },
+  ];
+
   return (
     <AppShell.Footer p="md">
       <Group justify="space-between">
@@ -40,39 +69,13 @@ function EmulatorFooter(props: { canvas: () => HTMLCanvasElement | null }) {
             </Menu.Target>
 
             <Menu.Dropdown>
-              <Menu.Item
-                leftSection={<IconPhoto size={16} />}
-                onClick={handleScreenshot}
-              >
-                Screenshot
-              </Menu.Item>
-              <Menu.Item
-                leftSection={<IconRestore size={16} />}
-                onClick={dbg.reset}
-              >
-                Restart
-              </Menu.Item>
-              {dbg.running ? (
-                <Menu.Item
-                  leftSection={<IconPlayerPause size={16} />}
-                  onClick={dbg.pause}
-                >
-                  Pause
+              {menuItems.map(({ icon: Icon, name, action }) => (
+                <Menu.Item leftSection={<Icon size={16} />} onClick={action}>
+                  <Text ml="xs" size="md">
+                    {name}
+                  </Text>
                 </Menu.Item>
-              ) : (
-                <Menu.Item
-                  leftSection={<IconPlayerPlay size={16} />}
-                  onClick={dbg.run}
-                >
-                  Resume
-                </Menu.Item>
-              )}
-              <Menu.Item
-                leftSection={<IconX size={16} />}
-                onClick={dbg.unloadRom}
-              >
-                Stop
-              </Menu.Item>
+              ))}
             </Menu.Dropdown>
           </Menu>
           {dbg.running ? (

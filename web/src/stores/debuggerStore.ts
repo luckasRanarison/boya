@@ -2,6 +2,15 @@ import { create } from "zustand";
 import { instance } from "@/lib/gba";
 import { FrameCounter } from "@/utils";
 
+type InstructionChache = Record<
+  number,
+  | {
+      value: string;
+      size: number;
+    }
+  | undefined
+>;
+
 type DebuggerStore = {
   cycles: bigint;
   lastCycle?: number;
@@ -12,7 +21,7 @@ type DebuggerStore = {
   canvas?: { context: CanvasRenderingContext2D; imageData: ImageData };
   fps: number;
   paused: boolean;
-  instructionCache: Record<number, string | undefined>;
+  instructionCache: InstructionChache;
 
   run: () => void;
   pause: () => void;
@@ -22,7 +31,7 @@ type DebuggerStore = {
   setBreakpoints: (breakPoints: number[]) => void;
   loadRom: (rom: Uint8Array) => void;
   unloadRom: () => void;
-  decode: () => void;
+  decode: (count: number) => void;
 };
 
 export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
@@ -79,16 +88,13 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
     set((prev) => ({ ...prev, running: true, paused: false }));
 
     const frameCounter = new FrameCounter();
-    const startTime = Date.now();
 
-    const intervalId = setInterval(() => {
+    const stepFrame = (ellapsed: number) => {
       const { running, canvas, breakpoints, paused } = get();
 
       if (!running || paused) {
-        return clearInterval(intervalId);
+        return;
       }
-
-      const ellapsed = Date.now() - startTime;
 
       frameCounter.onFrame(ellapsed, {
         interval: 1000,
@@ -120,7 +126,11 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
         instance.writeFrameBuffer(pixels as unknown as Uint8Array);
         canvas.context.putImageData(canvas.imageData, 0, 0);
       }
-    }, 1000 / 60);
+
+      requestAnimationFrame(stepFrame);
+    };
+
+    stepFrame(0);
   },
 
   stepInto: () => {
@@ -133,14 +143,17 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
     }));
   },
 
-  decode: () => {
-    const instructions = instance.nextInstructions();
+  decode: (count) => {
+    const size = instance.instructionSize();
+    const instructions: [number, string][] = instance.nextInstructions(count);
 
     set((prev) => ({
       ...prev,
       instructionCache: {
         ...prev.instructionCache,
-        ...Object.fromEntries(instructions),
+        ...Object.fromEntries(
+          instructions.map(([addr, value]) => [addr, { value, size }]),
+        ),
       },
     }));
   },

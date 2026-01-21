@@ -7,10 +7,11 @@ import { useDebuggerStore } from "../../../stores/debuggerStore";
 import { useEffect } from "react";
 
 function DebuggerView() {
-  const { cycles } = useDebuggerStore();
+  const { cycles, decode } = useDebuggerStore();
 
+  // re-render the component on cycle update
   useEffect(() => {
-    // re-render the component on cycle update
+    decode(10);
   }, [cycles]);
 
   return (

@@ -1,9 +1,11 @@
 import { Group, Text } from "@mantine/core";
 import { IconCaretRight } from "@tabler/icons-react";
 import { instance } from "@/lib/gba";
+import { useDebuggerStore } from "@/stores/debuggerStore";
 
 function InstructionPipeline() {
-  const instruction = instance.currentInstruction();
+  const { instructionCache } = useDebuggerStore();
+  const instruction = instructionCache[instance.pc()];
 
   return (
     <Group ff="monospace">
@@ -11,7 +13,7 @@ function InstructionPipeline() {
         <Group c="indigo">
           <IconCaretRight size={18} />
           <Text size="sm" fw={600}>
-            {instruction}
+            {instruction.value}
           </Text>
         </Group>
       ) : (

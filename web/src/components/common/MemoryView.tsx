@@ -27,9 +27,21 @@ import { memoryRegions, type MemoryRegion } from "@/lib/gba";
 import CodeView from "./CodeView";
 
 const viewModes = [
-  { name: "hex", pageSize: 1024, icon: IconSortAscendingNumbers },
-  { name: "tile", pageSize: 2048, icon: IconGridDots },
-  { name: "code", pageSize: 1024, icon: IconSourceCode },
+  {
+    name: "hex",
+    pageSize: 1024,
+    icon: IconSortAscendingNumbers,
+  },
+  {
+    name: "tile",
+    pageSize: 2048,
+    icon: IconGridDots,
+  },
+  {
+    name: "code",
+    pageSize: 512,
+    icon: IconSourceCode,
+  },
 ] as const;
 
 function MemoryView(props: { region: MemoryRegion; columns?: number }) {
@@ -125,7 +137,9 @@ function MemoryView(props: { region: MemoryRegion; columns?: number }) {
                     leftSection={<Icon size={16} />}
                     onClick={() => setCurrentModeId(id)}
                   >
-                    {mode.name}
+                    <Text ml="xs" size="md">
+                      {mode.name}
+                    </Text>
                   </Menu.Item>
                 ))}
               </Menu.Dropdown>
