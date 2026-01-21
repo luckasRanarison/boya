@@ -5,7 +5,7 @@ import DebuggerView from "../views/debugger/DebuggerView";
 import MainView from "../views/main/MainView";
 import SettingsView from "../views/settings/SettingsView";
 import IORegisterView from "../views/io/IORegisterView";
-import CPURegisterView from "../views/debugger/CPURegisterView";
+import CPURegisterView from "../views/cpu/CPURegisterView";
 
 function Main() {
   const { view } = useView();

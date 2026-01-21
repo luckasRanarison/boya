@@ -11,7 +11,7 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { useEffect, useState } from "react";
-import { formatHex } from "../../utils";
+import { formatHex } from "@/utils/format";
 import {
   IconDotsVertical,
   IconGridDots,

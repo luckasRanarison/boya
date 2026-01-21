@@ -1,6 +1,6 @@
 import { instance } from "@/lib/gba";
 import { useDebuggerStore } from "@/stores/debuggerStore";
-import { formatHex } from "@/utils";
+import { formatHex } from "@/utils/format";
 import { ActionIcon, Group, Stack, Text } from "@mantine/core";
 import { IconArrowRight, IconCircleDot } from "@tabler/icons-react";
 import { useState } from "react";
@@ -15,7 +15,7 @@ function CodeView(props: {
   pageStart: number;
   pageSize: number;
 }) {
-  const { instructionCache, breakpoints, setBreakpoints } = useDebuggerStore();
+  const { instructionCache, breakpoints } = useDebuggerStore();
   const [hovered, setHovered] = useState<number | null>(null);
 
   const generateLines = () => {
@@ -41,7 +41,7 @@ function CodeView(props: {
   return (
     <Stack w="100%" ff="monospace" gap={0}>
       {lines.map((line) => {
-        const isBreakpoint = breakpoints.includes(line.address);
+        const isBreakpoint = breakpoints.entries.has(line.address);
 
         return (
           <Group
@@ -49,11 +49,17 @@ function CodeView(props: {
             id={`${formatHex(line.address)}`}
             style={{ scrollMarginTop: "100px" }}
             key={line.address}
-            bg={pc === line.address ? "#4c6ef515" : "none"}
+            bg={
+              isBreakpoint
+                ? "#fa7a7a15"
+                : pc === line.address
+                  ? "#4c6ef515"
+                  : "none"
+            }
             onClick={() =>
               isBreakpoint
-                ? setBreakpoints(breakpoints.filter((b) => b !== line.address))
-                : setBreakpoints([...breakpoints, line.address])
+                ? breakpoints.remove(line.address)
+                : breakpoints.add(line.address)
             }
             gap={0}
           >

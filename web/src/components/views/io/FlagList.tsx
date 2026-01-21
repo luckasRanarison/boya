@@ -1,4 +1,4 @@
-import { getFlagValue } from "@/lib/bitflap";
+import { getFlagValue } from "@/utils/bitflag";
 import { Stack, Group, Text } from "@mantine/core";
 import type { Flag } from "boya_wasm";
 

@@ -1,5 +1,5 @@
-import { getFlagValue } from "@/lib/bitflap";
-import { formatHex } from "@/utils";
+import { getFlagValue } from "@/utils/bitflag";
+import { formatHex } from "@/utils/format";
 import { Table, Tooltip } from "@mantine/core";
 import type { RegisterEntry } from "boya_wasm";
 

@@ -1,6 +1,6 @@
 import { Group, SimpleGrid, Stack, Text } from "@mantine/core";
 import { instance } from "@/lib/gba";
-import { formatHex } from "@/utils";
+import { formatHex } from "@/utils/format";
 import ColorView from "./ColorView";
 
 type ByteLine = {

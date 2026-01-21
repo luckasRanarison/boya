@@ -1,6 +1,6 @@
 import { Text, Group, SimpleGrid, Stack, Accordion } from "@mantine/core";
 import { getRegistersBank, psrFlags } from "@/lib/gba";
-import { formatHex } from "../../../utils";
+import { formatHex } from "@/utils/format";
 
 function CpsrFlag(props: { label: string; value: number; flag: number }) {
   return (props.flag & props.value) !== 0 ? (

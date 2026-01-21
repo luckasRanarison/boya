@@ -8,7 +8,7 @@
     "preview": "vite preview --host",
     "build": "npm run wasm:build && tsc -b && vite build",
     "lint": "eslint .",
-    "wasm:watch": "node ./scripts/wasm-watch.mjs",
+    "wasm:watch": "node ./scripts/wasm-watch.mjs ../crates/",
     "wasm:build": "wasm-pack build ../crates/boya_wasm --out-dir ../../web/pkg && npm install ./pkg"
   },
   "dependencies": {
@@ -19,6 +19,7 @@
     "boya_wasm": "file:pkg",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-draggable": "^4.5.0",
     "vite-plugin-top-level-await": "^1.6.0",
     "vite-plugin-wasm": "^3.5.0",
     "zustand": "^5.0.9"

@@ -1,7 +1,7 @@
 import { ActionIcon, Group, Stack, Text } from "@mantine/core";
 import { instance } from "@/lib/gba";
 import { useDebuggerStore } from "@/stores/debuggerStore";
-import { formatHex, parseHex } from "@/utils";
+import { formatHex, parseHex } from "@/utils/format";
 import { IconExternalLink } from "@tabler/icons-react";
 import { useView } from "@/stores/viewStore";
 

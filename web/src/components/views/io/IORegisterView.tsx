@@ -1,6 +1,6 @@
 import { instance, memoryRegions } from "@/lib/gba";
 import { useDebuggerStore } from "@/stores/debuggerStore";
-import { formatHex } from "@/utils";
+import { formatHex } from "@/utils/format";
 import { Accordion, Group, Stack, Text } from "@mantine/core";
 import { type IOMap } from "boya_wasm";
 import { useEffect, useMemo } from "react";

@@ -1,4 +1,4 @@
-import { formatHex } from "@/utils";
+import { formatHex } from "@/utils/format";
 import { Card, SimpleGrid, Tooltip } from "@mantine/core";
 
 function ColorView(props: { value: number[]; columns: number }) {

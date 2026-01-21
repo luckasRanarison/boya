@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { instance } from "@/lib/gba";
-import { FrameCounter } from "@/utils";
+import { FrameCounter } from "@/utils/frame";
+import type { Position } from "@/utils/float";
 
 type InstructionChache = {
   [key: number]: { value: string; size: number } | undefined;
@@ -9,7 +10,6 @@ type InstructionChache = {
 type DebuggerStore = {
   cycles: bigint;
   lastCycle?: number;
-  breakpoints: number[];
   romLoaded: boolean;
   running: boolean;
   keypad: number;
@@ -23,10 +23,22 @@ type DebuggerStore = {
   reset: () => void;
   stepInto: () => void;
   setCanvas: (canvas: HTMLCanvasElement) => void;
-  setBreakpoints: (breakPoints: number[]) => void;
   loadRom: (rom: Uint8Array) => void;
   unloadRom: () => void;
   decode: (count: number) => void;
+
+  breakpoints: {
+    entries: Set<number>;
+    add: (breakPoints: number) => void;
+    remove: (breakPoints: number) => void;
+  };
+
+  panel: {
+    floating: boolean;
+    position: Position;
+    toggleFloat: () => void;
+    setPosition: (position: Position) => void;
+  };
 };
 
 export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
@@ -35,12 +47,49 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
   paused: false,
   romLoaded: false,
   keypad: 0x3ff,
-  breakpoints: [],
   fps: 0,
   instructionCache: {},
+  floatingControls: false,
 
-  setBreakpoints: (breakpoints) => {
-    set((prev) => ({ ...prev, breakpoints }));
+  panel: {
+    floating: false,
+    position: "down",
+
+    setPosition: (position) => {
+      set((prev) => ({ ...prev, panel: { ...prev.panel, position } }));
+    },
+
+    toggleFloat: () =>
+      set((prev) => ({
+        ...prev,
+        panel: { ...prev.panel, floating: !prev.panel.floating },
+      })),
+  },
+
+  breakpoints: {
+    entries: new Set<number>(),
+
+    add: (breakpoint) => {
+      set((prev) => ({
+        ...prev,
+        breakpoints: {
+          ...prev.breakpoints,
+          entries: prev.breakpoints.entries.add(breakpoint),
+        },
+      }));
+    },
+
+    remove: (breakpoint) => {
+      set((prev) => {
+        const breakpoints = prev.breakpoints.entries;
+        breakpoints.delete(breakpoint);
+
+        return {
+          ...prev,
+          breakpoints: { ...prev.breakpoints, entries: breakpoints },
+        };
+      });
+    },
   },
 
   setCanvas: (canvas: HTMLCanvasElement) => {
@@ -101,9 +150,9 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
         callback: (fps) => set((prev) => ({ ...prev, fps })),
       });
 
-      if (breakpoints.length) {
+      if (breakpoints.entries.size) {
         const cycles = instance.stepFrameWithBreakpoints(
-          new Uint32Array(breakpoints),
+          new Uint32Array(breakpoints.entries.values()),
         );
 
         set((prev) => ({
@@ -112,7 +161,7 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
           lastCycle: cycles,
         }));
 
-        if (breakpoints.includes(instance.execAddress()) || !get().running) {
+        if (breakpoints.entries.has(instance.execAddress()) || !get().running) {
           return set((prev) => ({
             ...prev,
             cycles: instance.cycles(),

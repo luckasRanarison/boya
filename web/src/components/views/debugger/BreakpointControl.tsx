@@ -1,12 +1,12 @@
 import { useDebuggerStore } from "@/stores/debuggerStore";
 import { useView } from "@/stores/viewStore";
-import { formatHex } from "@/utils";
+import { formatHex } from "@/utils/format";
 import { Stack, TextInput, Group, ActionIcon, Button } from "@mantine/core";
 import { IconExternalLink, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useState } from "react";
 
 function BreakpointControl() {
-  const { breakpoints, setBreakpoints } = useDebuggerStore();
+  const { breakpoints } = useDebuggerStore();
   const { gotoMemory } = useView();
 
   const [currentEdit, setCurrentEdit] = useState<{
@@ -20,32 +20,23 @@ function BreakpointControl() {
       : parseInt(value, 10);
   };
 
-  const updateBreakpoint = () => {
+  const updateBreakpoint = (bp: number) => {
     if (!currentEdit) return;
 
     const parsed = parse(currentEdit.value);
 
     if (Number.isNaN(parsed)) return;
 
-    const next = [...breakpoints];
-    next[currentEdit.index] = parsed;
-    setBreakpoints(next);
+    breakpoints.remove(bp);
+    breakpoints.add(parsed);
     setCurrentEdit(null);
-  };
-
-  const removeBreakpoint = (index: number) => {
-    setBreakpoints(breakpoints.filter((_, i) => i !== index));
-  };
-
-  const addBreakpoint = () => {
-    setBreakpoints([...breakpoints, 0]);
   };
 
   return (
     <Stack p="md">
-      {breakpoints.length > 0 && (
+      {breakpoints.entries.size > 0 && (
         <Group w="100%" gap="xs">
-          {breakpoints.map((bp, i) => (
+          {Array.from(breakpoints.entries.values()).map((bp, i) => (
             <Group w="100%" key={i} align="center">
               <TextInput
                 value={
@@ -57,7 +48,7 @@ function BreakpointControl() {
                 onFocus={() =>
                   setCurrentEdit({ index: i, value: formatHex(bp) })
                 }
-                onBlur={() => updateBreakpoint()}
+                onBlur={() => updateBreakpoint(bp)}
                 onKeyDown={(e) => e.code === "Enter" && e.currentTarget.blur()}
                 error={
                   currentEdit?.index === i &&
@@ -74,7 +65,7 @@ function BreakpointControl() {
               <ActionIcon
                 color="red"
                 variant="light"
-                onClick={() => removeBreakpoint(i)}
+                onClick={() => breakpoints.remove(bp)}
               >
                 <IconTrash size={16} />
               </ActionIcon>
@@ -86,7 +77,7 @@ function BreakpointControl() {
       <Button
         leftSection={<IconPlus size={16} />}
         variant="light"
-        onClick={addBreakpoint}
+        onClick={() => breakpoints.add(0)}
       >
         Add breakpoint
       </Button>

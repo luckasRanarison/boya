@@ -1,6 +1,6 @@
 import type { MemoryViewMode } from "@/components/common/MemoryView";
 import { memoryRegions } from "@/lib/gba";
-import { formatHex } from "@/utils";
+import { formatHex } from "@/utils/format";
 import {
   IconArrowsSort,
   IconBlocks,

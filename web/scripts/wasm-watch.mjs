@@ -6,6 +6,13 @@ let dirty = false;
 let running = false;
 let debounce = false;
 
+const [, , path] = process.argv;
+
+if (!path) {
+  console.error(chalk.red("Error: Path not provided"));
+  process.exit(1);
+}
+
 function log(message) {
   console.log(
     `${chalk.dim(new Date().toLocaleTimeString("en-US"))} ${chalk.cyan.bold("[wasm-watch]")} ${message}`,
@@ -38,7 +45,7 @@ function build() {
   });
 }
 
-fs.watch("../crates", { recursive: true }, (event, filename) => {
+fs.watch(path, { recursive: true }, (event, filename) => {
   if (!filename || debounce) return;
 
   log(`${filename} ${chalk.yellow(`(${event}d)`)}`);
