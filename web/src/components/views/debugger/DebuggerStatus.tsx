@@ -1,42 +1,41 @@
 import { Group, Stack, Text } from "@mantine/core";
-import { instance } from "@/lib/gba";
 import { useDebuggerStore } from "@/stores/debuggerStore";
-import { formatHex, parseHex } from "@/utils/format";
+import { formatHex } from "@/utils/format";
 import MemoryLink from "@/components/common/MemoryLink";
+import type { CpuState } from "@/hooks/useGba";
 
-function DebuggerStatus() {
+function DebuggerStatus({ data }: { data: CpuState }) {
   const { running, cycles, lastCycle, romLoaded } = useDebuggerStore();
 
-  // Accessing SP, LR, or operating mode before boot causes a panic
   const rows = [
     {
       label: "PC",
       default: formatHex(0),
       link: true,
-      value: () => formatHex(instance.execAddress()),
+      value: data.pc,
     },
     {
       label: "LR",
       default: formatHex(0),
       link: true,
-      value: () => formatHex(instance.lr()),
+      value: data.lr,
     },
     {
       label: "SP",
       default: formatHex(0),
       link: true,
-      value: () => formatHex(instance.sp()),
+      value: data.sp,
     },
     {
       label: "Mode",
       default: "none",
-      value: () => instance.cpuOperatingMode(),
+      value: data.operatingMode,
     },
     {
       label: "Cycles",
       default: 0,
       extra: lastCycle && <Text c="green">(+ {lastCycle})</Text>,
-      value: () => cycles,
+      value: cycles,
     },
   ];
 
@@ -47,18 +46,15 @@ function DebuggerStatus() {
           <Group>
             <Text size="sm">{row.label}:</Text>
             {romLoaded ? (
-              <Text c="indigo">{row.value()}</Text>
+              <Text c="indigo">
+                {row.link ? formatHex(row.value) : row.value}
+              </Text>
             ) : (
               <Text c="gray">{row.default}</Text>
             )}
             {row.extra}
           </Group>
-          {row.link && (
-            <MemoryLink
-              address={parseHex(romLoaded ? row.value() : row.default)}
-              disabled={running}
-            />
-          )}
+          {row.link && <MemoryLink address={row.value} disabled={running} />}
         </Group>
       ))}
     </Stack>

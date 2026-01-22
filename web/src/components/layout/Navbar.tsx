@@ -1,13 +1,13 @@
 import { Box, Stack, Tabs } from "@mantine/core";
 import { IconBug, IconInfoCircle, IconSettings } from "@tabler/icons-react";
 import AppTitle from "./AppTitle";
-import { useState } from "react";
 import SettingsView from "../views/settings/SettingsView";
 import DebuggerView from "../views/debugger/DebuggerView";
+import { useView, type NavbarTab } from "@/stores/viewStore";
 
 function DesktopNavbar() {
   // use controlled state to load the debugger lazily and improve perf
-  const [activeTab, setActiveTab] = useState("about");
+  const { tab, setTab } = useView();
 
   return (
     <Stack h="100%" w="100%" visibleFrom="sm">
@@ -17,8 +17,8 @@ function DesktopNavbar() {
       <Tabs
         h="100%"
         variant="outline"
-        value={activeTab}
-        onChange={(value) => value && setActiveTab(value)}
+        value={tab}
+        onChange={(value) => value && setTab(value as NavbarTab)}
       >
         <Tabs.List h="50">
           <Tabs.Tab value="about" leftSection={<IconInfoCircle size={14} />}>
@@ -36,13 +36,13 @@ function DesktopNavbar() {
           <div></div>
         </Tabs.Panel>
 
-        {activeTab === "settings" && (
+        {tab === "settings" && (
           <Tabs.Panel value="settings">
             <SettingsView />
           </Tabs.Panel>
         )}
 
-        {activeTab === "debugger" && (
+        {tab === "debugger" && (
           <Tabs.Panel value="debugger">
             <DebuggerView />
           </Tabs.Panel>

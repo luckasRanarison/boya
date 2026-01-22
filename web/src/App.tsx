@@ -5,7 +5,7 @@ import { Notifications } from "@mantine/notifications";
 import Header from "./components/layout/Header";
 import { useEffect } from "react";
 import { usePersistantStore } from "./stores/persistantStore";
-import { instance } from "./lib/gba";
+import { GBA } from "./lib/gba";
 import DebuggerControls from "./components/views/debugger/DebuggerControls";
 import { useDebuggerStore } from "./stores/debuggerStore";
 
@@ -19,7 +19,7 @@ function App() {
 
   useEffect(() => {
     if (bios) {
-      instance.loadBios(bios);
+      GBA.loadBios(bios);
     }
   }, [bios]);
 

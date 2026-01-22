@@ -1,22 +1,22 @@
-import { Gba } from "boya_wasm";
+import { Gba, type IOMap } from "boya_wasm";
 
-export const instance = new Gba();
+export const GBA = new Gba();
 
 export const memoryRegions = {
   bios: {
     offset: 0x0000_0000,
     length: 0x4000,
-    getData: () => instance.bios(),
+    getData: () => GBA.bios(),
   },
   ewram: {
     offset: 0x0200_0000,
     length: 0x40000,
-    getData: () => instance.ewram(),
+    getData: () => GBA.ewram(),
   },
   iwram: {
     offset: 0x0300_0000,
     length: 0x8000,
-    getData: () => instance.iwram(),
+    getData: () => GBA.iwram(),
   },
   io: {
     offset: 0x0400_0000,
@@ -26,31 +26,29 @@ export const memoryRegions = {
   palette: {
     offset: 0x0500_0000,
     length: 0x400,
-    getData: () => instance.palette(),
+    getData: () => GBA.palette(),
   },
   vram: {
     offset: 0x0600_0000,
     length: 0x18000,
-    getData: () => instance.vram(),
+    getData: () => GBA.vram(),
   },
   oam: {
     offset: 0x0700_0000,
     length: 0x400,
-    getData: () => instance.oam(),
+    getData: () => GBA.oam(),
   },
   rom: {
     offset: 0x0800_0000,
     length: 0xffff_ffff,
-    getData: () => instance.rom(),
+    getData: () => GBA.rom(),
   },
   sram: {
     offset: 0x0e00_0000,
     length: 0x1000,
-    getData: () => instance.sram(),
+    getData: () => GBA.sram(),
   },
 };
-
-export type MemoryRegion = keyof typeof memoryRegions;
 
 export const psrFlags = {
   N: 1 << 31,
@@ -62,43 +60,65 @@ export const psrFlags = {
   T: 1 << 5,
 };
 
-export function getRegistersBank() {
-  const psr = instance.getSpsrBank();
+export function getCpuRegistersBank() {
+  const psr = GBA.getSpsrBank();
 
   return [
     {
-      registers: instance.getMainRegisters(),
-      psr: instance.cpsr(),
+      registers: GBA.getMainRegisters(),
+      psr: GBA.cpsr(),
     },
     {
       label: "fiq",
-      registers: instance.getFiqRegisters(),
+      registers: GBA.getFiqRegisters(),
       offset: 8,
       psr: psr[0],
     },
     {
       label: "svc",
-      registers: instance.getSvcRegisters(),
+      registers: GBA.getSvcRegisters(),
       offset: 13,
       psr: psr[1],
     },
     {
       label: "abt",
-      registers: instance.getAbtRegisters(),
+      registers: GBA.getAbtRegisters(),
       offset: 13,
       psr: psr[2],
     },
     {
       label: "irq",
-      registers: instance.getIrqRegisters(),
+      registers: GBA.getIrqRegisters(),
       offset: 13,
       psr: psr[3],
     },
     {
       label: "und",
-      registers: instance.getUndRegisters(),
+      registers: GBA.getUndRegisters(),
       offset: 13,
       psr: psr[4],
     },
   ];
 }
+
+export function getIoRegisters(ioMap: IOMap) {
+  return ioMap.map((r) =>
+    r.size === "HWord"
+      ? { ...r, value: GBA.readHWord(r.address) }
+      : { ...r, value: GBA.readWord(r.address) },
+  );
+}
+
+export function getMemoryRegion(name: MemoryRegion) {
+  const region = memoryRegions[name];
+
+  return {
+    lenght: region.length,
+    offset: region.offset,
+    data: region.getData(),
+  };
+}
+
+export type MemoryRegion = keyof typeof memoryRegions;
+export type IORegister = ReturnType<typeof getIoRegisters>;
+export type CPURegisterBank = ReturnType<typeof getCpuRegistersBank>;

@@ -1,5 +1,5 @@
 import { Group, SimpleGrid, Stack, Text } from "@mantine/core";
-import { instance } from "@/lib/gba";
+import { GBA } from "@/lib/gba";
 import { formatHex } from "@/utils/format";
 import ColorView from "./ColorView";
 
@@ -18,7 +18,7 @@ function HexView(props: {
   columns: number;
   rightSection?: "color" | "ascii";
 }) {
-  const colors = props.rightSection === "color" && instance.colorPalette();
+  const colors = props.rightSection === "color" && GBA.colorPalette();
 
   const generateLines = () => {
     const lines: ByteLine[] = [];
@@ -47,12 +47,7 @@ function HexView(props: {
   return (
     <Stack p="xl" w="100%" ff={"monospace"} align="center">
       {lines.map((line) => (
-        <Group
-          key={line.address}
-          id={`${formatHex(line.address)}`}
-          w="100%"
-          justify="space-between"
-        >
+        <Group key={line.address} w="100%" justify="space-between">
           <Text c="indigo" fw={600}>
             {formatHex(line.address)}:
           </Text>
@@ -62,7 +57,12 @@ function HexView(props: {
             w={{ base: "100%", sm: "auto" }}
           >
             {line.columns.map((byte, idx) => (
-              <Text key={line.address + idx} c="gray" ta="center">
+              <Text
+                id={`${formatHex(line.address + idx)}`}
+                key={line.address + idx}
+                c="gray"
+                ta="center"
+              >
                 {byte.toString(16).padStart(2, "0")}
               </Text>
             ))}

@@ -1,5 +1,5 @@
 import { Text, Group, SimpleGrid, Stack, Accordion } from "@mantine/core";
-import { getRegistersBank, psrFlags } from "@/lib/gba";
+import { psrFlags, type CPURegisterBank } from "@/lib/gba";
 import { formatHex } from "@/utils/format";
 import { useDebuggerStore } from "@/stores/debuggerStore";
 
@@ -63,14 +63,16 @@ function RegisterView(props: {
   );
 }
 
-function RegisterBankView(props: { style: "simple" | "full" }) {
+function RegisterBankView(props: {
+  value: CPURegisterBank;
+  style: "simple" | "full";
+}) {
   const { running } = useDebuggerStore();
-  const banks = getRegistersBank();
 
   return (
     <Stack w="100%" ff="monospace">
       <Accordion multiple defaultValue={["main"]}>
-        {banks.map((b, i) => (
+        {props.value.map((b, i) => (
           <Accordion.Item value={b.label ?? "main"} key={i}>
             <Accordion.Control disabled={running}>
               {b.label ?? "main"}

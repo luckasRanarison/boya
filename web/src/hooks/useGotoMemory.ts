@@ -1,5 +1,6 @@
 import type { MemoryViewMode } from "@/components/views/memory/MemoryView";
 import { memoryRegions } from "@/lib/gba";
+import notifications from "@/lib/notifications";
 import { useView } from "@/stores/viewStore";
 import { formatHex } from "@/utils/format";
 
@@ -13,7 +14,11 @@ export function useGotoMemory() {
   }) => {
     const hex = formatHex(params.address);
 
-    const findElement = () => {
+    const findElement = (depth = 0) => {
+      if (depth > 1) {
+        return notifications.error(`Invalid jump address: ${hex}`);
+      }
+
       const elem = document.getElementById(hex);
 
       if (!elem) {
@@ -22,18 +27,18 @@ export function useGotoMemory() {
         link.click();
         link.remove();
 
-        return setTimeout(findElement, 200); // add timeout to avoid busy loop
+        return setTimeout(() => findElement(depth + 1), 200); // add timeout to avoid busy loop
       }
 
-      if (elem.classList.contains(".goto-highlight") || !params?.hightlight)
-        return;
-
       elem.scrollIntoView({ block: "center", behavior: "smooth" });
-      elem.classList.add("goto-highlight");
 
-      setTimeout(() => {
-        elem.classList.remove("goto-highlight");
-      }, 2000);
+      if (params?.hightlight && !elem.classList.contains(".goto-highlight")) {
+        elem.classList.add("goto-highlight");
+
+        setTimeout(() => {
+          elem.classList.remove("goto-highlight");
+        }, 2000);
+      }
     };
 
     const region = Object.entries(memoryRegions).find(([, data]) => {
@@ -47,7 +52,7 @@ export function useGotoMemory() {
           name: region[0],
           metadata: {
             mode: params.mode ?? "code",
-            address: params.address,
+            jump: { address: params.address },
           },
         },
       });

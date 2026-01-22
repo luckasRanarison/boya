@@ -52,11 +52,11 @@ type ViewName = (typeof views)[number]["name"];
 type ViewMetadata = {
   memory: {
     mode?: MemoryViewMode;
-    address?: number;
+    jump?: { address: number };
   };
 };
 
-type MenuView<K extends string = ViewName> = {
+export type MenuView<K extends string = ViewName> = {
   name: K;
   sub?: {
     name: string;
@@ -64,9 +64,14 @@ type MenuView<K extends string = ViewName> = {
   };
 };
 
+export type NavbarTab = "about" | "debugger" | "settings";
+
 type ViewStore = {
   view: MenuView;
+  tab: NavbarTab;
+
   setView: (view: MenuView) => void;
+  setTab: (tab: NavbarTab) => void;
 };
 
 export const useView = create<ViewStore>((set) => ({
@@ -74,5 +79,8 @@ export const useView = create<ViewStore>((set) => ({
     name: "main",
   },
 
-  setView: (view: MenuView) => set((prev) => ({ ...prev, view })),
+  tab: "about",
+
+  setView: (view) => set((prev) => ({ ...prev, view })),
+  setTab: (tab) => set((prev) => ({ ...prev, tab })),
 }));

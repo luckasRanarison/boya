@@ -1,31 +1,23 @@
 import { Group, Stack, Text } from "@mantine/core";
 import { IconCaretRight, IconCaretRightFilled } from "@tabler/icons-react";
-import { instance } from "@/lib/gba";
 import { useDebuggerStore } from "@/stores/debuggerStore";
 import MemoryLink from "@/components/common/MemoryLink";
+import type { InstructionPipeline } from "@/hooks/useGba";
 
-function InstructionPipeline() {
-  const { running, instructionCache } = useDebuggerStore();
-
-  const pc = instance.execAddress();
-  const next = pc + instance.instructionSize();
-
-  const instructions = [
-    { address: pc, value: instructionCache[pc]?.value },
-    { address: next, value: instructionCache[next]?.value },
-  ].filter((i) => i.value);
+function PipelineView(props: { base: number; pipeline: InstructionPipeline }) {
+  const { running } = useDebuggerStore();
 
   return (
     <Group p="md" ff="monospace">
-      {instructions.length ? (
+      {props.pipeline.length ? (
         <Stack w="100%">
-          {instructions.map((instr) => (
+          {props.pipeline.map((instr) => (
             <Group
               key={instr.address}
-              c={instr.address === pc ? "indigo" : "gray"}
+              c={instr.address === props.base ? "indigo" : "gray"}
               w="100%"
             >
-              {instr.address === pc ? (
+              {instr.address === props.base ? (
                 <IconCaretRightFilled size={18} />
               ) : (
                 <IconCaretRight size={18} />
@@ -49,4 +41,4 @@ function InstructionPipeline() {
   );
 }
 
-export default InstructionPipeline;
+export default PipelineView;

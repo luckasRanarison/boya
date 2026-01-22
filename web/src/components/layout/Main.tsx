@@ -1,13 +1,14 @@
 import { useView } from "@/stores/viewStore";
+import { useDebuggerStore } from "@/stores/debuggerStore";
 import type { MemoryRegion } from "@/lib/gba";
 import MemoryView from "../views/memory/MemoryView";
 import DebuggerView from "../views/debugger/DebuggerView";
 import SettingsView from "../views/settings/SettingsView";
-import IORegisterView from "../views/io/IORegisterView";
-import CPURegisterView from "../views/cpu/CPURegisterView";
-import { useDebuggerStore } from "@/stores/debuggerStore";
 import EmulatorView from "../views/main/EmulatorView";
 import UploadView from "../views/main/UploadView";
+import RegisterView, {
+  type RegisterSubMenu,
+} from "../views/registers/RegisterView";
 
 function Main() {
   const { view } = useView();
@@ -21,14 +22,13 @@ function Main() {
       <MemoryView
         region={view.sub.name as MemoryRegion}
         mode={view.sub.metadata?.mode ?? "hex"}
-        targetAddress={view.sub.metadata?.address}
+        jump={view.sub.metadata?.jump}
       />
     );
   }
 
   if (view.name === "registers" && view.sub) {
-    if (view.sub.name === "cpu") return <CPURegisterView style="full" />;
-    if (view.sub.name === "i/o") return <IORegisterView style="full" />;
+    return <RegisterView sub={view.sub.name as RegisterSubMenu} />;
   }
 
   return romLoaded ? <EmulatorView /> : <UploadView />;

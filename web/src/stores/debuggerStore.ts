@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { instance } from "@/lib/gba";
+import { GBA } from "@/lib/gba";
 import { FrameCounter } from "@/utils/frame";
 import type { Position } from "@/utils/float";
 
@@ -100,10 +100,10 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
   },
 
   loadRom: (rom) => {
-    instance.reset();
-    instance.loadRom(rom);
-    instance.boot();
-    set((prev) => ({ ...prev, cycles: instance.cycles(), romLoaded: true }));
+    GBA.reset();
+    GBA.loadRom(rom);
+    GBA.boot();
+    set((prev) => ({ ...prev, cycles: GBA.cycles(), romLoaded: true }));
   },
 
   unloadRom: () => {
@@ -116,11 +116,11 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
   },
 
   reset: () => {
-    instance.reset();
-    instance.boot();
+    GBA.reset();
+    GBA.boot();
     set((prev) => ({
       ...prev,
-      cycles: instance.cycles(),
+      cycles: GBA.cycles(),
       instructionCache: {},
       keypad: 0x3ff,
     }));
@@ -151,36 +151,36 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
       });
 
       if (breakpoints.entries.size) {
-        const cycles = instance.stepFrameWithBreakpoints(
+        const cycles = GBA.stepFrameWithBreakpoints(
           new Uint32Array(breakpoints.entries.values()),
         );
 
         set((prev) => ({
           ...prev,
-          cycles: instance.cycles(),
+          cycles: GBA.cycles(),
           lastCycle: cycles,
         }));
 
-        if (breakpoints.entries.has(instance.execAddress()) || !get().running) {
+        if (breakpoints.entries.has(GBA.execAddress()) || !get().running) {
           return set((prev) => ({
             ...prev,
-            cycles: instance.cycles(),
+            cycles: GBA.cycles(),
             running: false,
           }));
         }
       } else {
-        instance.stepFrame();
+        GBA.stepFrame();
 
         set((prev) => ({
           ...prev,
-          cycles: instance.cycles(),
+          cycles: GBA.cycles(),
           lastCycle: undefined,
         }));
       }
 
       if (canvas) {
         const pixels = canvas.imageData.data;
-        instance.writeFrameBuffer(pixels as unknown as Uint8Array);
+        GBA.writeFrameBuffer(pixels as unknown as Uint8Array);
         canvas.context.putImageData(canvas.imageData, 0, 0);
       }
 
@@ -191,7 +191,7 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
   },
 
   stepInto: () => {
-    const count = instance.debugSyncedStep();
+    const count = GBA.debugSyncedStep();
 
     set((prev) => ({
       ...prev,
@@ -201,8 +201,8 @@ export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
   },
 
   decode: (count) => {
-    const size = instance.instructionSize();
-    const instructions: [number, string][] = instance.nextInstructions(count);
+    const size = GBA.instructionSize();
+    const instructions: [number, string][] = GBA.nextInstructions(count);
 
     set((prev) => ({
       ...prev,

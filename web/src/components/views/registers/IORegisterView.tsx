@@ -1,36 +1,30 @@
-import { instance, memoryRegions } from "@/lib/gba";
 import { useDebuggerStore } from "@/stores/debuggerStore";
 import { formatHex } from "@/utils/format";
 import { Accordion, Group, Stack, Text } from "@mantine/core";
-import { type IOMap } from "boya_wasm";
-import { useMemo } from "react";
 import { FlagBits } from "./FlagBits";
 import { FlagList } from "./FlagList";
+import { memoryRegions, type IORegister } from "@/lib/gba";
 
-function IORegisterView(props: { style: "simple" | "full" }) {
+function IORegisterView(props: {
+  value: IORegister;
+  style: "simple" | "full";
+}) {
   const { running } = useDebuggerStore();
-  const registerMap = useMemo<IOMap>(() => instance.generateIOMap(), []);
 
   return (
     <Stack w="100%" p={0} ff="monospace">
       <Accordion>
-        {registerMap.map((register) => {
-          const address = memoryRegions.io.offset + register.address;
-          const value =
-            register.size === "HWord"
-              ? instance.readHWord(address)
-              : instance.readWord(address);
-
+        {props.value.map((register) => {
           return (
-            <Accordion.Item key={address} value={register.name}>
+            <Accordion.Item key={register.address} value={register.name}>
               <Accordion.Control disabled={running}>
                 <Group justify="space-between" pr="md">
                   <Group gap="xl">
                     <Text c="indigo" fw={600}>
                       {formatHex(
                         props.style === "simple"
-                          ? address - memoryRegions.io.offset
-                          : address,
+                          ? register.address - memoryRegions.io.offset
+                          : register.address,
                         { width: 3 },
                       )}
                     </Text>
@@ -40,25 +34,25 @@ function IORegisterView(props: { style: "simple" | "full" }) {
                   </Group>
                   {props.style === "simple" ? (
                     <Text c="gray">
-                      {formatHex(value, {
+                      {formatHex(register.value, {
                         width: register.size === "HWord" ? 4 : 8,
                       })}
                     </Text>
                   ) : (
                     <Group style={{ overflow: "scroll" }}>
-                      <FlagBits value={value} register={register} />
+                      <FlagBits value={register.value} register={register} />
                     </Group>
                   )}
                 </Group>
               </Accordion.Control>
               <Accordion.Panel>
                 {register.flags.length ? (
-                  <FlagList value={value} flags={register.flags} />
+                  <FlagList value={register.value} flags={register.flags} />
                 ) : (
                   <Group>
                     <Text size="sm">Value: </Text>
                     <Text size="sm" c="gray">
-                      {value}
+                      {register.value}
                     </Text>
                   </Group>
                 )}

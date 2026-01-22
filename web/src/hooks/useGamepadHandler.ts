@@ -1,4 +1,4 @@
-import { instance } from "@/lib/gba";
+import { GBA } from "@/lib/gba";
 import { useDebuggerStore as debuggerStore } from "@/stores/debuggerStore";
 import { usePersistantStore } from "@/stores/persistantStore";
 
@@ -26,6 +26,6 @@ export function useGamepadHandler() {
       default:
     }
 
-    instance.setKeyinput(debuggerStore.getState().keypad);
+    GBA.setKeyinput(debuggerStore.getState().keypad);
   };
 }

@@ -1,6 +1,6 @@
 import styles from "./CodeView.module.css";
 
-import { instance } from "@/lib/gba";
+import { GBA } from "@/lib/gba";
 import { useDebuggerStore } from "@/stores/debuggerStore";
 import { formatHex } from "@/utils/format";
 import { ActionIcon, Group, Stack, Text } from "@mantine/core";
@@ -37,7 +37,7 @@ function CodeView(props: {
     return lines;
   };
 
-  const pc = instance.execAddress();
+  const pc = GBA.execAddress();
   const lines = generateLines();
 
   return (

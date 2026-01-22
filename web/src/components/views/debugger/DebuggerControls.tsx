@@ -21,7 +21,7 @@ import {
 } from "@tabler/icons-react";
 import Draggable from "react-draggable";
 import { useView } from "@/stores/viewStore";
-import { instance } from "@/lib/gba";
+import { GBA } from "@/lib/gba";
 import { useRef } from "react";
 import { useMediaQuery } from "@mantine/hooks";
 import { floatingPositions, type Position } from "@/utils/float";
@@ -67,7 +67,7 @@ function DebuggerControls(props: { position?: Position }) {
 
     if (view.name === "memory") {
       gotoMemory({
-        address: instance.execAddress(),
+        address: GBA.execAddress(),
         mode: "code",
       });
     }

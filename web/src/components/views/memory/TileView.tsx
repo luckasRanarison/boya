@@ -1,6 +1,6 @@
 import { Box, Card, Flex, Select, SimpleGrid, Stack } from "@mantine/core";
 import { useState } from "react";
-import { instance } from "@/lib/gba";
+import { GBA } from "@/lib/gba";
 import { ColorMode } from "boya_wasm";
 
 import Tile from "./Tile";
@@ -17,7 +17,7 @@ function TileView(props: { pageData: Uint8Array }) {
   const [currentMode, setCurrentMode] = useState<TileMode>("4bpp");
   const [currentPaletteId, setCurrentPaletteId] = useState(0);
   const { tileSize, paletteSize } = tileConfig[currentMode];
-  const colorPalette = instance.colorPalette();
+  const colorPalette = GBA.colorPalette();
 
   const palettes = colorPalette.reduce<number[][]>((prev, _curr, i) => {
     if (i % paletteSize === 0) {

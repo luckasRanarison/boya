@@ -1,4 +1,4 @@
-import { instance } from "@/lib/gba";
+import { GBA } from "@/lib/gba";
 import { ColorMode } from "boya_wasm";
 import { useEffect, useRef } from "react";
 
@@ -18,7 +18,7 @@ function Tile(props: {
     const ctx = canvasRef.current.getContext("2d")!;
     const imageData = ctx.createImageData(8, 8);
 
-    instance.writeTileBuffer(
+    GBA.writeTileBuffer(
       imageData.data as unknown as Uint8Array,
       props.rawData,
       props.mode,

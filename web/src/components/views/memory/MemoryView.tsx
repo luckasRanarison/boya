@@ -20,10 +20,9 @@ import {
   IconSourceCode,
   IconStackFront,
 } from "@tabler/icons-react";
-import { useDebuggerStore } from "@/stores/debuggerStore";
-import { memoryRegions, type MemoryRegion } from "@/lib/gba";
+import type { MemoryRegion } from "@/lib/gba";
 import { useMemoryPage } from "@/hooks/useMemoryPage";
-import { usePersistantStore } from "@/stores/persistantStore";
+import { useGba } from "@/hooks/useGba";
 
 import HexView from "./HexView";
 import TileView from "./TileView";
@@ -49,21 +48,19 @@ export type MemoryViewMode = keyof typeof viewModes;
 export type MemoryViewProps = {
   region: MemoryRegion;
   mode: MemoryViewMode;
-  targetAddress?: number;
   columns?: number;
+  jump?: { address: number };
 };
 
 function MemoryView(props: MemoryViewProps) {
-  const { cycles, decode } = useDebuggerStore();
-  const { decodeDepth } = usePersistantStore();
-
+  const { memory } = useGba();
   const [currentMode, setCurrentMode] = useState(props.mode ?? "hex");
-  const { offset, getData } = memoryRegions[props.region];
+
+  const { offset, data } = memory.getRegion(props.region);
   const { pageSize, icon: ModeIcon } = viewModes[currentMode];
 
   const [{ pageId }, dispatch] = useMemoryPage({ offset, pageSize });
 
-  const data = getData();
   const columns = props.columns ?? 16;
   const pageStart = (pageId - 1) * pageSize;
   const total = Math.ceil(data.length / pageSize);
@@ -93,16 +90,10 @@ function MemoryView(props: MemoryViewProps) {
   const addresses = generateAddresses();
 
   useEffect(() => {
-    if (props.targetAddress) {
-      dispatch({ type: "jump", address: props.targetAddress });
+    if (props.jump !== undefined) {
+      dispatch({ type: "jump", address: props.jump.address });
     }
-  }, [props.targetAddress, dispatch]);
-
-  useEffect(() => {
-    if (currentMode === "code") {
-      decode(decodeDepth);
-    }
-  }, [cycles, currentMode, decodeDepth, decode]);
+  }, [props.jump, dispatch]);
 
   return (
     <Stack flex={1} mb="80px" align="center">
