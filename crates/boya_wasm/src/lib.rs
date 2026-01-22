@@ -226,13 +226,13 @@ impl Gba {
         self.core.cpu.bus.write_byte(address, value);
     }
 
-    #[wasm_bindgen(js_name = "readHWord")]
-    pub fn read_hword(&self, address: u32) -> u16 {
-        self.core.cpu.bus.read_hword(address)
+    #[wasm_bindgen(js_name = "peekHWord")]
+    pub fn peek_hword(&self, address: u32) -> u16 {
+        self.core.cpu.bus.peek_hword(address)
     }
 
-    #[wasm_bindgen(js_name = "readWord")]
-    pub fn read_word(&self, address: u32) -> u32 {
-        self.core.cpu.bus.read_word(address)
+    #[wasm_bindgen(js_name = "peekWord")]
+    pub fn peek_word(&self, address: u32) -> u32 {
+        self.core.cpu.bus.peek_word(address)
     }
 }

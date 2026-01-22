@@ -102,10 +102,12 @@ export function getCpuRegistersBank() {
 }
 
 export function getIoRegisters(ioMap: IOMap) {
+  const { offset } = memoryRegions.io;
+
   return ioMap.map((r) =>
     r.size === "HWord"
-      ? { ...r, value: GBA.readHWord(r.address) }
-      : { ...r, value: GBA.readWord(r.address) },
+      ? { ...r, value: GBA.peekHWord(offset + r.address) }
+      : { ...r, value: GBA.peekWord(offset + r.address) },
   );
 }
 

@@ -21,6 +21,7 @@ pub const BIOS_SIZE: usize = 0x04000; // 16kb
 pub const IWRAM_SIZE: usize = 0x08000; // 32kb
 pub const EWRAM_SIZE: usize = 0x40000; // 256kb
 pub const SRAM_SIZE: usize = 0x10000; // 64kb
+pub const IOREG_SIZE: usize = 0x210;
 
 #[derive(Debug)]
 pub struct GbaBus {

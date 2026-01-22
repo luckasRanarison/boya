@@ -1,4 +1,4 @@
-import { getFlagValue } from "@/utils/bitflag";
+import { getFlagBits } from "@/utils/bitflag";
 import { formatHex } from "@/utils/format";
 import { Table, Tooltip } from "@mantine/core";
 import type { RegisterEntry } from "boya_wasm";
@@ -14,12 +14,10 @@ export function FlagBits({
     <Table w="0" fz="xs" withTableBorder withColumnBorders>
       <Table.Tbody>
         <Table.Tr>
-          {register.flags.map((f) =>
-            getFlagValue(value, f)
-              .toString(10)
-              .padStart(f.length, "0")
-              .split("")
-              .map((b, i) => (
+          {register.flags.map(
+            (f) =>
+              register.size === "HWord" &&
+              getFlagBits(value, f).map((b, i) => (
                 <Tooltip
                   key={register.name + f.name + (f.start + i)}
                   label={f.name}
@@ -27,16 +25,7 @@ export function FlagBits({
                   {f.name === "unused" ? (
                     <Table.Td c="gray">-</Table.Td>
                   ) : (
-                    <Table.Td
-                      style={{
-                        borderColor:
-                          f.length > 1 && i !== f.length - 1
-                            ? "transparent"
-                            : undefined,
-                      }}
-                    >
-                      {b}
-                    </Table.Td>
+                    <Table.Td>{b}</Table.Td>
                   )}
                 </Tooltip>
               )),

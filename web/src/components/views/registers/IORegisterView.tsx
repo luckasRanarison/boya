@@ -10,6 +10,7 @@ function IORegisterView(props: {
   style: "simple" | "full";
 }) {
   const { running } = useDebuggerStore();
+  const offset = memoryRegions.io.offset;
 
   return (
     <Stack w="100%" p={0} ff="monospace">
@@ -23,8 +24,8 @@ function IORegisterView(props: {
                     <Text c="indigo" fw={600}>
                       {formatHex(
                         props.style === "simple"
-                          ? register.address - memoryRegions.io.offset
-                          : register.address,
+                          ? register.address + offset - offset
+                          : register.address + offset,
                         { width: 3 },
                       )}
                     </Text>

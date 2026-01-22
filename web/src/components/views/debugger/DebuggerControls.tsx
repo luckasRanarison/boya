@@ -38,7 +38,11 @@ function Wrapper(props: {
 
   return props.floatConfig ? (
     <Portal>
-      <Draggable nodeRef={nodeRef} handle=".drag-handle">
+      <Draggable
+        key={props.floatConfig.position} // force re-render on position change
+        nodeRef={nodeRef}
+        handle=".drag-handle"
+      >
         <Card
           ref={nodeRef}
           style={{

@@ -51,7 +51,7 @@ function DebuggerView() {
   return (
     <Stack
       w="100%"
-      pb="10dvh"
+      pb="20dvh"
       mah="90dvh"
       style={{ overflow: "scroll" }}
       ff="monospace"
