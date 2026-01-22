@@ -4,26 +4,26 @@ import { persist } from "zustand/middleware";
 
 export type ColorTheme = "light" | "dark";
 
-type UploadStore = {
+type PersistantStore = {
   bios?: Uint8Array | null;
   keymap: Keymap;
   theme: ColorTheme;
+  decodeDepth: number;
 
-  setBios: (value: Uint8Array) => void;
-  setTheme: (theme: ColorTheme) => void;
-  setKeymap: (value: Keymap) => void;
+  set<K extends keyof PersistantStore>(key: K, value: PersistantStore[K]): void;
 };
 
 export const usePersistantStore = create(
-  persist<UploadStore>(
-    (set) => ({
+  persist<PersistantStore>(
+    (_set) => ({
       bios: null,
       theme: "light",
       keymap: defaultKeymaps,
+      decodeDepth: 10,
 
-      setBios: (bios) => set((prev) => ({ ...prev, bios })),
-      setTheme: (theme) => set((prev) => ({ ...prev, theme })),
-      setKeymap: (keymap) => set((prev) => ({ ...prev, keymap })),
+      set(key, value) {
+        _set((prev) => ({ ...prev, [key]: value }));
+      },
     }),
     {
       name: "boya_data",
@@ -34,7 +34,7 @@ export const usePersistantStore = create(
           const values = Object.values<number>(state.bios);
           const bios = new Uint8Array(values);
 
-          return { ...current, ...state, bios } as UploadStore;
+          return { ...current, ...state, bios } as PersistantStore;
         }
 
         return current;

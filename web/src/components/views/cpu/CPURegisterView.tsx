@@ -1,6 +1,7 @@
 import { Text, Group, SimpleGrid, Stack, Accordion } from "@mantine/core";
 import { getRegistersBank, psrFlags } from "@/lib/gba";
 import { formatHex } from "@/utils/format";
+import { useDebuggerStore } from "@/stores/debuggerStore";
 
 function CpsrFlag(props: { label: string; value: number; flag: number }) {
   return (props.flag & props.value) !== 0 ? (
@@ -63,6 +64,7 @@ function RegisterView(props: {
 }
 
 function RegisterBankView(props: { style: "simple" | "full" }) {
+  const { running } = useDebuggerStore();
   const banks = getRegistersBank();
 
   return (
@@ -70,7 +72,9 @@ function RegisterBankView(props: { style: "simple" | "full" }) {
       <Accordion multiple defaultValue={["main"]}>
         {banks.map((b, i) => (
           <Accordion.Item value={b.label ?? "main"} key={i}>
-            <Accordion.Control>{b.label ?? "main"}</Accordion.Control>
+            <Accordion.Control disabled={running}>
+              {b.label ?? "main"}
+            </Accordion.Control>
             <Accordion.Panel
               styles={{
                 content: {

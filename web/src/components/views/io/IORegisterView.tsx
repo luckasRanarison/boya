@@ -3,17 +3,13 @@ import { useDebuggerStore } from "@/stores/debuggerStore";
 import { formatHex } from "@/utils/format";
 import { Accordion, Group, Stack, Text } from "@mantine/core";
 import { type IOMap } from "boya_wasm";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { FlagBits } from "./FlagBits";
 import { FlagList } from "./FlagList";
 
 function IORegisterView(props: { style: "simple" | "full" }) {
-  const { cycles } = useDebuggerStore();
+  const { running } = useDebuggerStore();
   const registerMap = useMemo<IOMap>(() => instance.generateIOMap(), []);
-
-  useEffect(() => {
-    // re-render on cycle update
-  }, [cycles]);
 
   return (
     <Stack w="100%" p={0} ff="monospace">
@@ -27,7 +23,7 @@ function IORegisterView(props: { style: "simple" | "full" }) {
 
           return (
             <Accordion.Item key={address} value={register.name}>
-              <Accordion.Control>
+              <Accordion.Control disabled={running}>
                 <Group justify="space-between" pr="md">
                   <Group gap="xl">
                     <Text c="indigo" fw={600}>

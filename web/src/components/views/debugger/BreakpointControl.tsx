@@ -1,13 +1,12 @@
+import MemoryLink from "@/components/common/MemoryLink";
 import { useDebuggerStore } from "@/stores/debuggerStore";
-import { useView } from "@/stores/viewStore";
 import { formatHex } from "@/utils/format";
 import { Stack, TextInput, Group, ActionIcon, Button } from "@mantine/core";
-import { IconExternalLink, IconPlus, IconTrash } from "@tabler/icons-react";
+import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { useState } from "react";
 
 function BreakpointControl() {
   const { breakpoints } = useDebuggerStore();
-  const { gotoMemory } = useView();
 
   const [currentEdit, setCurrentEdit] = useState<{
     index: number;
@@ -56,12 +55,7 @@ function BreakpointControl() {
                 }
                 flex={1}
               />
-              <ActionIcon
-                variant="subtle"
-                onClick={() => gotoMemory(bp, "code")}
-              >
-                <IconExternalLink size={18} />
-              </ActionIcon>
+              <MemoryLink address={bp} />
               <ActionIcon
                 color="red"
                 variant="light"

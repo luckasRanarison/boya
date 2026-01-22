@@ -1,13 +1,11 @@
-import { ActionIcon, Group, Stack, Text } from "@mantine/core";
+import { Group, Stack, Text } from "@mantine/core";
 import { instance } from "@/lib/gba";
 import { useDebuggerStore } from "@/stores/debuggerStore";
 import { formatHex, parseHex } from "@/utils/format";
-import { IconExternalLink } from "@tabler/icons-react";
-import { useView } from "@/stores/viewStore";
+import MemoryLink from "@/components/common/MemoryLink";
 
 function DebuggerStatus() {
-  const { cycles, lastCycle, romLoaded } = useDebuggerStore();
-  const { gotoMemory } = useView();
+  const { running, cycles, lastCycle, romLoaded } = useDebuggerStore();
 
   // Accessing SP, LR, or operating mode before boot causes a panic
   const rows = [
@@ -56,12 +54,10 @@ function DebuggerStatus() {
             {row.extra}
           </Group>
           {row.link && (
-            <ActionIcon
-              variant="subtle"
-              onClick={() => gotoMemory(parseHex(row.value()), "code")}
-            >
-              <IconExternalLink size={18} />
-            </ActionIcon>
+            <MemoryLink
+              address={parseHex(romLoaded ? row.value() : row.default)}
+              disabled={running}
+            />
           )}
         </Group>
       ))}

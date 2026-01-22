@@ -1,4 +1,4 @@
-import { Accordion, Divider, Group, Stack } from "@mantine/core";
+import { Accordion, ActionIcon, Divider, Stack, Tooltip } from "@mantine/core";
 import CPURegisterView from "../cpu/CPURegisterView";
 import DebuggerControls from "./DebuggerControls";
 import DebuggerStatus from "./DebuggerStatus";
@@ -8,6 +8,8 @@ import { useEffect, useState } from "react";
 import IORegisterView from "../io/IORegisterView";
 import BreakpointControl from "./BreakpointControl";
 import FloatingControl from "./FloatingControl";
+import { useView } from "@/stores/viewStore";
+import { IconFoldDown } from "@tabler/icons-react";
 
 const menus = [
   {
@@ -38,17 +40,23 @@ const menus = [
 ];
 
 function DebuggerView() {
-  const { cycles, panel, decode } = useDebuggerStore();
+  const { running, cycles, panel, decode } = useDebuggerStore();
+  const { view } = useView();
 
   const [activeMenu, setActiveMenu] = useState<string[]>([
     "status",
     "pipeline",
   ]);
 
+  const isCodeView =
+    view.name === "memory" && view.sub?.metadata?.mode === "code";
+
   // re-render the component and decode next instructions on cycle update
   useEffect(() => {
-    decode(10);
-  }, [decode, cycles]);
+    if (!isCodeView) {
+      decode(2);
+    }
+  }, [decode, cycles, isCodeView]);
 
   return (
     <Stack
@@ -58,23 +66,32 @@ function DebuggerView() {
       style={{ overflow: "scroll" }}
       ff="monospace"
     >
-      <Group pt="xl" pb="md" justify="center">
+      <Stack pt="xl" pb="md" align="center">
         {panel.floating ? (
-          <FloatingControl
-            defaultValue={panel.position}
-            onChange={panel.setPosition}
-          />
+          <>
+            <FloatingControl
+              defaultValue={panel.position}
+              onChange={panel.setPosition}
+            />
+            <Tooltip label="Dock">
+              <ActionIcon variant="subtle" onClick={panel.toggleFloat}>
+                <IconFoldDown />
+              </ActionIcon>
+            </Tooltip>
+          </>
         ) : (
           <DebuggerControls />
         )}
-      </Group>
+      </Stack>
 
       <Accordion multiple value={activeMenu} onChange={setActiveMenu}>
         <Divider />
 
         {menus.map(({ key, label, view }) => (
           <Accordion.Item key={`${key}-${cycles}`} value={key}>
-            <Accordion.Control fz="sm">{label}</Accordion.Control>
+            <Accordion.Control fz="sm" disabled={running}>
+              {label}
+            </Accordion.Control>
             <Accordion.Panel
               styles={{
                 content: {

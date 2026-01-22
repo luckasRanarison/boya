@@ -5,8 +5,8 @@ import { usePersistantStore } from "@/stores/persistantStore";
 import notifications from "@/lib/notifications";
 import { useDebuggerStore } from "@/stores/debuggerStore";
 
-function UploadArea() {
-  const { bios, theme, setBios } = usePersistantStore();
+function UploadView() {
+  const { bios, theme, set } = usePersistantStore();
   const { loadRom } = useDebuggerStore();
 
   const romInputRef = useRef<HTMLInputElement>(null);
@@ -19,7 +19,7 @@ function UploadArea() {
           `Invalid BIOS file, expected size: ${0x4000} bytes`,
         );
       } else {
-        setBios(bytes);
+        set("bios", bytes);
         notifications.info(
           "The BIOS file has successfully been uploaded and saved to local storage!",
         );
@@ -124,4 +124,4 @@ function UploadArea() {
   );
 }
 
-export default UploadArea;
+export default UploadView;

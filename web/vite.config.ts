@@ -1,16 +1,17 @@
 import { defineConfig } from "vite";
+import path from "path";
 import react from "@vitejs/plugin-react";
+import { visualizer } from "rollup-plugin-visualizer";
 import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
-import path from "path";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), wasm(), topLevelAwait()],
+  base: "/boya",
+  plugins: [react(), wasm(), topLevelAwait(), visualizer()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  base: "/boya",
 });

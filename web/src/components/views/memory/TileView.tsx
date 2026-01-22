@@ -1,9 +1,10 @@
 import { Box, Card, Flex, Select, SimpleGrid, Stack } from "@mantine/core";
 import { useState } from "react";
 import { instance } from "@/lib/gba";
+import { ColorMode } from "boya_wasm";
+
 import Tile from "./Tile";
 import ColorView from "./ColorView";
-import { ColorMode } from "boya_wasm";
 
 const tileConfig = {
   "4bpp": { tileSize: 32, paletteSize: 16 },

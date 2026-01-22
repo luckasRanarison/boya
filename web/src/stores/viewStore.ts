@@ -1,6 +1,4 @@
-import type { MemoryViewMode } from "@/components/common/MemoryView";
-import { memoryRegions } from "@/lib/gba";
-import { formatHex } from "@/utils/format";
+import type { MemoryViewMode } from "@/components/views/memory/MemoryView";
 import {
   IconArrowsSort,
   IconBlocks,
@@ -49,52 +47,32 @@ export const views = [
   { name: "settings", icon: IconSettings, mobileOnly: true },
 ] as const;
 
-type MenuView = {
-  name: (typeof views)[number]["name"];
+type ViewName = (typeof views)[number]["name"];
+
+type ViewMetadata = {
+  memory: {
+    mode?: MemoryViewMode;
+    address?: number;
+  };
+};
+
+type MenuView<K extends string = ViewName> = {
+  name: K;
   sub?: {
     name: string;
-    metadata?: unknown;
+    metadata?: K extends keyof ViewMetadata ? ViewMetadata[K] : never;
   };
 };
 
 type ViewStore = {
   view: MenuView;
   setView: (view: MenuView) => void;
-  gotoMemory: (address: number, mode: MemoryViewMode) => void;
 };
 
-export const useView = create<ViewStore>((set, get) => ({
+export const useView = create<ViewStore>((set) => ({
   view: {
     name: "main",
   },
 
   setView: (view: MenuView) => set((prev) => ({ ...prev, view })),
-
-  gotoMemory: (address, mode) => {
-    const region = Object.entries(memoryRegions).find(
-      ([, data]) => address < data.offset + data.length,
-    );
-
-    if (!region) return;
-
-    get().setView({
-      name: "memory",
-      sub: {
-        name: region[0],
-        metadata: { mode, address },
-      },
-    });
-
-    const id = formatHex(address);
-    const elem = document.getElementById(id);
-
-    if (!elem) {
-      const link = document.createElement("a");
-      link.href = `#${id}`;
-      link.click();
-      link.remove();
-    }
-
-    elem?.scrollIntoView({ block: "center", behavior: "smooth" });
-  },
 }));

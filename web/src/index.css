@@ -1,0 +1,7 @@
+.goto-highlight {
+  background-color: alpha(var(--mantine-color-yellow-4), 0.2) !important;
+}
+
+.goto-highlight svg {
+  stroke: var(--mantine-color-yellow-5) !important;
+}

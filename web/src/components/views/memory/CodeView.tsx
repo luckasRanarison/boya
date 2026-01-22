@@ -1,3 +1,5 @@
+import styles from "./CodeView.module.css";
+
 import { instance } from "@/lib/gba";
 import { useDebuggerStore } from "@/stores/debuggerStore";
 import { formatHex } from "@/utils/format";
@@ -49,12 +51,12 @@ function CodeView(props: {
             id={`${formatHex(line.address)}`}
             style={{ scrollMarginTop: "100px" }}
             key={line.address}
-            bg={
+            className={
               isBreakpoint
-                ? "#fa7a7a15"
-                : pc === line.address
-                  ? "#4c6ef515"
-                  : "none"
+                ? styles["breakpoint-highlight"]
+                : line.address === pc
+                  ? styles["execution-highlight"]
+                  : undefined
             }
             onClick={() =>
               isBreakpoint
@@ -66,7 +68,7 @@ function CodeView(props: {
             {pc === line.address ? (
               <ActionIcon
                 mx="xs"
-                c={isBreakpoint ? "red" : "indigo"}
+                c={isBreakpoint ? "red" : "green"}
                 variant="transparent"
               >
                 <IconArrowRight size={18} />

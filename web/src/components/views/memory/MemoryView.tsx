@@ -21,11 +21,13 @@ import {
   IconStackFront,
 } from "@tabler/icons-react";
 import { useDebuggerStore } from "@/stores/debuggerStore";
+import { memoryRegions, type MemoryRegion } from "@/lib/gba";
+import { useMemoryPage } from "@/hooks/useMemoryPage";
+import { usePersistantStore } from "@/stores/persistantStore";
+
 import HexView from "./HexView";
 import TileView from "./TileView";
-import { memoryRegions, type MemoryRegion } from "@/lib/gba";
 import CodeView from "./CodeView";
-import { useMemoryPage } from "@/hooks/useMemoryPageReducer";
 
 const viewModes = {
   hex: {
@@ -44,15 +46,18 @@ const viewModes = {
 
 export type MemoryViewMode = keyof typeof viewModes;
 
-function MemoryView(props: {
+export type MemoryViewProps = {
   region: MemoryRegion;
   mode: MemoryViewMode;
   targetAddress?: number;
   columns?: number;
-}) {
-  const [currentMode, setCurrentMode] = useState(props.mode ?? "hex");
-  const { cycles } = useDebuggerStore();
+};
 
+function MemoryView(props: MemoryViewProps) {
+  const { cycles, decode } = useDebuggerStore();
+  const { decodeDepth } = usePersistantStore();
+
+  const [currentMode, setCurrentMode] = useState(props.mode ?? "hex");
   const { offset, getData } = memoryRegions[props.region];
   const { pageSize, icon: ModeIcon } = viewModes[currentMode];
 
@@ -94,8 +99,10 @@ function MemoryView(props: {
   }, [props.targetAddress, dispatch]);
 
   useEffect(() => {
-    // re-render component on cycle update
-  }, [cycles]);
+    if (currentMode === "code") {
+      decode(decodeDepth);
+    }
+  }, [cycles, currentMode, decodeDepth, decode]);
 
   return (
     <Stack flex={1} mb="80px" align="center">

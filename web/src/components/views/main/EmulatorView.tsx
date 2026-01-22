@@ -2,12 +2,12 @@ import { useDebuggerStore } from "@/stores/debuggerStore";
 import { Flex, Stack } from "@mantine/core";
 import { useEffect, useRef } from "react";
 import EmulatorFooter from "./EmulatorFooter";
-import { useKeyHandler } from "@/hooks/useKeyHandler";
+import { useGamepadHandler } from "@/hooks/useGamepadHandler";
 
 function EmulatorView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { paused, run, setCanvas } = useDebuggerStore();
-  const handleKey = useKeyHandler();
+  const handleKey = useGamepadHandler();
 
   useEffect(() => {
     if (canvasRef.current) {

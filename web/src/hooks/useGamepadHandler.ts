@@ -2,7 +2,7 @@ import { instance } from "@/lib/gba";
 import { useDebuggerStore as debuggerStore } from "@/stores/debuggerStore";
 import { usePersistantStore } from "@/stores/persistantStore";
 
-export function useKeyHandler() {
+export function useGamepadHandler() {
   const { keymap } = usePersistantStore();
 
   return (event: KeyboardEvent) => {

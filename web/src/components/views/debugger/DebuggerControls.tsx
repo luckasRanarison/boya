@@ -26,6 +26,7 @@ import { useRef } from "react";
 import { useMediaQuery } from "@mantine/hooks";
 import { floatingPositions, type Position } from "@/utils/float";
 import { useDebuggerStore } from "@/stores/debuggerStore";
+import { useGotoMemory } from "@/hooks/useGotoMemory";
 
 function Wrapper(props: {
   children: React.ReactNode;
@@ -58,13 +59,17 @@ function Wrapper(props: {
 
 function DebuggerControls(props: { position?: Position }) {
   const dbg = useDebuggerStore();
-  const { view, gotoMemory } = useView();
+  const gotoMemory = useGotoMemory();
+  const { view } = useView();
 
   const handleStepInto = () => {
     dbg.stepInto();
 
     if (view.name === "memory") {
-      gotoMemory(instance.execAddress(), "code");
+      gotoMemory({
+        address: instance.execAddress(),
+        mode: "code",
+      });
     }
   };
 
@@ -130,6 +135,7 @@ function DebuggerControls(props: { position?: Position }) {
             <IconGripVertical />
           </ThemeIcon>
         )}
+
         {actions.map(({ icon: Icon, label, disabled, onClick }) => (
           <Tooltip
             offset={props.position ? 25 : undefined}

@@ -1,16 +1,11 @@
-import { ActionIcon, Group, Stack, Text } from "@mantine/core";
-import {
-  IconCaretRight,
-  IconCaretRightFilled,
-  IconExternalLink,
-} from "@tabler/icons-react";
+import { Group, Stack, Text } from "@mantine/core";
+import { IconCaretRight, IconCaretRightFilled } from "@tabler/icons-react";
 import { instance } from "@/lib/gba";
 import { useDebuggerStore } from "@/stores/debuggerStore";
-import { useView } from "@/stores/viewStore";
+import MemoryLink from "@/components/common/MemoryLink";
 
 function InstructionPipeline() {
-  const { instructionCache } = useDebuggerStore();
-  const { gotoMemory } = useView();
+  const { running, instructionCache } = useDebuggerStore();
 
   const pc = instance.execAddress();
   const next = pc + instance.instructionSize();
@@ -40,12 +35,7 @@ function InstructionPipeline() {
                 {instr.value}
               </Text>
 
-              <ActionIcon
-                variant="subtle"
-                onClick={() => gotoMemory(instr.address, "code")}
-              >
-                <IconExternalLink size={18} />
-              </ActionIcon>
+              <MemoryLink address={instr.address} disabled={running} />
             </Group>
           ))}
         </Stack>
