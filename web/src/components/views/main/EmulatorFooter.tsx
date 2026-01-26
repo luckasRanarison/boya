@@ -1,5 +1,7 @@
 import { getActiveKeys, keyIconMap } from "@/lib/keymap";
-import { useDebuggerStore } from "@/stores/debuggerStore";
+import { useBreakpoints } from "@/stores/debuggerStore";
+import { useRuntimeActions, useRuntimeStore } from "@/stores/runtimeStore";
+import { useViewActions } from "@/stores/viewStore";
 import { ActionIcon, AppShell, Card, Group, Menu, Text } from "@mantine/core";
 import {
   IconDotsVertical,
@@ -11,8 +13,18 @@ import {
 } from "@tabler/icons-react";
 
 function EmulatorFooter(props: { canvas: () => HTMLCanvasElement | null }) {
-  const dbg = useDebuggerStore();
-  const activeKeys = getActiveKeys(dbg.keypad);
+  const rt = useRuntimeActions();
+  const { renderFrame } = useViewActions();
+  const fps = useRuntimeStore((state) => state.fps);
+  const keypad = useRuntimeStore((state) => state.keypad);
+  const running = useRuntimeStore((state) => state.running);
+  const breakpoints = useBreakpoints();
+  const activeKeys = getActiveKeys(keypad);
+
+  const handleReset = () => {
+    rt.reset();
+    rt.run({ onFrame: renderFrame, breakpoints });
+  };
 
   const handleScreenshot = () => {
     const canvas = props.canvas();
@@ -37,23 +49,23 @@ function EmulatorFooter(props: { canvas: () => HTMLCanvasElement | null }) {
     {
       name: "Restart",
       icon: IconRestore,
-      action: dbg.reset,
+      action: handleReset,
     },
-    dbg.running
+    running
       ? {
           name: "Pause",
           icon: IconPlayerPause,
-          action: dbg.pause,
+          action: rt.pause,
         }
       : {
           name: "Continue",
           icon: IconPlayerPlay,
-          action: dbg.run,
+          action: () => rt.run({ onFrame: renderFrame, breakpoints }),
         },
     {
       name: "Stop",
       icon: IconX,
-      action: dbg.unloadRom,
+      action: rt.unload,
     },
   ];
 
@@ -82,7 +94,7 @@ function EmulatorFooter(props: { canvas: () => HTMLCanvasElement | null }) {
               ))}
             </Menu.Dropdown>
           </Menu>
-          {dbg.running ? (
+          {running ? (
             <Text c="green">Running</Text>
           ) : (
             <Text c="yellow">Paused</Text>
@@ -109,7 +121,7 @@ function EmulatorFooter(props: { canvas: () => HTMLCanvasElement | null }) {
         </Group>
         <Group>
           <Text c="gray">
-            {dbg.fps}
+            {fps}
             /60 FPS
           </Text>
         </Group>

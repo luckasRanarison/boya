@@ -1,7 +1,7 @@
 import { Text, Group, SimpleGrid, Stack, Accordion } from "@mantine/core";
 import { psrFlags, type CPURegisterBank } from "@/lib/gba";
 import { formatHex } from "@/utils/format";
-import { useDebuggerStore } from "@/stores/debuggerStore";
+import { useRuntimeStore } from "@/stores/runtimeStore";
 
 function CpsrFlag(props: { label: string; value: number; flag: number }) {
   return (props.flag & props.value) !== 0 ? (
@@ -67,7 +67,7 @@ function RegisterBankView(props: {
   value: CPURegisterBank;
   style: "simple" | "full";
 }) {
-  const { running } = useDebuggerStore();
+  const { running } = useRuntimeStore();
 
   return (
     <Stack w="100%" ff="monospace">

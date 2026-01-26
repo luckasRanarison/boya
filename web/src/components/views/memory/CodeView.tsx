@@ -1,11 +1,11 @@
+import { usePersistantStore } from "@/stores/persistantStore";
 import styles from "./CodeView.module.css";
 
-import { GBA } from "@/lib/gba";
-import { useDebuggerStore } from "@/stores/debuggerStore";
+import { useDebuggerActions, useDebuggerStore } from "@/stores/debuggerStore";
 import { formatHex } from "@/utils/format";
 import { ActionIcon, Group, Stack, Text } from "@mantine/core";
 import { IconArrowRight, IconCircleDot } from "@tabler/icons-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type CodeLine = {
   address: number;
@@ -13,12 +13,20 @@ type CodeLine = {
 };
 
 function CodeView(props: {
+  execAddress: number;
   baseAddress: number;
   pageStart: number;
   pageSize: number;
 }) {
-  const { instructionCache, breakpoints } = useDebuggerStore();
   const [hovered, setHovered] = useState<number | null>(null);
+  const breakpoints = useDebuggerStore((state) => state.breakpoints);
+  const instructionCache = useDebuggerStore((state) => state.instructionCache);
+  const decodeDepth = usePersistantStore((state) => state.decodeDepth);
+  const { removeBreak, addBreak, decode } = useDebuggerActions();
+
+  useEffect(() => {
+    decode(decodeDepth);
+  }, [props.execAddress, decodeDepth, decode]);
 
   const generateLines = () => {
     const lines: CodeLine[] = [];
@@ -29,15 +37,12 @@ function CodeView(props: {
 
       lines.push({ address, value: instr?.value });
 
-      if (instr?.size == 4) {
-        i += 2;
-      }
+      if (instr?.size == 4) i += 2;
     }
 
     return lines;
   };
 
-  const pc = GBA.execAddress();
   const lines = generateLines();
 
   return (
@@ -54,18 +59,16 @@ function CodeView(props: {
             className={
               isBreakpoint
                 ? styles["breakpoint-highlight"]
-                : line.address === pc
+                : line.address === props.execAddress
                   ? styles["execution-highlight"]
                   : undefined
             }
             onClick={() =>
-              isBreakpoint
-                ? breakpoints.remove(line.address)
-                : breakpoints.add(line.address)
+              isBreakpoint ? removeBreak(line.address) : addBreak(line.address)
             }
             gap={0}
           >
-            {pc === line.address ? (
+            {props.execAddress === line.address ? (
               <ActionIcon
                 mx="xs"
                 c={isBreakpoint ? "red" : "green"}

@@ -1,41 +1,46 @@
 import { Group, Stack, Text } from "@mantine/core";
-import { useDebuggerStore } from "@/stores/debuggerStore";
+import { useRuntimeStore } from "@/stores/runtimeStore";
 import { formatHex } from "@/utils/format";
 import MemoryLink from "@/components/common/MemoryLink";
 import type { CpuState } from "@/hooks/useGba";
 
-function DebuggerStatus({ data }: { data: CpuState }) {
-  const { running, cycles, lastCycle, romLoaded } = useDebuggerStore();
+function DebuggerStatus(props: {
+  cpu: CpuState;
+  running: boolean;
+  booted: boolean;
+  cycles: bigint;
+}) {
+  const lastCycle = useRuntimeStore((state) => state.lastCycle);
 
   const rows = [
     {
       label: "PC",
       default: formatHex(0),
       link: true,
-      value: data.pc,
+      value: props.cpu.pc,
     },
     {
       label: "LR",
       default: formatHex(0),
       link: true,
-      value: data.lr,
+      value: props.cpu.lr,
     },
     {
       label: "SP",
       default: formatHex(0),
       link: true,
-      value: data.sp,
+      value: props.cpu.sp,
     },
     {
       label: "Mode",
       default: "none",
-      value: data.operatingMode,
+      value: props.cpu.operatingMode,
     },
     {
       label: "Cycles",
       default: 0,
       extra: lastCycle && <Text c="green">(+ {lastCycle})</Text>,
-      value: cycles,
+      value: props.cycles.toString(),
     },
   ];
 
@@ -45,7 +50,7 @@ function DebuggerStatus({ data }: { data: CpuState }) {
         <Group key={row.label} justify="space-between">
           <Group>
             <Text size="sm">{row.label}:</Text>
-            {romLoaded ? (
+            {props.booted ? (
               <Text c="indigo">
                 {row.link ? formatHex(row.value) : row.value}
               </Text>
@@ -54,7 +59,9 @@ function DebuggerStatus({ data }: { data: CpuState }) {
             )}
             {row.extra}
           </Group>
-          {row.link && <MemoryLink address={row.value} disabled={running} />}
+          {row.link && (
+            <MemoryLink address={row.value} disabled={props.running} />
+          )}
         </Group>
       ))}
     </Stack>

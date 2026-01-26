@@ -1,217 +1,68 @@
-import { create } from "zustand";
 import { GBA } from "@/lib/gba";
-import { FrameCounter } from "@/utils/frame";
-import type { Position } from "@/utils/float";
-
-type InstructionChache = {
-  [key: number]: { value: string; size: number } | undefined;
-};
+import { create } from "zustand";
 
 type DebuggerStore = {
-  cycles: bigint;
-  lastCycle?: number;
-  romLoaded: boolean;
-  running: boolean;
-  keypad: number;
-  canvas?: { context: CanvasRenderingContext2D; imageData: ImageData };
-  fps: number;
-  paused: boolean;
-  instructionCache: InstructionChache;
-
-  run: () => void;
-  pause: () => void;
-  reset: () => void;
-  stepInto: () => void;
-  setCanvas: (canvas: HTMLCanvasElement) => void;
-  loadRom: (rom: Uint8Array) => void;
-  unloadRom: () => void;
-  decode: (count: number) => void;
-
   breakpoints: {
     entries: Set<number>;
-    add: (breakPoints: number) => void;
-    remove: (breakPoints: number) => void;
   };
 
-  panel: {
-    floating: boolean;
-    position: Position;
-    toggleFloat: () => void;
-    setPosition: (position: Position) => void;
+  instructionCache: {
+    [key: number]: { value: string; size: number } | undefined;
+  };
+
+  actions: {
+    decode: (count: number) => void;
+    addBreak: (bp: number) => void;
+    removeBreak: (bp: number) => void;
   };
 };
 
-export const useDebuggerStore = create<DebuggerStore>((set, get) => ({
-  cycles: BigInt(0),
-  running: false,
-  paused: false,
-  romLoaded: false,
-  keypad: 0x3ff,
-  fps: 0,
-  instructionCache: {},
-  floatingControls: false,
-
-  panel: {
-    floating: false,
-    position: "down",
-
-    setPosition: (position) => {
-      set((prev) => ({ ...prev, panel: { ...prev.panel, position } }));
-    },
-
-    toggleFloat: () =>
-      set((prev) => ({
-        ...prev,
-        panel: { ...prev.panel, floating: !prev.panel.floating },
-      })),
+export const useDebuggerStore = create<DebuggerStore>((set) => ({
+  breakpoints: {
+    entries: new Set(),
   },
 
-  breakpoints: {
-    entries: new Set<number>(),
+  instructionCache: {},
 
-    add: (breakpoint) => {
+  actions: {
+    decode: (count) => {
+      const size = GBA.instructionSize();
+      const instructions: [number, string][] = GBA.nextInstructions(count);
+
       set((prev) => ({
         ...prev,
-        breakpoints: {
-          ...prev.breakpoints,
-          entries: prev.breakpoints.entries.add(breakpoint),
+        instructionCache: {
+          ...prev.instructionCache,
+          ...Object.fromEntries(
+            instructions.map(([addr, value]) => [addr, { value, size }]),
+          ),
         },
       }));
     },
 
-    remove: (breakpoint) => {
+    addBreak: (breakpoint) => {
+      set((prev) => ({
+        ...prev,
+        breakpoints: { entries: prev.breakpoints.entries.add(breakpoint) },
+      }));
+    },
+
+    removeBreak: (breakpoint) => {
       set((prev) => {
-        const breakpoints = prev.breakpoints.entries;
-        breakpoints.delete(breakpoint);
+        const entries = prev.breakpoints.entries;
+        entries.delete(breakpoint);
 
         return {
           ...prev,
-          breakpoints: { ...prev.breakpoints, entries: breakpoints },
+          breakpoints: { entries },
         };
       });
     },
   },
-
-  setCanvas: (canvas: HTMLCanvasElement) => {
-    const context = canvas.getContext("2d")!;
-    const imageData = context.createImageData(240, 160);
-
-    set((prev) => ({ ...prev, canvas: { context, imageData } }));
-  },
-
-  loadRom: (rom) => {
-    GBA.reset();
-    GBA.loadRom(rom);
-    GBA.boot();
-    set((prev) => ({ ...prev, cycles: GBA.cycles(), romLoaded: true }));
-  },
-
-  unloadRom: () => {
-    set((prev) => ({
-      ...prev,
-      running: false,
-      paused: false,
-      romLoaded: false,
-    }));
-  },
-
-  reset: () => {
-    GBA.reset();
-    GBA.boot();
-    set((prev) => ({
-      ...prev,
-      cycles: GBA.cycles(),
-      instructionCache: {},
-      keypad: 0x3ff,
-    }));
-    get().run();
-  },
-
-  pause: () => {
-    set((prev) => ({ ...prev, running: false, paused: true }));
-  },
-
-  run: () => {
-    if (get().running) return;
-
-    set((prev) => ({ ...prev, running: true, paused: false }));
-
-    const frameCounter = new FrameCounter();
-
-    const stepFrame = (ellapsed: number) => {
-      const { running, canvas, breakpoints, paused } = get();
-
-      if (!running || paused) {
-        return;
-      }
-
-      frameCounter.onFrame(ellapsed, {
-        interval: 1000,
-        callback: (fps) => set((prev) => ({ ...prev, fps })),
-      });
-
-      if (breakpoints.entries.size) {
-        const cycles = GBA.stepFrameWithBreakpoints(
-          new Uint32Array(breakpoints.entries.values()),
-        );
-
-        set((prev) => ({
-          ...prev,
-          cycles: GBA.cycles(),
-          lastCycle: cycles,
-        }));
-
-        if (breakpoints.entries.has(GBA.execAddress()) || !get().running) {
-          return set((prev) => ({
-            ...prev,
-            cycles: GBA.cycles(),
-            running: false,
-          }));
-        }
-      } else {
-        GBA.stepFrame();
-
-        set((prev) => ({
-          ...prev,
-          cycles: GBA.cycles(),
-          lastCycle: undefined,
-        }));
-      }
-
-      if (canvas) {
-        const pixels = canvas.imageData.data;
-        GBA.writeFrameBuffer(pixels as unknown as Uint8Array);
-        canvas.context.putImageData(canvas.imageData, 0, 0);
-      }
-
-      requestAnimationFrame(stepFrame);
-    };
-
-    stepFrame(0);
-  },
-
-  stepInto: () => {
-    const count = GBA.debugSyncedStep();
-
-    set((prev) => ({
-      ...prev,
-      lastCycle: count,
-      cycles: prev.cycles + BigInt(count),
-    }));
-  },
-
-  decode: (count) => {
-    const size = GBA.instructionSize();
-    const instructions: [number, string][] = GBA.nextInstructions(count);
-
-    set((prev) => ({
-      ...prev,
-      instructionCache: {
-        ...prev.instructionCache,
-        ...Object.fromEntries(
-          instructions.map(([addr, value]) => [addr, { value, size }]),
-        ),
-      },
-    }));
-  },
 }));
+
+export const useBreakpoints = () =>
+  useDebuggerStore((state) => state.breakpoints).entries;
+
+export const useDebuggerActions = () =>
+  useDebuggerStore((state) => state.actions);

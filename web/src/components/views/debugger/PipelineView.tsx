@@ -1,11 +1,11 @@
 import { Group, Stack, Text } from "@mantine/core";
 import { IconCaretRight, IconCaretRightFilled } from "@tabler/icons-react";
-import { useDebuggerStore } from "@/stores/debuggerStore";
+import { useRuntimeStore } from "@/stores/runtimeStore";
 import MemoryLink from "@/components/common/MemoryLink";
 import type { InstructionPipeline } from "@/hooks/useGba";
 
 function PipelineView(props: { base: number; pipeline: InstructionPipeline }) {
-  const { running } = useDebuggerStore();
+  const { running } = useRuntimeStore();
 
   return (
     <Group p="md" ff="monospace">

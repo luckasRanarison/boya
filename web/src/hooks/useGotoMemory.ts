@@ -1,11 +1,11 @@
 import type { MemoryViewMode } from "@/components/views/memory/MemoryView";
 import { memoryRegions } from "@/lib/gba";
 import notifications from "@/lib/notifications";
-import { useView } from "@/stores/viewStore";
+import { useViewActions } from "@/stores/viewStore";
 import { formatHex } from "@/utils/format";
 
 export function useGotoMemory() {
-  const { setView } = useView();
+  const { setView } = useViewActions();
 
   return (params: {
     address: number;

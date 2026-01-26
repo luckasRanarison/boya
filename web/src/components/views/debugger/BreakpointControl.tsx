@@ -1,17 +1,19 @@
+import { useState } from "react";
 import MemoryLink from "@/components/common/MemoryLink";
-import { useDebuggerStore } from "@/stores/debuggerStore";
+import { useBreakpoints, useDebuggerActions } from "@/stores/debuggerStore";
 import { formatHex } from "@/utils/format";
 import { Stack, TextInput, Group, ActionIcon, Button } from "@mantine/core";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
-import { useState } from "react";
 
-function BreakpointControl() {
-  const { breakpoints } = useDebuggerStore();
+type Edit = {
+  index: number;
+  value: string;
+};
 
-  const [currentEdit, setCurrentEdit] = useState<{
-    index: number;
-    value: string;
-  } | null>(null);
+function BreakpointControl(props: { disabled: boolean }) {
+  const [edit, setEdit] = useState<Edit | null>(null);
+  const breakpoints = useBreakpoints();
+  const { removeBreak, addBreak } = useDebuggerActions();
 
   const parse = (value: string) => {
     return value.startsWith("0x")
@@ -20,46 +22,41 @@ function BreakpointControl() {
   };
 
   const updateBreakpoint = (bp: number) => {
-    if (!currentEdit) return;
+    if (!edit) return;
 
-    const parsed = parse(currentEdit.value);
+    const parsed = parse(edit.value);
 
-    if (Number.isNaN(parsed)) return;
-
-    breakpoints.remove(bp);
-    breakpoints.add(parsed);
-    setCurrentEdit(null);
+    if (!Number.isNaN(parsed)) {
+      removeBreak(bp);
+      addBreak(parsed);
+      setEdit(null);
+    }
   };
 
   return (
     <Stack p="md">
-      {breakpoints.entries.size > 0 && (
+      {breakpoints.size > 0 && (
         <Group w="100%" gap="xs">
-          {Array.from(breakpoints.entries.values()).map((bp, i) => (
+          {Array.from(breakpoints.values()).map((bp, i) => (
             <Group w="100%" key={i} align="center">
               <TextInput
-                value={
-                  currentEdit?.index === i ? currentEdit.value : formatHex(bp)
-                }
+                value={edit?.index === i ? edit.value : formatHex(bp)}
                 onChange={(e) =>
-                  setCurrentEdit({ index: i, value: e.currentTarget.value })
+                  setEdit({ index: i, value: e.currentTarget.value })
                 }
-                onFocus={() =>
-                  setCurrentEdit({ index: i, value: formatHex(bp) })
-                }
+                onFocus={() => setEdit({ index: i, value: formatHex(bp) })}
                 onBlur={() => updateBreakpoint(bp)}
                 onKeyDown={(e) => e.code === "Enter" && e.currentTarget.blur()}
-                error={
-                  currentEdit?.index === i &&
-                  Number.isNaN(parse(currentEdit.value))
-                }
+                error={edit?.index === i && Number.isNaN(parse(edit.value))}
                 flex={1}
+                disabled={props.disabled}
               />
-              <MemoryLink address={bp} />
+              <MemoryLink address={bp} disabled={props.disabled} />
               <ActionIcon
                 color="red"
                 variant="light"
-                onClick={() => breakpoints.remove(bp)}
+                onClick={() => removeBreak(bp)}
+                disabled={props.disabled}
               >
                 <IconTrash size={16} />
               </ActionIcon>
@@ -71,7 +68,8 @@ function BreakpointControl() {
       <Button
         leftSection={<IconPlus size={16} />}
         variant="light"
-        onClick={() => breakpoints.add(0)}
+        onClick={() => addBreak(0)}
+        disabled={props.disabled}
       >
         Add breakpoint
       </Button>

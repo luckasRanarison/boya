@@ -20,13 +20,14 @@ import {
   IconStepOut,
 } from "@tabler/icons-react";
 import Draggable from "react-draggable";
-import { useView } from "@/stores/viewStore";
+import { useViewActions, useViewStore } from "@/stores/viewStore";
 import { GBA } from "@/lib/gba";
 import { useRef } from "react";
 import { useMediaQuery } from "@mantine/hooks";
 import { floatingPositions, type Position } from "@/utils/float";
-import { useDebuggerStore } from "@/stores/debuggerStore";
+import { useRuntimeActions, useRuntimeStore } from "@/stores/runtimeStore";
 import { useGotoMemory } from "@/hooks/useGotoMemory";
+import { useBreakpoints } from "@/stores/debuggerStore";
 
 function Wrapper(props: {
   children: React.ReactNode;
@@ -62,12 +63,23 @@ function Wrapper(props: {
 }
 
 function DebuggerControls(props: { position?: Position }) {
-  const dbg = useDebuggerStore();
+  const view = useViewStore((state) => state.view);
+  const debugPannel = useViewStore((state) => state.debugPannel);
+  const running = useRuntimeStore((state) => state.running);
+  const romLoaded = useRuntimeStore((state) => state.romLoaded);
+  const breakpoints = useBreakpoints();
+
   const gotoMemory = useGotoMemory();
-  const { view } = useView();
+  const { toggleDebugPannel, renderFrame } = useViewActions();
+  const rt = useRuntimeActions();
+
+  const handleReset = () => {
+    rt.reset();
+    rt.run({ onFrame: renderFrame, breakpoints });
+  };
 
   const handleStepInto = () => {
-    dbg.stepInto();
+    rt.stepInto();
 
     if (view.name === "memory") {
       gotoMemory({
@@ -77,12 +89,12 @@ function DebuggerControls(props: { position?: Position }) {
     }
   };
 
-  const actions = [
+  const controlActions = [
     {
       icon: IconRestore,
       label: "Reset",
-      onClick: () => dbg.reset(),
-      disabled: dbg.running || !dbg.romLoaded,
+      onClick: handleReset,
+      disabled: running || !romLoaded,
     },
     {
       icon: IconArrowBackUp,
@@ -97,16 +109,17 @@ function DebuggerControls(props: { position?: Position }) {
       disabled: true,
     },
     {
-      icon: dbg.running ? IconPlayerPause : IconPlayerPlay,
-      label: dbg.running ? "Pause" : "Continue",
-      onClick: () => (dbg.running ? dbg.pause() : dbg.run()),
-      disabled: !dbg.romLoaded,
+      icon: running ? IconPlayerPause : IconPlayerPlay,
+      label: running ? "Pause" : "Continue",
+      onClick: () =>
+        running ? rt.pause() : rt.run({ onFrame: renderFrame, breakpoints }),
+      disabled: !romLoaded,
     },
     {
       icon: IconStepInto,
       label: "Step into",
       onClick: handleStepInto,
-      disabled: dbg.running || !dbg.romLoaded,
+      disabled: running || !romLoaded,
     },
     {
       icon: IconStepOut,
@@ -115,9 +128,9 @@ function DebuggerControls(props: { position?: Position }) {
       disabled: true,
     },
     {
-      icon: dbg.panel.floating ? IconFoldDown : IconFoldUp,
-      label: dbg.panel.floating ? "Dock" : "Dettach",
-      onClick: () => dbg.panel.toggleFloat(),
+      icon: debugPannel.floating ? IconFoldDown : IconFoldUp,
+      label: debugPannel.floating ? "Dock" : "Dettach",
+      onClick: toggleDebugPannel,
       disabled: false,
     },
   ];
@@ -127,7 +140,7 @@ function DebuggerControls(props: { position?: Position }) {
       floatConfig={props.position ? { position: props.position } : undefined}
     >
       <Group w="100%" align="center" justify="center">
-        {dbg.panel.floating && (
+        {debugPannel.floating && (
           <ThemeIcon
             c="gray"
             variant="transparent"
@@ -140,7 +153,7 @@ function DebuggerControls(props: { position?: Position }) {
           </ThemeIcon>
         )}
 
-        {actions.map(({ icon: Icon, label, disabled, onClick }) => (
+        {controlActions.map(({ icon: Icon, label, disabled, onClick }) => (
           <Tooltip
             offset={props.position ? 25 : undefined}
             key={label}

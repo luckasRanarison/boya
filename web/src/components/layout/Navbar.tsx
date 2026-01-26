@@ -3,11 +3,17 @@ import { IconBug, IconInfoCircle, IconSettings } from "@tabler/icons-react";
 import AppTitle from "./AppTitle";
 import SettingsView from "../views/settings/SettingsView";
 import DebuggerView from "../views/debugger/DebuggerView";
-import { useView, type NavbarTab } from "@/stores/viewStore";
+import {
+  useViewActions,
+  useViewStore,
+  type NavbarTab,
+} from "@/stores/viewStore";
+import AboutView from "../views/about/AboutView";
 
 function DesktopNavbar() {
   // use controlled state to load the debugger lazily and improve perf
-  const { tab, setTab } = useView();
+  const tab = useViewStore((state) => state.tab);
+  const { setTab } = useViewActions();
 
   return (
     <Stack h="100%" w="100%" visibleFrom="sm">
@@ -32,9 +38,11 @@ function DesktopNavbar() {
           </Tabs.Tab>
         </Tabs.List>
 
-        <Tabs.Panel value="about">
-          <div></div>
-        </Tabs.Panel>
+        {tab === "about" && (
+          <Tabs.Panel value="about">
+            <AboutView />
+          </Tabs.Panel>
+        )}
 
         {tab === "settings" && (
           <Tabs.Panel value="settings">

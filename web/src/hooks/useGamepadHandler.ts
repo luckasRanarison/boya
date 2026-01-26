@@ -1,5 +1,5 @@
 import { GBA } from "@/lib/gba";
-import { useDebuggerStore as debuggerStore } from "@/stores/debuggerStore";
+import { useRuntimeStore as debuggerStore } from "@/stores/runtimeStore";
 import { usePersistantStore } from "@/stores/persistantStore";
 
 export function useGamepadHandler() {

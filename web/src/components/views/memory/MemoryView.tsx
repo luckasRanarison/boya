@@ -53,7 +53,7 @@ export type MemoryViewProps = {
 };
 
 function MemoryView(props: MemoryViewProps) {
-  const { memory } = useGba();
+  const { memory, cpu } = useGba();
   const [currentMode, setCurrentMode] = useState(props.mode ?? "hex");
 
   const { offset, data } = memory.getRegion(props.region);
@@ -113,6 +113,7 @@ function MemoryView(props: MemoryViewProps) {
 
           {currentMode === "code" && (
             <CodeView
+              execAddress={cpu.pc}
               baseAddress={offset}
               pageStart={pageStart}
               pageSize={pageSize}

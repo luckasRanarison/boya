@@ -1,4 +1,5 @@
 import type { MemoryViewMode } from "@/components/views/memory/MemoryView";
+import type { Position } from "@/utils/float";
 import {
   IconArrowsSort,
   IconBlocks,
@@ -16,6 +17,7 @@ import {
   IconStack2,
   IconStack3,
 } from "@tabler/icons-react";
+import type { Gba } from "boya_wasm";
 import { create } from "zustand";
 
 export const views = [
@@ -70,17 +72,79 @@ type ViewStore = {
   view: MenuView;
   tab: NavbarTab;
 
-  setView: (view: MenuView) => void;
-  setTab: (tab: NavbarTab) => void;
+  debugPannel: {
+    floating: boolean;
+    position: Position;
+  };
+
+  canvas?: {
+    context: CanvasRenderingContext2D;
+    imageData: ImageData;
+  };
+
+  actions: {
+    setView: (view: MenuView) => void;
+    setTab: (tab: NavbarTab) => void;
+    setCanvas: (canvas: HTMLCanvasElement) => void;
+    renderFrame: (gba: Gba) => void;
+    toggleDebugPannel: () => void;
+    moveDebugPannel: (position: Position) => void;
+  };
 };
 
-export const useView = create<ViewStore>((set) => ({
+export const useViewStore = create<ViewStore>((set, get) => ({
   view: {
     name: "main",
   },
 
   tab: "about",
 
-  setView: (view) => set((prev) => ({ ...prev, view })),
-  setTab: (tab) => set((prev) => ({ ...prev, tab })),
+  debugPannel: {
+    floating: false,
+    position: "down",
+  },
+
+  actions: {
+    setView: (view) => set((prev) => ({ ...prev, view })),
+    setTab: (tab) => set((prev) => ({ ...prev, tab })),
+
+    setCanvas: (canvas: HTMLCanvasElement) => {
+      const context = canvas.getContext("2d")!;
+      const imageData = context.createImageData(240, 160);
+
+      set((prev) => ({ ...prev, canvas: { context, imageData } }));
+    },
+
+    renderFrame: (gba) => {
+      const { canvas } = get();
+
+      if (canvas) {
+        const pixels = canvas.imageData.data;
+        gba.writeFrameBuffer(pixels as unknown as Uint8Array);
+        canvas.context.putImageData(canvas.imageData, 0, 0);
+      }
+    },
+
+    moveDebugPannel: (position) => {
+      set((prev) => ({
+        ...prev,
+        debugPannel: {
+          ...prev.debugPannel,
+          position,
+        },
+      }));
+    },
+
+    toggleDebugPannel: () => {
+      set((prev) => ({
+        ...prev,
+        debugPannel: {
+          ...prev.debugPannel,
+          floating: !prev.debugPannel.floating,
+        },
+      }));
+    },
+  },
 }));
+
+export const useViewActions = () => useViewStore((state) => state.actions);

@@ -3,7 +3,7 @@ import { IconExternalLink } from "@tabler/icons-react";
 import type { MemoryViewMode } from "../views/memory/MemoryView";
 import { formatHex } from "@/utils/format";
 import { useGotoMemory } from "@/hooks/useGotoMemory";
-import { useView } from "@/stores/viewStore";
+import { useViewStore } from "@/stores/viewStore";
 
 function MemoryLink(props: {
   address: number;
@@ -11,7 +11,7 @@ function MemoryLink(props: {
   disabled?: boolean;
 }) {
   const gotoMemory = useGotoMemory();
-  const { view } = useView();
+  const { view } = useViewStore();
 
   return (
     <Tooltip label={`Go to ${formatHex(props.address)}`}>

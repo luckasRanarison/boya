@@ -1,4 +1,4 @@
-import { useDebuggerStore } from "@/stores/debuggerStore";
+import { useRuntimeStore } from "@/stores/runtimeStore";
 import { formatHex } from "@/utils/format";
 import { Accordion, Group, Stack, Text } from "@mantine/core";
 import { FlagBits } from "./FlagBits";
@@ -9,7 +9,7 @@ function IORegisterView(props: {
   value: IORegister;
   style: "simple" | "full";
 }) {
-  const { running } = useDebuggerStore();
+  const { running } = useRuntimeStore();
   const offset = memoryRegions.io.offset;
 
   return (

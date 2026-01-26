@@ -1,19 +1,21 @@
-import { useView } from "@/stores/viewStore";
-import { useDebuggerStore } from "@/stores/debuggerStore";
+import { useViewStore } from "@/stores/viewStore";
+import { useRuntimeStore } from "@/stores/runtimeStore";
 import type { MemoryRegion } from "@/lib/gba";
 import MemoryView from "../views/memory/MemoryView";
 import DebuggerView from "../views/debugger/DebuggerView";
 import SettingsView from "../views/settings/SettingsView";
 import EmulatorView from "../views/main/EmulatorView";
 import UploadView from "../views/main/UploadView";
+import AboutView from "../views/about/AboutView";
 import RegisterView, {
   type RegisterSubMenu,
 } from "../views/registers/RegisterView";
 
 function Main() {
-  const { view } = useView();
-  const { romLoaded } = useDebuggerStore();
+  const { view } = useViewStore();
+  const { romLoaded } = useRuntimeStore();
 
+  if (view.name === "about") return <AboutView />;
   if (view.name === "debugger") return <DebuggerView />;
   if (view.name === "settings") return <SettingsView />;
 

@@ -1,12 +1,17 @@
-import { useDebuggerStore } from "@/stores/debuggerStore";
+import { useRuntimeActions, useRuntimeStore } from "@/stores/runtimeStore";
 import { Flex, Stack } from "@mantine/core";
 import { useEffect, useRef } from "react";
 import EmulatorFooter from "./EmulatorFooter";
 import { useGamepadHandler } from "@/hooks/useGamepadHandler";
+import { useViewActions } from "@/stores/viewStore";
+import { useBreakpoints } from "@/stores/debuggerStore";
 
 function EmulatorView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { paused, run, setCanvas } = useDebuggerStore();
+  const paused = useRuntimeStore((state) => state.paused);
+  const breakpoints = useBreakpoints();
+  const { run } = useRuntimeActions();
+  const { setCanvas, renderFrame } = useViewActions();
   const handleKey = useGamepadHandler();
 
   useEffect(() => {
@@ -23,13 +28,13 @@ function EmulatorView() {
       document.removeEventListener("keydown", handleKey);
       document.removeEventListener("keyup", handleKey);
     };
-  }, [run, handleKey]);
+  }, [handleKey]);
 
   useEffect(() => {
     if (!paused) {
-      run();
+      run({ onFrame: renderFrame, breakpoints });
     }
-  }, [paused, run]);
+  }, [paused, breakpoints, run, renderFrame]);
 
   return (
     <Stack flex={1}>

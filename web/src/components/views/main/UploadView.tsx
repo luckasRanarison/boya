@@ -3,11 +3,11 @@ import { Button, Text, Stack, Mark, Paper, Group, Flex } from "@mantine/core";
 import { IconDragDrop, IconUpload } from "@tabler/icons-react";
 import { usePersistantStore } from "@/stores/persistantStore";
 import notifications from "@/lib/notifications";
-import { useDebuggerStore } from "@/stores/debuggerStore";
+import { useRuntimeActions } from "@/stores/runtimeStore";
 
 function UploadView() {
   const { bios, theme, set } = usePersistantStore();
-  const { loadRom } = useDebuggerStore();
+  const { load } = useRuntimeActions();
 
   const romInputRef = useRef<HTMLInputElement>(null);
   const biosInputRef = useRef<HTMLInputElement>(null);
@@ -25,7 +25,7 @@ function UploadView() {
         );
       }
     } else {
-      loadRom(bytes);
+      load(bytes);
     }
   };
 

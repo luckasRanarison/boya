@@ -5,10 +5,11 @@ import {
   IconMenu2,
 } from "@tabler/icons-react";
 import AppTitle from "./AppTitle";
-import { views, useView } from "@/stores/viewStore";
+import { views, useViewStore, useViewActions } from "@/stores/viewStore";
 
 function Header() {
-  const { view, setView } = useView();
+  const view = useViewStore((state) => state.view);
+  const { setView } = useViewActions();
 
   return (
     <Group p="md" h="100%" justify="space-between" align="center">

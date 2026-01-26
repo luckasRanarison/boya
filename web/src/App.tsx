@@ -7,7 +7,7 @@ import { useEffect } from "react";
 import { usePersistantStore } from "./stores/persistantStore";
 import { GBA } from "./lib/gba";
 import DebuggerControls from "./components/views/debugger/DebuggerControls";
-import { useDebuggerStore } from "./stores/debuggerStore";
+import { useViewStore } from "./stores/viewStore";
 
 function App() {
   const mantineTheme = createTheme({
@@ -15,7 +15,7 @@ function App() {
   });
 
   const { bios, theme: colorScheme } = usePersistantStore();
-  const { panel } = useDebuggerStore();
+  const debugPannel = useViewStore((state) => state.debugPannel);
 
   useEffect(() => {
     if (bios) {
@@ -48,7 +48,9 @@ function App() {
       </AppShell>
 
       <Notifications />
-      {panel.floating && <DebuggerControls position={panel.position} />}
+      {debugPannel.floating && (
+        <DebuggerControls position={debugPannel.position} />
+      )}
     </MantineProvider>
   );
 }

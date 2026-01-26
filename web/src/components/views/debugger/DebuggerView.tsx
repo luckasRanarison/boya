@@ -1,35 +1,50 @@
+import { useEffect, useState } from "react";
+import { useGba } from "@/hooks/useGba";
+import { useRuntimeStore } from "@/stores/runtimeStore";
+import { useViewActions, useViewStore } from "@/stores/viewStore";
 import { Accordion, ActionIcon, Divider, Stack, Tooltip } from "@mantine/core";
 import CPURegisterView from "../registers/CPURegisterView";
 import DebuggerControls from "./DebuggerControls";
 import DebuggerStatus from "./DebuggerStatus";
-import { useDebuggerStore } from "@/stores/debuggerStore";
-import { useState } from "react";
 import IORegisterView from "../registers/IORegisterView";
 import BreakpointControl from "./BreakpointControl";
 import FloatingControl from "./FloatingControl";
 import { IconFoldDown } from "@tabler/icons-react";
-import { useGba } from "@/hooks/useGba";
 import PipelineView from "./PipelineView";
+import { useDebuggerActions } from "@/stores/debuggerStore";
 
 function DebuggerView() {
-  const { cpu, memory } = useGba();
-  const { running, cycles, panel } = useDebuggerStore();
+  const { cpu, cycles, memory, booted } = useGba();
+  const running = useRuntimeStore((state) => state.running);
+  const debugPannel = useViewStore((state) => state.debugPannel);
+  const view = useViewStore((state) => state.view);
+  const { toggleDebugPannel, moveDebugPannel } = useViewActions();
+  const { decode } = useDebuggerActions();
+  const [activeMenu, setActiveMenu] = useState(["status", "pipeline"]);
 
-  const [activeMenu, setActiveMenu] = useState<string[]>([
-    "status",
-    "pipeline",
-  ]);
+  useEffect(() => {
+    if (!(view.name === "memory" && view.sub?.metadata?.mode === "code")) {
+      decode(2);
+    }
+  }, [cycles, view, decode]);
 
   const menus = [
     {
       key: "breakpoint",
       label: "Breakpoints",
-      view: <BreakpointControl />,
+      view: <BreakpointControl disabled={running} />,
     },
     {
       key: "status",
       label: "Status",
-      view: <DebuggerStatus data={cpu} />,
+      view: (
+        <DebuggerStatus
+          cpu={cpu}
+          running={running}
+          booted={booted}
+          cycles={cycles}
+        />
+      ),
     },
     {
       key: "pipeline",
@@ -57,14 +72,14 @@ function DebuggerView() {
       ff="monospace"
     >
       <Stack pt="xl" pb="md" align="center">
-        {panel.floating ? (
+        {debugPannel.floating ? (
           <>
             <FloatingControl
-              defaultValue={panel.position}
-              onChange={panel.setPosition}
+              defaultValue={debugPannel.position}
+              onChange={moveDebugPannel}
             />
             <Tooltip label="Dock">
-              <ActionIcon variant="subtle" onClick={panel.toggleFloat}>
+              <ActionIcon variant="subtle" onClick={toggleDebugPannel}>
                 <IconFoldDown />
               </ActionIcon>
             </Tooltip>
