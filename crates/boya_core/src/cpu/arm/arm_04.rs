@@ -64,6 +64,12 @@ impl Executable for Instruction {
     }
 }
 
+impl Instruction {
+    pub fn is_link(&self) -> bool {
+        matches!(self.op, Opcode::BL)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

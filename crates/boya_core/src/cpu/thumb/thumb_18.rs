@@ -14,7 +14,7 @@ pub struct Instruction {
 impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         Self {
-            of: ((value.get_bits(0, 10) as i8) as i16) << 1,
+            of: ((value.get_bits(0, 10) << 5) as i16) >> 4, // sign-exteneded + steps 2
         }
     }
 }

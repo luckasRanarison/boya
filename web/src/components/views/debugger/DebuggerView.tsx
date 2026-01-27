@@ -1,8 +1,10 @@
+import { GBA } from "@/lib/gba";
 import { useEffect, useState } from "react";
 import { useGba } from "@/hooks/useGba";
 import { useRuntimeStore } from "@/stores/runtimeStore";
 import { useViewActions, useViewStore } from "@/stores/viewStore";
 import { Accordion, ActionIcon, Divider, Stack, Tooltip } from "@mantine/core";
+import { useDebuggerActions, useDebuggerStore } from "@/stores/debuggerStore";
 import CPURegisterView from "../registers/CPURegisterView";
 import DebuggerControls from "./DebuggerControls";
 import DebuggerStatus from "./DebuggerStatus";
@@ -11,22 +13,38 @@ import BreakpointControl from "./BreakpointControl";
 import FloatingControl from "./FloatingControl";
 import { IconFoldDown } from "@tabler/icons-react";
 import PipelineView from "./PipelineView";
-import { useDebuggerActions } from "@/stores/debuggerStore";
+import CallStack from "./CallStack";
 
 function DebuggerView() {
   const { cpu, cycles, memory, booted } = useGba();
   const running = useRuntimeStore((state) => state.running);
   const debugPannel = useViewStore((state) => state.debugPannel);
+  const callstack = useDebuggerStore((state) => state.callstack);
   const view = useViewStore((state) => state.view);
   const { toggleDebugPannel, moveDebugPannel } = useViewActions();
-  const { decode } = useDebuggerActions();
-  const [activeMenu, setActiveMenu] = useState(["status", "pipeline"]);
+  const { decode, pushStack, popStack } = useDebuggerActions();
+
+  const [activeMenu, setActiveMenu] = useState([
+    "status",
+    "pipeline",
+    "callstack",
+  ]);
 
   useEffect(() => {
+    const pc = GBA.execAddress();
+
+    if ((cpu.lr & ~1) === pc && callstack.length) {
+      popStack();
+    }
+
+    if (GBA.startingSubroutine()) {
+      pushStack({ caller: pc, return: pc + GBA.instructionSize() });
+    }
+
     if (!(view.name === "memory" && view.sub?.metadata?.mode === "code")) {
       decode(2);
     }
-  }, [cycles, view, decode]);
+  }, [cpu.lr, callstack.length, cycles, view, decode, pushStack, popStack]);
 
   const menus = [
     {
@@ -50,6 +68,11 @@ function DebuggerView() {
       key: "pipeline",
       label: "Pipeline",
       view: <PipelineView base={cpu.pc} pipeline={cpu.pipeline()} />,
+    },
+    {
+      key: "callstack",
+      label: "Call Stack",
+      view: <CallStack disabled={running} />,
     },
     {
       key: "cpu_reg",

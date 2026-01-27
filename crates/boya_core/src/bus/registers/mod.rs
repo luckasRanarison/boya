@@ -80,6 +80,12 @@ impl IORegister {
     pub fn set_irq(&mut self, irq: Interrupt) {
         self.irf.set(irq as u16);
     }
+
+    pub fn write_irf(&mut self, address: u32, value: u8) {
+        if value != 0 {
+            self.irf.write_byte(address % 2, !value);
+        }
+    }
 }
 
 impl Bus for IORegister {
@@ -117,7 +123,7 @@ impl Bus for IORegister {
             0x10C..=0x10F => self.timer[3].write_byte(address, value),
             0x132..=0x133 => self.keypad.keycnt.write_byte(address, value),
             0x200..=0x201 => self.ie.write_byte(address, value),
-            0x202..=0x203 => self.irf.write_byte(address, value),
+            0x202..=0x203 => self.write_irf(address, value),
             0x204..=0x205 => self.waitcnt.value.write_byte(address, value),
             0x208..=0x209 => self.ime.write_byte(address, value),
             0x300..=0x301 => self.haltcnt.write_byte(address, value),

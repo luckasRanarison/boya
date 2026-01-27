@@ -26,7 +26,7 @@ impl Bgcnt {
     }
 
     pub fn screen_block_offset(&self) -> u32 {
-        self.value.get_bits(8, 12) as u32 * 0x400
+        self.value.get_bits(8, 12) as u32 * 0x800
     }
 
     pub fn overflow_wrap(&self) -> bool {

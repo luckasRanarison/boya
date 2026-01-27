@@ -100,6 +100,11 @@ impl Gba {
         self.core.cpu.instr_size()
     }
 
+    #[wasm_bindgen(js_name = "startingSubroutine")]
+    pub fn starting_subroutine(&self) -> bool {
+        self.core.cpu.starting_subroutine()
+    }
+
     #[wasm_bindgen(js_name = "stepFrame")]
     pub fn step_frame(&mut self) {
         self.core.step_frame();

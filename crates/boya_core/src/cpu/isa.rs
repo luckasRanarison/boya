@@ -47,6 +47,14 @@ impl Instruction {
             _ => false,
         }
     }
+
+    pub fn is_branch_link(&self) -> bool {
+        match self {
+            Instruction::Thumb(Thumb::Format19(instr)) => instr.is_second_part(),
+            Instruction::Arm(Arm::Arm04(instr)) => instr.is_link(),
+            _ => false,
+        }
+    }
 }
 
 pub trait Executable: Sized {

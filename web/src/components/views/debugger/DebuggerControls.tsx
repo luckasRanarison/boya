@@ -27,7 +27,11 @@ import { useMediaQuery } from "@mantine/hooks";
 import { floatingPositions, type Position } from "@/utils/float";
 import { useRuntimeActions, useRuntimeStore } from "@/stores/runtimeStore";
 import { useGotoMemory } from "@/hooks/useGotoMemory";
-import { useBreakpoints } from "@/stores/debuggerStore";
+import {
+  useBreakpoints,
+  useDebuggerActions,
+  useDebuggerStore,
+} from "@/stores/debuggerStore";
 
 function Wrapper(props: {
   children: React.ReactNode;
@@ -67,26 +71,38 @@ function DebuggerControls(props: { position?: Position }) {
   const debugPannel = useViewStore((state) => state.debugPannel);
   const running = useRuntimeStore((state) => state.running);
   const romLoaded = useRuntimeStore((state) => state.romLoaded);
+  const callstack = useDebuggerStore((state) => state.callstack);
   const breakpoints = useBreakpoints();
 
   const gotoMemory = useGotoMemory();
   const { toggleDebugPannel, renderFrame } = useViewActions();
+  const dbg = useDebuggerActions();
   const rt = useRuntimeActions();
 
-  const handleReset = () => {
-    rt.reset();
-    rt.run({ onFrame: renderFrame, breakpoints });
-  };
-
-  const handleStepInto = () => {
-    rt.stepInto();
-
+  const jumpToExec = () => {
     if (view.name === "memory") {
       gotoMemory({
         address: GBA.execAddress(),
         mode: "code",
       });
     }
+  };
+
+  const handleReset = () => {
+    rt.reset();
+    dbg.reset();
+    rt.run({ onFrame: renderFrame, breakpoints });
+  };
+
+  const handleStepInto = () => {
+    rt.stepInto();
+    jumpToExec();
+  };
+
+  const handleStepOut = () => {
+    const entry = callstack[callstack.length - 1];
+    rt.run({ onFrame: renderFrame, breakpoints: new Set([entry.return]) });
+    jumpToExec();
   };
 
   const controlActions = [
@@ -124,8 +140,8 @@ function DebuggerControls(props: { position?: Position }) {
     {
       icon: IconStepOut,
       label: "Step out",
-      onClick: () => console.log("step out"),
-      disabled: true,
+      onClick: handleStepOut,
+      disabled: running || !callstack.length,
     },
     {
       icon: debugPannel.floating ? IconFoldDown : IconFoldUp,

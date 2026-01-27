@@ -49,21 +49,24 @@ impl From<u16> for BgScreen {
 
 impl Ppu {
     pub fn write_pixel(&mut self) {
+        let x = self.dot;
+        let y = self.scanline as u16;
+        let idx = (y as usize * LCD_WIDTH + x as usize) * 4;
+        let Color24 { r, g, b } = self.get_pixel(x, y).into();
+
+        self.frame_buffer[idx] = r;
+        self.frame_buffer[idx + 1] = g;
+        self.frame_buffer[idx + 2] = b;
+    }
+
+    pub fn get_pixel(&mut self, x: u16, y: u16) -> Color15 {
         for bg in self.pipeline.bg_prio {
-            let x = self.dot;
-            let y = self.scanline as u16;
-
             if let Some(pixel15) = self.get_bg_pixel(x, y, bg) {
-                let Color24 { r, g, b } = pixel15.into();
-                let idx = (self.scanline as usize * LCD_WIDTH + self.dot as usize) * 4;
-
-                self.frame_buffer[idx] = r;
-                self.frame_buffer[idx + 1] = g;
-                self.frame_buffer[idx + 2] = b;
-
-                break;
+                return pixel15;
             }
         }
+
+        Color15::default()
     }
 
     pub fn get_bg_pixel(&mut self, x: u16, y: u16, bg: Background) -> Option<Color15> {

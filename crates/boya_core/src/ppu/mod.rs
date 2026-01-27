@@ -49,7 +49,7 @@ impl Default for Ppu {
             divider: 0,
             pending_irq: None,
             pipeline: RenderPipeline::default(),
-            frame_buffer: Box::new([0xFF; FRAME_BUFFER_LEN]),
+            frame_buffer: Box::new([0x00; FRAME_BUFFER_LEN]),
         }
     }
 }
@@ -77,17 +77,16 @@ impl Ppu {
     }
 
     pub fn step(&mut self) {
-        self.handle_dot();
-        self.registers.vcount = self.scanline.into();
-        self.handle_scanline();
-        self.dot += 1;
-    }
-
-    fn handle_dot(&mut self) {
         if self.scanline < 160 && self.dot < 240 {
             self.write_pixel();
         }
 
+        self.registers.vcount = self.scanline.into();
+        self.handle_scanline();
+        self.handle_dot();
+    }
+
+    fn handle_dot(&mut self) {
         match self.dot {
             0 => {
                 self.registers.dispstat.clear(Dispstat::HBLANK);
@@ -102,9 +101,12 @@ impl Ppu {
             307 => {
                 self.scanline += 1;
                 self.dot = 0;
+                return;
             }
             _ => {}
         }
+
+        self.dot += 1;
     }
 
     fn handle_scanline(&mut self) {

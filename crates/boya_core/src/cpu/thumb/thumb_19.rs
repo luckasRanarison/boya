@@ -38,6 +38,12 @@ impl Executable for Instruction {
     }
 }
 
+impl Instruction {
+    pub fn is_second_part(&self) -> bool {
+        self.h
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

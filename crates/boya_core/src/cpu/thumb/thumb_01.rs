@@ -105,4 +105,18 @@ mod tests {
             .assert_flag(Psr::N, true)
             .run(3);
     }
+
+    #[test]
+    fn test_special_lsr() {
+        let asm = r"
+            lsr r1, r4, #0x10
+            mov r2, #0x2
+        ";
+
+        GbaTestBuilder::new()
+            .thumb()
+            .asm(asm)
+            .assert_reg(2, 2)
+            .run(2);
+    }
 }

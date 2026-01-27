@@ -15,7 +15,7 @@ pub struct Instruction {
 impl From<u16> for Instruction {
     fn from(value: u16) -> Self {
         let op = value.get_bits_u8(8, 11).into();
-        let of = (value.get_bits(0, 7) as i8 as i16) << 1;
+        let of = (value.get_bits(0, 7) << 8) as i16 >> 7;
 
         Self { op, of }
     }

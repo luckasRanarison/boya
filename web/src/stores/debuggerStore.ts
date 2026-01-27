@@ -1,7 +1,14 @@
 import { GBA } from "@/lib/gba";
 import { create } from "zustand";
 
+type CallStackEntry = {
+  caller: number;
+  return: number;
+};
+
 type DebuggerStore = {
+  callstack: CallStackEntry[];
+
   breakpoints: {
     entries: Set<number>;
   };
@@ -14,6 +21,9 @@ type DebuggerStore = {
     decode: (count: number) => void;
     addBreak: (bp: number) => void;
     removeBreak: (bp: number) => void;
+    pushStack: (entry: CallStackEntry) => void;
+    popStack: () => void;
+    reset: () => void;
   };
 };
 
@@ -22,6 +32,7 @@ export const useDebuggerStore = create<DebuggerStore>((set) => ({
     entries: new Set(),
   },
 
+  callstack: [],
   instructionCache: {},
 
   actions: {
@@ -57,6 +68,23 @@ export const useDebuggerStore = create<DebuggerStore>((set) => ({
           breakpoints: { entries },
         };
       });
+    },
+
+    pushStack: (entry) => {
+      set((prev) => ({ ...prev, callstack: [...prev.callstack, entry] }));
+    },
+
+    popStack: () => {
+      set((prev) => ({
+        ...prev,
+        callstack: prev.callstack.filter(
+          (_, i) => i !== prev.callstack.length - 1,
+        ),
+      }));
+    },
+
+    reset: () => {
+      set((prev) => ({ ...prev, callstack: [] }));
     },
   },
 }));

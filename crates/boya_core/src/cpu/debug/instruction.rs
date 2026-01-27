@@ -23,4 +23,11 @@ impl Arm7tdmi {
 
         instructions
     }
+
+    pub fn starting_subroutine(&self) -> bool {
+        self.pipeline
+            .current_instruction()
+            .map(|instr| instr.is_branch_link())
+            .unwrap_or_default()
+    }
 }

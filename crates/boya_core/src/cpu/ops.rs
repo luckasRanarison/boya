@@ -128,15 +128,11 @@ impl Arm7tdmi {
     #[inline(always)]
     pub fn bx_op(&mut self, rs: u8) -> Cycle {
         let value = self.registers.get(rs, self.cpsr.op_mode());
-        let prev_mode = self.cpsr.thumb();
         let first_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
 
         self.cpsr.update(Psr::T, value.has(0));
         self.registers.set_pc(value);
-
-        if prev_mode != self.cpsr.thumb() {
-            self.pipeline.flush();
-        }
+        self.pipeline.flush();
 
         let fetch_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
 
