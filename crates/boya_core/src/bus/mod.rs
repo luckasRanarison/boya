@@ -7,7 +7,7 @@ use crate::{
     bus::{
         registers::{
             IORegister,
-            dma::{Dma, DmaAddressControl, DmaData, DmaResult, DmaSpecialTiming, DmaStartTiming},
+            dma::{DmaAddressControl, DmaData, DmaResult, DmaSpecialTiming, DmaStartTiming},
         },
         types::{
             Cycle, DataType, Interrupt, MemoryAccess, MemoryRegion, MemoryRegionData, WaitState,
@@ -43,7 +43,7 @@ impl Default for GbaBus {
             ewram: Box::new([0; EWRAM_SIZE]),
             rom: Vec::new(),
             sram: Box::new([0; SRAM_SIZE]),
-            io: IORegister::default(),
+            io: IORegister::new(),
             ppu: Ppu::default(),
             apu: Apu::default(),
         }
@@ -54,10 +54,12 @@ impl GbaBus {
     pub fn tick(&mut self, cycles: u32) {
         self.ppu.tick(cycles);
 
-        self.io
-            .timer
-            .iter_mut()
-            .fold(false, |ovf, timer| timer.tick(cycles, ovf));
+        let ovf0 = self.io.timer[0].tick(cycles, false);
+        let ovf1 = self.io.timer[1].tick(cycles, ovf0);
+        let ovf2 = self.io.timer[2].tick(cycles, ovf1);
+        let _ovf3 = self.io.timer[3].tick(cycles, ovf2);
+
+        self.apu.on_timer_overflow(ovf0, ovf1);
 
         let interrupt = self
             .ppu
@@ -82,13 +84,7 @@ impl GbaBus {
 
     // FIXME: currently slow, use slice copy to improve performance
     pub fn try_dma(&mut self) -> Option<DmaResult> {
-        let dma = self.get_active_dma()?;
-
-        if !dma.repeat() {
-            dma.disable();
-        }
-
-        let data = dma.get_data();
+        let data = self.poll_active_dma()?;
         let cycles = self.dma_cycles(&data);
 
         self.execute_dma(&data);
@@ -180,17 +176,23 @@ impl GbaBus {
         read_cycles + write_cycles + internal_cycles // 2N + 2(n-1)S + xI
     }
 
-    fn get_active_dma(&mut self) -> Option<&mut Dma> {
-        for (channel, _) in self.io.dma.iter().enumerate() {
+    fn poll_active_dma(&mut self) -> Option<DmaData> {
+        for channel in 0..self.io.dma.len() {
             if self.should_start_dma(channel) {
-                return Some(&mut self.io.dma[channel]);
+                let dma = &mut self.io.dma[channel];
+
+                if !dma.repeat() {
+                    dma.disable();
+                }
+
+                return Some(dma.get_data());
             }
         }
 
         None
     }
 
-    fn should_start_dma(&self, channel: usize) -> bool {
+    fn should_start_dma(&mut self, channel: usize) -> bool {
         let dma = &self.io.dma[channel];
 
         if !dma.dma_enable() {
@@ -203,9 +205,9 @@ impl GbaBus {
             DmaStartTiming::HBlank => self.ppu.registers.dispstat.has(Dispstat::HBLANK),
 
             DmaStartTiming::Special => match dma.special_timing() {
-                DmaSpecialTiming::None => true,            // immediate
-                DmaSpecialTiming::FifoA => todo!(),        // TODO: FIFO_A DMA start
-                DmaSpecialTiming::FifoB => todo!(),        // TODO: FIFO_B DMA start
+                DmaSpecialTiming::None => true, // immediate
+                DmaSpecialTiming::FifoA => self.apu.poll_fifo_a_request(),
+                DmaSpecialTiming::FifoB => self.apu.poll_fifo_b_request(),
                 DmaSpecialTiming::VideoCapture => todo!(), // TODO: Video capture DMA start
             },
         }
@@ -264,7 +266,7 @@ impl Reset for GbaBus {
         self.iwram.fill(0);
         self.ewram.fill(0);
         self.sram.fill(0);
-        self.io = IORegister::default();
+        self.io = IORegister::new();
         self.ppu.reset();
         self.apu.reset()
     }

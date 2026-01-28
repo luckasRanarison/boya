@@ -45,9 +45,14 @@ impl Gba {
         self.core.debug_step().cycles().count()
     }
 
-    #[wasm_bindgen(js_name = "stepFrameWithBreakpoints")]
-    pub fn step_frame_with_breakpoints(&mut self, breakpoints: &[u32]) -> u32 {
-        self.core.step_frame_with_breakpoints(breakpoints).count()
+    #[wasm_bindgen(js_name = "stepFrameWithHooks")]
+    pub fn step_frame_with_hooks(&mut self, breakpoints: &[u32], irq: bool) -> bool {
+        self.core.step_frame_with_hook(breakpoints, irq)
+    }
+
+    #[wasm_bindgen(js_name = "stepScanline")]
+    pub fn step_scanline(&mut self) {
+        self.core.step_scanline();
     }
 
     #[wasm_bindgen]

@@ -121,6 +121,73 @@ impl RegisterEntry {
         }
     }
 
+    const fn soundcnt_l() -> Self {
+        RegisterEntry {
+            name: "SOUNDCNT_L",
+            address: 0x080,
+            size: RegisterSize::HWord,
+            flags: const {
+                &[
+                    Flag::new("Sound 1-4 Master Volume RIGHT", 0, 3),
+                    Flag::unused(3, 1),
+                    Flag::new("Sound 1-4 Master Volume LEFT", 4, 3),
+                    Flag::unused(7, 1),
+                    Flag::new("Sound 1-4 Enable Flags LEFT", 8, 4),
+                    Flag::new("Sound 1-4 Enable Flags RIGHT", 12, 4),
+                ]
+            },
+        }
+    }
+
+    const fn soundcnt_h() -> Self {
+        RegisterEntry {
+            name: "SOUNDCNT_H",
+            address: 0x082,
+            size: RegisterSize::HWord,
+            flags: const {
+                &[
+                    Flag::new("Sound 1-4 Volume", 0, 2).map(&[
+                        (0, "25%"),
+                        (1, "50%"),
+                        (2, "100%"),
+                        (3, "Prohibited"),
+                    ]),
+                    Flag::new("Sound A Volume", 2, 1).map(&[(0, "50%"), (1, "100%")]),
+                    Flag::new("Sound B Volume", 3, 1).map(&[(0, "50%"), (1, "100%")]),
+                    Flag::unused(4, 4),
+                    Flag::new("Sound A Enable RIGHT", 8, 1),
+                    Flag::new("Sound A Enable LEFT", 9, 1),
+                    Flag::new("Sound A Timer Select", 10, 1),
+                    Flag::new("Sound A Reset FIFO", 11, 1),
+                    Flag::new("Sound B Enable RIGHT", 12, 1),
+                    Flag::new("Sound B Enable LEFT", 13, 1),
+                    Flag::new("Sound B Timer Select", 14, 1),
+                    Flag::new("Sound B Reset FIFO", 15, 1),
+                ]
+            },
+        }
+    }
+
+    const fn sg_bias() -> Self {
+        RegisterEntry {
+            name: "SG_BIAS",
+            address: 0x88,
+            size: RegisterSize::HWord,
+            flags: const {
+                &[
+                    Flag::new("Bias Level", 0, 10),
+                    Flag::unused(10, 4),
+                    Flag::new("Amplitude Resolution Cycle", 14, 2).map(&[
+                        (0, "9bit / 32.768kHz"),
+                        (1, "8bit / 65.536kHz"),
+                        (2, "7bit / 131.072kHz"),
+                        (3, "6bit / 262.144kHz"),
+                    ]),
+                ]
+            },
+        }
+    }
+
     const fn dma_ad(name: &'static str, address: u32) -> Self {
         RegisterEntry {
             name,
@@ -326,6 +393,9 @@ pub const IO_MAP: &[RegisterEntry] = &[
     RegisterEntry::float16("BG3PD", 0x036),
     RegisterEntry::float28("BG3X", 0x038),
     RegisterEntry::float28("BG3Y", 0x03C),
+    RegisterEntry::soundcnt_l(),
+    RegisterEntry::soundcnt_h(),
+    RegisterEntry::sg_bias(),
     RegisterEntry::dma_ad("DMA0SAD", 0x0B0),
     RegisterEntry::dma_ad("DMA0DAD", 0x0B4),
     RegisterEntry::dma_cnt_l::<14>("DMA0CNT_L", 0x0B8),

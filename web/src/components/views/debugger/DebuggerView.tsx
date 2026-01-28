@@ -4,7 +4,7 @@ import { useGba } from "@/hooks/useGba";
 import { useRuntimeStore } from "@/stores/runtimeStore";
 import { useViewActions, useViewStore } from "@/stores/viewStore";
 import { Accordion, ActionIcon, Divider, Stack, Tooltip } from "@mantine/core";
-import { useDebuggerActions, useDebuggerStore } from "@/stores/debuggerStore";
+import { useDebuggerActions } from "@/stores/debuggerStore";
 import CPURegisterView from "../registers/CPURegisterView";
 import DebuggerControls from "./DebuggerControls";
 import DebuggerStatus from "./DebuggerStatus";
@@ -19,7 +19,6 @@ function DebuggerView() {
   const { cpu, cycles, memory, booted } = useGba();
   const running = useRuntimeStore((state) => state.running);
   const debugPannel = useViewStore((state) => state.debugPannel);
-  const callstack = useDebuggerStore((state) => state.callstack);
   const view = useViewStore((state) => state.view);
   const { toggleDebugPannel, moveDebugPannel } = useViewActions();
   const { decode, pushStack, popStack } = useDebuggerActions();
@@ -33,7 +32,7 @@ function DebuggerView() {
   useEffect(() => {
     const pc = GBA.execAddress();
 
-    if ((cpu.lr & ~1) === pc && callstack.length) {
+    if ((cpu.lr & ~1) === pc) {
       popStack();
     }
 
@@ -44,7 +43,7 @@ function DebuggerView() {
     if (!(view.name === "memory" && view.sub?.metadata?.mode === "code")) {
       decode(2);
     }
-  }, [cpu.lr, callstack.length, cycles, view, decode, pushStack, popStack]);
+  }, [cpu.lr, cycles, view, decode, pushStack, popStack]);
 
   const menus = [
     {

@@ -5,6 +5,7 @@ pub trait Bitflag: Sized {
     fn has(self, bit: Self) -> bool;
     fn set(&mut self, bit: Self);
     fn clear(&mut self, bit: Self);
+    fn take(&mut self, bit: Self) -> bool;
 
     fn set_bits(&mut self, start: Self, end: Self, value: Self);
     fn get_bits(self, start: Self, end: Self) -> Self;
@@ -52,6 +53,13 @@ where
     #[inline(always)]
     fn clear(&mut self, bit: T) {
         *self &= !(T::from(1) << bit);
+    }
+
+    #[inline(always)]
+    fn take(&mut self, bit: Self) -> bool {
+        let res = !(T::from(1) << bit);
+        *self &= res;
+        res != T::from(0)
     }
 
     #[inline(always)]

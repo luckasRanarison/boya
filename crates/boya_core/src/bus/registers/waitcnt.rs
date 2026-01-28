@@ -40,7 +40,7 @@ impl Waitcnt {
     pub fn set_gamepak_type(&mut self, value: GamepakType) {
         match value {
             GamepakType::GBA => self.value.clear(15),
-            GamepakType::GBC => self.value.set(1),
+            GamepakType::GBC => self.value.set(15),
         }
     }
 

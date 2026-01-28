@@ -8,16 +8,16 @@ import {
   Tooltip,
 } from "@mantine/core";
 import {
-  IconArrowBack,
-  IconArrowBackUp,
   IconFoldDown,
   IconFoldUp,
   IconGripVertical,
   IconPlayerPause,
   IconPlayerPlay,
   IconRestore,
+  IconSortDescending,
   IconStepInto,
   IconStepOut,
+  IconTimelineEventExclamation,
 } from "@tabler/icons-react";
 import Draggable from "react-draggable";
 import { useViewActions, useViewStore } from "@/stores/viewStore";
@@ -113,16 +113,16 @@ function DebuggerControls(props: { position?: Position }) {
       disabled: running || !romLoaded,
     },
     {
-      icon: IconArrowBackUp,
-      label: "Undo",
-      onClick: () => console.log("undo"),
-      disabled: true,
+      icon: IconSortDescending,
+      label: "Step scanline",
+      onClick: rt.stepScanline,
+      disabled: running || !romLoaded,
     },
     {
-      icon: IconArrowBack,
-      label: "Step back",
-      onClick: () => console.log("step back"),
-      disabled: true,
+      icon: IconTimelineEventExclamation,
+      label: "Step IRQ",
+      onClick: () => rt.run({ onFrame: renderFrame, breakpoints, irq: true }),
+      disabled: running || !romLoaded,
     },
     {
       icon: running ? IconPlayerPause : IconPlayerPlay,

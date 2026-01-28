@@ -5,7 +5,8 @@ import type { Gba } from "boya_wasm";
 
 type RunParams = {
   onFrame: (gba: Gba) => void;
-  breakpoints: Set<number>;
+  breakpoints?: Set<number>;
+  irq?: boolean;
 };
 
 type RuntimeStore = {
@@ -22,6 +23,7 @@ type RuntimeStore = {
     pause: () => void;
     reset: () => void;
     stepInto: () => void;
+    stepScanline: () => void;
     load: (rom: Uint8Array) => void;
     unload: () => void;
   };
@@ -75,46 +77,41 @@ export const useRuntimeStore = create<RuntimeStore>((set, get) => ({
       set((prev) => ({ ...prev, running: true, paused: false }));
 
       const frameCounter = new FrameCounter();
-      const breakpoints = new Uint32Array(params.breakpoints.values());
+      const breakpoints = new Uint32Array(params.breakpoints?.values() || []);
 
       const stepFrame = (ellapsed: number) => {
         const { running, paused } = get();
 
         if (!running || paused) return;
 
+        let halt = false;
+
         frameCounter.onFrame(ellapsed, {
           interval: 1000,
           callback: (fps) => set((prev) => ({ ...prev, fps })),
         });
 
-        if (params.breakpoints.size) {
-          const cycles = GBA.stepFrameWithBreakpoints(breakpoints);
-
-          set((prev) => ({
-            ...prev,
-            cycles: GBA.cycles(),
-            lastCycle: cycles,
-          }));
-
-          if (params.breakpoints.has(GBA.execAddress()) || !get().running) {
-            return set((prev) => ({
-              ...prev,
-              cycles: GBA.cycles(),
-              running: false,
-            }));
-          }
+        if (breakpoints.length || params.irq) {
+          halt = GBA.stepFrameWithHooks(breakpoints, params.irq ?? false);
         } else {
           GBA.stepFrame();
-
-          set((prev) => ({
-            ...prev,
-            cycles: GBA.cycles(),
-            lastCycle: undefined,
-          }));
         }
 
+        const cycles = GBA.cycles();
+
+        set((prev) => ({
+          ...prev,
+          cycles,
+          lastCycle: Number(cycles - prev.cycles),
+        }));
+
         params.onFrame(GBA);
-        requestAnimationFrame(stepFrame);
+
+        if (halt) {
+          set((prev) => ({ ...prev, running: false }));
+        } else {
+          requestAnimationFrame(stepFrame);
+        }
       };
 
       stepFrame(0);
@@ -127,6 +124,16 @@ export const useRuntimeStore = create<RuntimeStore>((set, get) => ({
         ...prev,
         lastCycle: count,
         cycles: prev.cycles + BigInt(count),
+      }));
+    },
+
+    stepScanline: () => {
+      GBA.stepScanline();
+
+      set((prev) => ({
+        ...prev,
+        cycles: GBA.cycles(),
+        lastCycle: Number(GBA.cycles() - prev.cycles),
       }));
     },
   },

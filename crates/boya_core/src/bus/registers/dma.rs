@@ -175,6 +175,12 @@ pub enum DmaAddressControl {
     IncrementReload,
 }
 
+#[derive(Debug)]
+pub enum DmaTimer {
+    Timer0,
+    Timer1,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{bus::types::Interrupt, test::GbaTestBuilder};

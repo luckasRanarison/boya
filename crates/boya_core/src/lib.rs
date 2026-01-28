@@ -142,27 +142,6 @@ impl Gba {
 }
 
 impl Gba {
-    pub fn step_frame_with_breakpoints(&mut self, breakpoints: &[u32]) -> Cycle {
-        let mut cycles = Cycle::default();
-        let mut rendering_done = false;
-
-        loop {
-            let curr_addr = self.cpu.pipeline.current_address();
-
-            if !self.is_rendering() {
-                rendering_done = true;
-            }
-
-            if breakpoints.contains(&curr_addr) || self.is_rendering() && rendering_done {
-                break;
-            }
-
-            cycles += self.debug_step().cycles();
-        }
-
-        cycles
-    }
-
     pub fn color_palette(&self) -> Vec<Color15> {
         self.cpu.bus.ppu.color_palette()
     }
@@ -174,6 +153,46 @@ impl Gba {
         palette_id: usize,
     ) -> Box<[u8; TILE_BUFFER_SIZE]> {
         self.cpu.bus.ppu.render_tile(tile, color_mode, palette_id)
+    }
+
+    pub fn step_scanline(&mut self) {
+        let initial_scanline = self.cpu.bus.ppu.scanline;
+
+        while self.cpu.bus.ppu.scanline == initial_scanline {
+            self.step();
+        }
+    }
+
+    pub fn step_frame_with_hook(&mut self, breakpoints: &[u32], irq: bool) -> bool {
+        let inital_state = self.is_rendering();
+        let mut cycles = Cycle::default();
+        let mut state_switch = false;
+
+        loop {
+            if inital_state != self.is_rendering() {
+                state_switch = true;
+            }
+
+            if !breakpoints.is_empty() {
+                let curr_addr = self.cpu.pipeline.current_address();
+
+                if breakpoints.contains(&curr_addr) {
+                    return true;
+                }
+            }
+
+            if state_switch && inital_state == self.is_rendering() {
+                break false; // frame completed
+            }
+
+            let step = self.debug_step();
+
+            if irq && matches!(step.value, GbaStepKind::Interrupt(_)) {
+                return true;
+            }
+
+            cycles += step.cycles();
+        }
     }
 }
 
