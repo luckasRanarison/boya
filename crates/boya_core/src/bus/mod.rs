@@ -231,31 +231,31 @@ impl Bus for GbaBus {
     fn read_byte(&self, address: u32) -> u8 {
         match address {
             0x0000_0000..=0x0000_3FFF => self.bios[address as usize],
-            0x0200_0000..=0x0203_FFFF => self.ewram[address as usize - 0x0200_0000],
-            0x0300_0000..=0x0300_7FFF => self.iwram[address as usize - 0x0300_0000],
+            0x0200_0000..=0x02FF_FFFF => self.ewram[address as usize & 0x3FFFF],
+            0x0300_0000..=0x03FF_FFFF => self.iwram[address as usize & 0x7FFF],
             0x0400_0000..=0x0400_005F => self.ppu.registers.read_byte(address),
             0x0400_0060..=0x0400_00AF => self.apu.registers.read_byte(address),
-            0x0400_00B0..=0x0400_03FE => self.io.read_byte(address),
-            0x0500_0000..=0x0500_03FF => self.ppu.palette[address as usize - 0x0500_0000],
-            0x0600_0000..=0x0617_FFFF => self.ppu.vram[address as usize - 0x0600_0000],
-            0x0700_0000..=0x0700_03FF => self.ppu.oam[address as usize - 0x0700_0000],
-            0x0800_0000..=0x0DFF_FFFF => self.read_rom(address as usize - 0x0800_0000),
-            0x0E00_0000..=0x0E00_FFFF => self.sram[address as usize - 0x0E00_0000],
+            0x0400_00B0..=0x04FF_FFFF => self.io.read_byte(address),
+            0x0500_0000..=0x05FF_FFFF => self.ppu.palette[address as usize & 0x3FF],
+            0x0600_0000..=0x06FF_FFFF => self.ppu.read_vram(address),
+            0x0700_0000..=0x07FF_FFFF => self.ppu.oam[address as usize & 0x3FF],
+            0x0800_0000..=0x0DFF_FFFF => self.read_rom(address as usize & 0x01FF_FFFF),
+            0x0E00_0000..=0x0FFF_FFFF => self.sram[address as usize & 0x0FFFF],
             _ => 0x0, // TODO: open bus
         }
     }
 
     fn write_byte(&mut self, address: u32, value: u8) {
         match address {
-            0x0200_0000..=0x0203_FFFF => self.ewram[address as usize - 0x0200_0000] = value,
-            0x0300_0000..=0x0300_7FFF => self.iwram[address as usize - 0x0300_0000] = value,
+            0x0200_0000..=0x02FF_FFFF => self.ewram[address as usize & 0x3FFFF] = value,
+            0x0300_0000..=0x03FF_FFFF => self.iwram[address as usize & 0x7FFF] = value,
             0x0400_0000..=0x0400_005F => self.ppu.registers.write_byte(address, value),
             0x0400_0060..=0x0400_00AF => self.apu.registers.write_byte(address, value),
-            0x0400_00B0..=0x0400_03FE => self.io.write_byte(address, value),
-            0x0500_0000..=0x0500_03FF => self.ppu.palette[address as usize - 0x0500_0000] = value,
-            0x0600_0000..=0x0617_FFFF => self.ppu.vram[address as usize - 0x0600_0000] = value,
-            0x0700_0000..=0x0700_03FF => self.ppu.oam[address as usize - 0x0700_0000] = value,
-            0x0E00_0000..=0x0E00_FFFF => self.sram[address as usize - 0x0E00_0000] = value,
+            0x0400_00B0..=0x04FF_FFFF => self.io.write_byte(address, value),
+            0x0500_0000..=0x05FF_FFFF => self.ppu.palette[address as usize & 0x3FF] = value,
+            0x0600_0000..=0x06FF_FFFF => self.ppu.write_vram(address, value),
+            0x0700_0000..=0x07FF_FFFF => self.ppu.oam[address as usize & 0x3FF] = value,
+            0x0E00_0000..=0x0FFF_FFFF => self.sram[address as usize & 0x0FFFF] = value,
             _ => {}
         };
     }

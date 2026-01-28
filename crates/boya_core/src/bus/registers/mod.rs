@@ -33,8 +33,10 @@ pub struct IORegister {
     pub waitcnt: Waitcnt,
     /// 0x208: Interrupt Master Enable (R/W)
     pub ime: u16,
-    /// 0x300: Power Down Control (R/W)
-    pub haltcnt: u16,
+    /// 0x300: Debug Control (R/W)
+    pub haltcnt_l: u8,
+    /// 0x301: Low Power Mode Control (R/W)
+    pub haltcnt_h: u8,
     /// 0x800: Undocumented - Internal Memory Control (R/W)
     pub imemcnt: u32,
 }
@@ -82,9 +84,8 @@ impl IORegister {
     }
 
     pub fn write_irf(&mut self, address: u32, value: u8) {
-        if value != 0 {
-            self.irf.write_byte(address % 2, !value);
-        }
+        self.irf
+            .write_byte(address & 1, self.irf.read_byte(address) & !value);
     }
 }
 
@@ -105,7 +106,8 @@ impl Bus for IORegister {
             0x202..=0x203 => self.irf.read_byte(address),
             0x204..=0x205 => self.waitcnt.value.read_byte(address),
             0x208..=0x209 => self.ime.read_byte(address),
-            0x300..=0x301 => self.haltcnt.read_byte(address),
+            0x300 => self.haltcnt_l,
+            0x301 => self.haltcnt_h,
             0x800..=0x803 => self.imemcnt.read_byte(address),
             _ => 0, // TODO: open bus
         }
@@ -126,7 +128,8 @@ impl Bus for IORegister {
             0x202..=0x203 => self.write_irf(address, value),
             0x204..=0x205 => self.waitcnt.value.write_byte(address, value),
             0x208..=0x209 => self.ime.write_byte(address, value),
-            0x300..=0x301 => self.haltcnt.write_byte(address, value),
+            0x300 => self.haltcnt_l = value,
+            0x301 => self.haltcnt_h = value,
             0x410..=0x411 => {} // undocumented, purpose unknown
             0x800..=0x803 => self.imemcnt.write_byte(address, value),
             _ => {}

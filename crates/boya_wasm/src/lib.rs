@@ -236,6 +236,11 @@ impl Gba {
         self.core.cpu.bus.write_byte(address, value);
     }
 
+    #[wasm_bindgen(js_name = "peekByte")]
+    pub fn peek_byte(&self, address: u32) -> u8 {
+        self.core.cpu.bus.peek_byte(address)
+    }
+
     #[wasm_bindgen(js_name = "peekHWord")]
     pub fn peek_hword(&self, address: u32) -> u16 {
         self.core.cpu.bus.peek_hword(address)

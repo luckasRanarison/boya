@@ -1,4 +1,4 @@
-import { Group, SimpleGrid, Stack, Text } from "@mantine/core";
+import { Group, SimpleGrid, Stack, Text, Tooltip } from "@mantine/core";
 import { GBA } from "@/lib/gba";
 import { formatHex } from "@/utils/format";
 import ColorView from "./ColorView";
@@ -57,14 +57,18 @@ function HexView(props: {
             w={{ base: "100%", sm: "auto" }}
           >
             {line.columns.map((byte, idx) => (
-              <Text
-                id={`${formatHex(line.address + idx)}`}
+              <Tooltip
                 key={line.address + idx}
-                c="gray"
-                ta="center"
+                label={formatHex(line.address + idx)}
               >
-                {byte.toString(16).padStart(2, "0")}
-              </Text>
+                <Text
+                  id={`${formatHex(line.address + idx)}`}
+                  c="gray"
+                  ta="center"
+                >
+                  {byte.toString(16).padStart(2, "0")}
+                </Text>
+              </Tooltip>
             ))}
           </SimpleGrid>
 

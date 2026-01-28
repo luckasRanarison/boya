@@ -23,6 +23,7 @@ impl From<ColorMode> for ppu::registers::bgcnt::ColorMode {
 
 #[derive(Tsify, Serialize)]
 pub enum RegisterSize {
+    Byte,
     HWord,
     Word,
 }
@@ -30,6 +31,7 @@ pub enum RegisterSize {
 impl From<bus::debug::types::RegisterSize> for RegisterSize {
     fn from(value: bus::debug::types::RegisterSize) -> Self {
         match value {
+            bus::debug::types::RegisterSize::Byte => RegisterSize::Byte,
             bus::debug::types::RegisterSize::HWord => RegisterSize::HWord,
             bus::debug::types::RegisterSize::Word => RegisterSize::Word,
         }

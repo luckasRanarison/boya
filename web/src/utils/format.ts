@@ -8,3 +8,9 @@ export function formatHex(
 export function parseHex(value: string, params?: { prefix?: string }) {
   return parseInt(value.replace(params?.prefix ?? "0x", ""), 16);
 }
+
+export function getHexWidth(dataType: "Byte" | "HWord" | "Word") {
+  if (dataType === "Byte") return 2;
+  if (dataType === "HWord") return 4;
+  return 8;
+}

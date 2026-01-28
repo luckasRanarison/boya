@@ -86,6 +86,24 @@ impl Ppu {
         self.handle_dot();
     }
 
+    pub fn read_vram(&self, address: u32) -> u8 {
+        self.vram[self.vram_offset(address)]
+    }
+
+    pub fn write_vram(&mut self, address: u32, value: u8) {
+        self.vram[self.vram_offset(address)] = value;
+    }
+
+    fn vram_offset(&self, address: u32) -> usize {
+        let base = address as usize & 0x1FFFF;
+
+        if base >= VRAM_SIZE {
+            base - 0x8000
+        } else {
+            base
+        }
+    }
+
     fn handle_dot(&mut self) {
         match self.dot {
             0 => {

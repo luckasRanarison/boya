@@ -1,5 +1,5 @@
 import { useRuntimeStore } from "@/stores/runtimeStore";
-import { formatHex } from "@/utils/format";
+import { formatHex, getHexWidth } from "@/utils/format";
 import { Accordion, Group, Stack, Text } from "@mantine/core";
 import { FlagBits } from "./FlagBits";
 import { FlagList } from "./FlagList";
@@ -36,7 +36,7 @@ function IORegisterView(props: {
                   {props.style === "simple" ? (
                     <Text c="gray">
                       {formatHex(register.value, {
-                        width: register.size === "HWord" ? 4 : 8,
+                        width: getHexWidth(register.size),
                       })}
                     </Text>
                   ) : (

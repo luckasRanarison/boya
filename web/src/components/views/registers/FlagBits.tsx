@@ -1,5 +1,5 @@
 import { getFlagBits } from "@/utils/bitflag";
-import { formatHex } from "@/utils/format";
+import { formatHex, getHexWidth } from "@/utils/format";
 import { Table, Tooltip } from "@mantine/core";
 import type { RegisterEntry } from "boya_wasm";
 
@@ -31,7 +31,7 @@ export function FlagBits({
               )),
           )}
           <Table.Td c="gray">
-            {formatHex(value, { width: register.size === "HWord" ? 4 : 8 })}
+            {formatHex(value, { width: getHexWidth(register.size) })}
           </Table.Td>
         </Table.Tr>
       </Table.Tbody>

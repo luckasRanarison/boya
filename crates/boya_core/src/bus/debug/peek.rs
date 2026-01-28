@@ -29,6 +29,10 @@ impl Bus for IOPeeker<'_> {
 }
 
 impl GbaBus {
+    pub fn peek_byte(&self, address: u32) -> u8 {
+        IOPeeker(self).read_byte(address)
+    }
+
     pub fn peek_hword(&self, address: u32) -> u16 {
         IOPeeker(self).read_hword(address)
     }

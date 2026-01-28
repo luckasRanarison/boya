@@ -466,7 +466,11 @@ impl Arm7tdmi {
         self.cpsr.update(Psr::F, fiq);
 
         self.registers.set_pc(vector);
-        self.load_pipeline();
+        self.pipeline.flush();
+
+        if !matches!(exception, Exception::SoftwareInterrupt) {
+            self.load_pipeline();
+        }
 
         let extra_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
 

@@ -363,6 +363,24 @@ impl RegisterEntry {
             flags: const { &[Flag::new("Disable interrupts", 0, 1), Flag::unused(1, 15)] },
         }
     }
+
+    const fn haltcnt_l() -> Self {
+        RegisterEntry {
+            name: "HALTCNT_L",
+            address: 0x300,
+            size: RegisterSize::Byte,
+            flags: const { &[Flag::new("First Boot Flag", 0, 1), Flag::unused(1, 7)] },
+        }
+    }
+
+    const fn haltcnt_h() -> Self {
+        RegisterEntry {
+            name: "HALTCNT_H",
+            address: 0x301,
+            size: RegisterSize::Byte,
+            flags: const { &[Flag::unused(1, 7), Flag::new("Power Down Mode", 7, 1)] },
+        }
+    }
 }
 
 pub const IO_MAP: &[RegisterEntry] = &[
@@ -425,4 +443,6 @@ pub const IO_MAP: &[RegisterEntry] = &[
     RegisterEntry::interrupt("IE", 0x200),
     RegisterEntry::interrupt("IF", 0x202),
     RegisterEntry::ime(),
+    RegisterEntry::haltcnt_l(),
+    RegisterEntry::haltcnt_h(),
 ];
