@@ -46,6 +46,7 @@ export function useGba() {
     },
 
     cycles,
+    scanline: GBA.scanline(),
     booted: romLoaded,
   };
 }

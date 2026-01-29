@@ -205,6 +205,11 @@ impl Gba {
         format!("{:?}", self.core.cpu.cpsr.op_mode())
     }
 
+    #[wasm_bindgen(js_name = "scanline")]
+    pub fn scanline(&self) -> u8 {
+        self.core.cpu.bus.ppu.scanline
+    }
+
     #[wasm_bindgen(js_name = "colorPalette")]
     pub fn color_palette(&self) -> Vec<u32> {
         self.core

@@ -3,6 +3,8 @@ import { GBA } from "@/lib/gba";
 import { FrameCounter } from "@/utils/frame";
 import type { Gba } from "boya_wasm";
 
+type StepKind = "into" | "scanline" | "frame";
+
 type RunParams = {
   onFrame: (gba: Gba) => void;
   breakpoints?: Set<number>;
@@ -22,122 +24,113 @@ type RuntimeStore = {
     run: (params: RunParams) => void;
     pause: () => void;
     reset: () => void;
-    stepInto: () => void;
-    stepScanline: () => void;
+    step: (params: { type: StepKind }) => void;
     load: (rom: Uint8Array) => void;
     unload: () => void;
   };
 };
 
-export const useRuntimeStore = create<RuntimeStore>((set, get) => ({
-  cycles: BigInt(0),
-  running: false,
-  paused: false,
-  romLoaded: false,
-  keypad: 0x3ff,
-  fps: 0,
-  instructionCache: {},
-  floatingControls: false,
+export const useRuntimeStore = create<RuntimeStore>((set, get) => {
+  const updateCycles = () => {
+    set((prev) => ({
+      ...prev,
+      cycles: GBA.cycles(),
+      lastCycle: Number(GBA.cycles() - prev.cycles),
+    }));
+  };
 
-  actions: {
-    load: (rom) => {
-      GBA.reset();
-      GBA.loadRom(rom);
-      GBA.boot();
-      set((prev) => ({ ...prev, cycles: GBA.cycles(), romLoaded: true }));
-    },
+  return {
+    cycles: BigInt(0),
+    running: false,
+    paused: false,
+    romLoaded: false,
+    keypad: 0x3ff,
+    fps: 0,
+    instructionCache: {},
+    floatingControls: false,
 
-    unload: () => {
-      set((prev) => ({
-        ...prev,
-        running: false,
-        paused: false,
-        romLoaded: false,
-      }));
-    },
+    actions: {
+      load: (rom) => {
+        GBA.reset();
+        GBA.loadRom(rom);
+        GBA.boot();
+        set((prev) => ({ ...prev, cycles: GBA.cycles(), romLoaded: true }));
+      },
 
-    reset: () => {
-      GBA.reset();
-      GBA.boot();
-      set((prev) => ({
-        ...prev,
-        cycles: GBA.cycles(),
-        instructionCache: {},
-        keypad: 0x3ff,
-      }));
-    },
-
-    pause: () => {
-      set((prev) => ({ ...prev, running: false, paused: true }));
-    },
-
-    run: (params) => {
-      if (get().running) return;
-
-      set((prev) => ({ ...prev, running: true, paused: false }));
-
-      const frameCounter = new FrameCounter();
-      const breakpoints = new Uint32Array(params.breakpoints?.values() || []);
-
-      const stepFrame = (ellapsed: number) => {
-        const { running, paused } = get();
-
-        if (!running || paused) return;
-
-        let halt = false;
-
-        frameCounter.onFrame(ellapsed, {
-          interval: 1000,
-          callback: (fps) => set((prev) => ({ ...prev, fps })),
-        });
-
-        if (breakpoints.length || params.irq) {
-          halt = GBA.stepFrameWithHooks(breakpoints, params.irq ?? false);
-        } else {
-          GBA.stepFrame();
-        }
-
-        const cycles = GBA.cycles();
-
+      unload: () => {
         set((prev) => ({
           ...prev,
-          cycles,
-          lastCycle: Number(cycles - prev.cycles),
+          running: false,
+          paused: false,
+          romLoaded: false,
         }));
+      },
 
-        params.onFrame(GBA);
+      reset: () => {
+        GBA.reset();
+        GBA.boot();
+        set((prev) => ({
+          ...prev,
+          cycles: GBA.cycles(),
+          instructionCache: {},
+          keypad: 0x3ff,
+        }));
+      },
 
-        if (halt) {
-          set((prev) => ({ ...prev, running: false }));
-        } else {
-          requestAnimationFrame(stepFrame);
-        }
-      };
+      pause: () => {
+        set((prev) => ({ ...prev, running: false, paused: true }));
+      },
 
-      stepFrame(0);
+      run: (params) => {
+        if (get().running) return;
+
+        set((prev) => ({ ...prev, running: true, paused: false }));
+
+        const frameCounter = new FrameCounter();
+        const breakpoints = new Uint32Array(params.breakpoints?.values() || []);
+
+        const stepFrame = (ellapsed: number) => {
+          const { running, paused } = get();
+
+          if (!running || paused) return;
+
+          let halt = false;
+
+          frameCounter.onFrame(ellapsed, {
+            interval: 1000,
+            callback: (fps) => set((prev) => ({ ...prev, fps })),
+          });
+
+          if (breakpoints.length || params.irq) {
+            halt = GBA.stepFrameWithHooks(breakpoints, params.irq ?? false);
+          } else {
+            GBA.stepFrame();
+          }
+
+          updateCycles();
+
+          params.onFrame(GBA);
+
+          if (halt) {
+            set((prev) => ({ ...prev, running: false }));
+          } else {
+            requestAnimationFrame(stepFrame);
+          }
+        };
+
+        stepFrame(0);
+      },
+
+      step: (params) => {
+        if (params.type === "frame") GBA.stepFrame();
+        if (params.type === "scanline") GBA.stepScanline();
+        if (params.type === "into") GBA.debugSyncedStep();
+
+        updateCycles();
+      },
     },
-
-    stepInto: () => {
-      const count = GBA.debugSyncedStep();
-
-      set((prev) => ({
-        ...prev,
-        lastCycle: count,
-        cycles: prev.cycles + BigInt(count),
-      }));
-    },
-
-    stepScanline: () => {
-      GBA.stepScanline();
-
-      set((prev) => ({
-        ...prev,
-        cycles: GBA.cycles(),
-        lastCycle: Number(GBA.cycles() - prev.cycles),
-      }));
-    },
-  },
-}));
+  };
+});
 
 export const useRuntimeActions = () =>
   useRuntimeStore((state) => state.actions);

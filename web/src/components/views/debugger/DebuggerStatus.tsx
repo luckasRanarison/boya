@@ -2,14 +2,9 @@ import { Group, Stack, Text } from "@mantine/core";
 import { useRuntimeStore } from "@/stores/runtimeStore";
 import { formatHex } from "@/utils/format";
 import MemoryLink from "@/components/common/MemoryLink";
-import type { CpuState } from "@/hooks/useGba";
+import type { GbaState } from "@/hooks/useGba";
 
-function DebuggerStatus(props: {
-  cpu: CpuState;
-  running: boolean;
-  booted: boolean;
-  cycles: bigint;
-}) {
+function DebuggerStatus(props: { state: GbaState; running: boolean }) {
   const lastCycle = useRuntimeStore((state) => state.lastCycle);
 
   const rows = [
@@ -17,30 +12,35 @@ function DebuggerStatus(props: {
       label: "PC",
       default: formatHex(0),
       link: true,
-      value: props.cpu.pc,
+      value: props.state.cpu.pc,
     },
     {
       label: "LR",
       default: formatHex(0),
       link: true,
-      value: props.cpu.lr,
+      value: props.state.cpu.lr,
     },
     {
       label: "SP",
       default: formatHex(0),
       link: true,
-      value: props.cpu.sp,
+      value: props.state.cpu.sp,
     },
     {
       label: "Mode",
       default: "none",
-      value: props.cpu.operatingMode,
+      value: props.state.cpu.operatingMode,
+    },
+    {
+      label: "Scanline",
+      default: "0",
+      value: props.state.scanline,
     },
     {
       label: "Cycles",
       default: 0,
       extra: lastCycle && <Text c="green">(+ {lastCycle})</Text>,
-      value: props.cycles.toString(),
+      value: props.state.cycles.toString(),
     },
   ];
 
@@ -50,7 +50,7 @@ function DebuggerStatus(props: {
         <Group key={row.label} justify="space-between">
           <Group>
             <Text size="sm">{row.label}:</Text>
-            {props.booted ? (
+            {props.state.booted ? (
               <Text c="indigo">
                 {row.link ? formatHex(row.value) : row.value}
               </Text>

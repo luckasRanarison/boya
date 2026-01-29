@@ -222,6 +222,12 @@ impl GbaBus {
 
     fn send_interrupt(&mut self, interrupt: Interrupt) {
         if self.io.irq_master_enable() && self.io.is_irq_enabled(interrupt) {
+            match interrupt {
+                Interrupt::VBlank => self.ppu.mask_vblank = true,
+                Interrupt::HBlank => self.ppu.mask_hblank = true,
+                _ => {}
+            }
+
             self.io.set_irq(interrupt);
         }
     }

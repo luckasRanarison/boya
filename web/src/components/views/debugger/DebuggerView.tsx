@@ -16,7 +16,7 @@ import PipelineView from "./PipelineView";
 import CallStack from "./CallStack";
 
 function DebuggerView() {
-  const { cpu, cycles, memory, booted } = useGba();
+  const state = useGba();
   const running = useRuntimeStore((state) => state.running);
   const debugPannel = useViewStore((state) => state.debugPannel);
   const view = useViewStore((state) => state.view);
@@ -32,7 +32,7 @@ function DebuggerView() {
   useEffect(() => {
     const pc = GBA.execAddress();
 
-    if ((cpu.lr & ~1) === pc) {
+    if ((state.cpu.lr & ~1) === pc) {
       popStack();
     }
 
@@ -43,7 +43,7 @@ function DebuggerView() {
     if (!(view.name === "memory" && view.sub?.metadata?.mode === "code")) {
       decode(2);
     }
-  }, [cpu.lr, cycles, view, decode, pushStack, popStack]);
+  }, [state.cpu.lr, view, decode, pushStack, popStack]);
 
   const menus = [
     {
@@ -54,19 +54,14 @@ function DebuggerView() {
     {
       key: "status",
       label: "Status",
-      view: (
-        <DebuggerStatus
-          cpu={cpu}
-          running={running}
-          booted={booted}
-          cycles={cycles}
-        />
-      ),
+      view: <DebuggerStatus state={state} running={running} />,
     },
     {
       key: "pipeline",
       label: "Pipeline",
-      view: <PipelineView base={cpu.pc} pipeline={cpu.pipeline()} />,
+      view: (
+        <PipelineView base={state.cpu.pc} pipeline={state.cpu.pipeline()} />
+      ),
     },
     {
       key: "callstack",
@@ -76,12 +71,14 @@ function DebuggerView() {
     {
       key: "cpu_reg",
       label: "CPU Registers",
-      view: <CPURegisterView value={cpu.getRegisters()} style="simple" />,
+      view: <CPURegisterView value={state.cpu.getRegisters()} style="simple" />,
     },
     {
       key: "io_reg",
       label: "I/O Registers",
-      view: <IORegisterView value={memory.getIoRegisters()} style="simple" />,
+      view: (
+        <IORegisterView value={state.memory.getIoRegisters()} style="simple" />
+      ),
     },
   ];
 
@@ -115,7 +112,7 @@ function DebuggerView() {
         <Divider />
 
         {menus.map(({ key, label, view }) => (
-          <Accordion.Item key={`${key}-${cycles}`} value={key}>
+          <Accordion.Item key={`${key}-${state.cycles}`} value={key}>
             <Accordion.Control fz="sm" disabled={running}>
               {label}
             </Accordion.Control>

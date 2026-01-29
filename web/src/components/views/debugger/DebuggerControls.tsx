@@ -2,17 +2,22 @@ import {
   ActionIcon,
   Box,
   Card,
+  Flex,
   Group,
+  Menu,
   Portal,
   ThemeIcon,
   Tooltip,
 } from "@mantine/core";
 import {
+  IconArrowBack,
   IconFoldDown,
   IconFoldUp,
+  IconFrame,
   IconGripVertical,
   IconPlayerPause,
   IconPlayerPlay,
+  IconPlus,
   IconRestore,
   IconSortDescending,
   IconStepInto,
@@ -95,7 +100,7 @@ function DebuggerControls(props: { position?: Position }) {
   };
 
   const handleStepInto = () => {
-    rt.stepInto();
+    rt.step({ type: "into" });
     jumpToExec();
   };
 
@@ -113,16 +118,33 @@ function DebuggerControls(props: { position?: Position }) {
       disabled: running || !romLoaded,
     },
     {
-      icon: IconSortDescending,
-      label: "Step scanline",
-      onClick: rt.stepScanline,
+      icon: IconPlus,
+      label: "Navigate",
       disabled: running || !romLoaded,
+      options: [
+        {
+          label: "Step Scanline",
+          onClick: () => rt.step({ type: "scanline" }),
+          icon: IconSortDescending,
+        },
+        {
+          label: "Step Frame",
+          onClick: () => rt.step({ type: "frame" }),
+          icon: IconFrame,
+        },
+        {
+          label: "Step IRQ",
+          onClick: () =>
+            rt.run({ onFrame: renderFrame, breakpoints, irq: true }),
+          icon: IconTimelineEventExclamation,
+        },
+      ],
     },
     {
-      icon: IconTimelineEventExclamation,
-      label: "Step IRQ",
-      onClick: () => rt.run({ onFrame: renderFrame, breakpoints, irq: true }),
-      disabled: running || !romLoaded,
+      icon: IconArrowBack,
+      label: "Step Back",
+      onClick: () => {},
+      disabled: true,
     },
     {
       icon: running ? IconPlayerPause : IconPlayerPlay,
@@ -169,22 +191,51 @@ function DebuggerControls(props: { position?: Position }) {
           </ThemeIcon>
         )}
 
-        {controlActions.map(({ icon: Icon, label, disabled, onClick }) => (
-          <Tooltip
-            offset={props.position ? 25 : undefined}
-            key={label}
-            label={label}
-          >
-            <ActionIcon
-              variant="subtle"
-              onClick={onClick}
-              disabled={disabled}
-              bg={disabled ? "none" : undefined}
-            >
-              <Icon />
-            </ActionIcon>
-          </Tooltip>
-        ))}
+        {controlActions.map(
+          ({ icon: Icon, label, disabled, onClick, options: sub }) => {
+            const button = (
+              <Tooltip
+                offset={props.position ? 25 : undefined}
+                key={label}
+                label={label}
+              >
+                <ActionIcon
+                  variant="subtle"
+                  onClick={onClick}
+                  disabled={disabled}
+                  bg={disabled ? "none" : undefined}
+                >
+                  <Icon />
+                </ActionIcon>
+              </Tooltip>
+            );
+
+            if (!sub) return button;
+
+            return (
+              <Menu key={label} offset={30}>
+                <Menu.Target>
+                  <Flex>{button}</Flex>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  {sub.map(({ label, icon: Icon, onClick }, i) => (
+                    <Menu.Item
+                      key={i}
+                      leftSection={
+                        <ThemeIcon variant="subtle" c="indigo">
+                          <Icon size={18} />
+                        </ThemeIcon>
+                      }
+                      onClick={onClick}
+                    >
+                      {label}
+                    </Menu.Item>
+                  ))}
+                </Menu.Dropdown>
+              </Menu>
+            );
+          },
+        )}
       </Group>
     </Wrapper>
   );

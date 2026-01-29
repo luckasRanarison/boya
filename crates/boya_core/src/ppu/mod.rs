@@ -31,6 +31,8 @@ pub struct Ppu {
     pub dot: u16,
     pub scanline: u8,
     pub divider: u32,
+    pub mask_vblank: bool,
+    pub mask_hblank: bool,
 
     pending_irq: Option<Interrupt>,
     pipeline: RenderPipeline,
@@ -47,6 +49,8 @@ impl Default for Ppu {
             dot: 0,
             scanline: 0,
             divider: 0,
+            mask_vblank: false,
+            mask_hblank: false,
             pending_irq: None,
             pipeline: RenderPipeline::default(),
             frame_buffer: Box::new([0x00; FRAME_BUFFER_LEN]),
@@ -109,16 +113,17 @@ impl Ppu {
             0 => {
                 self.registers.dispstat.clear(Dispstat::HBLANK);
             }
-            239 => {
+            239..=306 if self.scanline < 160 => {
                 self.registers.dispstat.set(Dispstat::HBLANK);
 
-                if self.registers.dispstat.has(Dispstat::HBLANK_IRQ) {
+                if !self.mask_hblank && self.registers.dispstat.has(Dispstat::HBLANK_IRQ) {
                     self.pending_irq = Some(Interrupt::HBlank);
                 }
             }
             307 => {
                 self.scanline += 1;
                 self.dot = 0;
+                self.mask_hblank = false;
                 return;
             }
             _ => {}
@@ -132,15 +137,16 @@ impl Ppu {
             0 if self.dot == 0 => {
                 self.sort_bg();
             }
-            159 if self.dot == 0 => {
+            160..=227 => {
                 self.registers.dispstat.set(Dispstat::VBLANK);
 
-                if self.registers.dispstat.has(Dispstat::VBLANK_IRQ) {
+                if !self.mask_vblank && self.registers.dispstat.has(Dispstat::VBLANK_IRQ) {
                     self.pending_irq = Some(Interrupt::VBlank);
                 }
             }
             228 => {
                 self.scanline = 0;
+                self.mask_vblank = false;
                 self.registers.dispstat.clear(Dispstat::VBLANK);
             }
             _ => {}

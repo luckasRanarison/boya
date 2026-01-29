@@ -165,7 +165,6 @@ impl Gba {
 
     pub fn step_frame_with_hook(&mut self, breakpoints: &[u32], irq: bool) -> bool {
         let inital_state = self.is_rendering();
-        let mut cycles = Cycle::default();
         let mut state_switch = false;
 
         loop {
@@ -174,7 +173,7 @@ impl Gba {
             }
 
             if !breakpoints.is_empty() {
-                let curr_addr = self.cpu.pipeline.current_address();
+                let curr_addr = self.cpu.exec_address();
 
                 if breakpoints.contains(&curr_addr) {
                     return true;
@@ -190,8 +189,6 @@ impl Gba {
             if irq && matches!(step.value, GbaStepKind::Interrupt(_)) {
                 return true;
             }
-
-            cycles += step.cycles();
         }
     }
 }
