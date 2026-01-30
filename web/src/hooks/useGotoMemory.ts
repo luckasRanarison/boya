@@ -6,8 +6,8 @@ import { useGba } from "./useGba";
 import type { MemoryRegionName } from "@/lib/gba";
 
 export function useGotoMemory() {
-  const { setView } = useViewActions();
   const { memory } = useGba();
+  const { setView } = useViewActions();
 
   return (params: {
     address: number;

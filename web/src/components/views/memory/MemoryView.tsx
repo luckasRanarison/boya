@@ -85,7 +85,7 @@ function MemoryView(props: MemoryViewProps) {
 
   return (
     <Stack flex={1} mb="80px" align="center">
-      {currentPage.length ? (
+      {currentPage?.length ? (
         <>
           {currentMode === "hex" && (
             <HexView
@@ -146,7 +146,7 @@ function MemoryView(props: MemoryViewProps) {
               </ThemeIcon>
               <Text ff="monospace">
                 {formatHex(offset + pageStart)}{" "}
-                {currentPage.length ? (
+                {currentPage?.length ? (
                   <>- {formatHex(offset + pageId * pageSize)}</>
                 ) : undefined}
               </Text>

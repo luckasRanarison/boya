@@ -119,12 +119,17 @@ impl Gba {
     }
 
     #[wasm_bindgen(js_name = "getRegionSlice")]
-    pub fn get_region_slice(&self, region: MemoryRegion, start: usize, end: usize) -> Uint8Array {
+    pub fn get_region_slice(
+        &self,
+        region: MemoryRegion,
+        start: usize,
+        end: usize,
+    ) -> Option<Uint8Array> {
         let region = self.get_region(region);
         let end = end.min(start + region.len());
-        let slice = &region[start..end];
+        let slice = &region.get(start..end);
 
-        unsafe { Uint8Array::view(slice) }
+        unsafe { slice.map(|s| Uint8Array::view(s)) }
     }
 
     #[wasm_bindgen(js_name = "getRegionLength")]
