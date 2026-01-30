@@ -1,4 +1,11 @@
-import { Text, Group, SimpleGrid, Stack, Accordion } from "@mantine/core";
+import {
+  Text,
+  Group,
+  SimpleGrid,
+  Stack,
+  Accordion,
+  Tooltip,
+} from "@mantine/core";
 import { psrFlags, type CPURegisterBank } from "@/lib/gba";
 import { formatHex } from "@/utils/format";
 import { useRuntimeStore } from "@/stores/runtimeStore";
@@ -19,15 +26,17 @@ function CpsrView(props: { value: number; label?: string }) {
   return (
     <Group px="md">
       <Text size="sm">CPSR{props.label && `_${props.label}`}: </Text>
-      <SimpleGrid cols={8}>
-        <CpsrFlag label="N" value={props.value} flag={psrFlags.N} />
-        <CpsrFlag label="Z" value={props.value} flag={psrFlags.Z} />
-        <CpsrFlag label="C" value={props.value} flag={psrFlags.C} />
-        <CpsrFlag label="V" value={props.value} flag={psrFlags.V} />
-        <CpsrFlag label="I" value={props.value} flag={psrFlags.I} />
-        <CpsrFlag label="F" value={props.value} flag={psrFlags.F} />
-        <CpsrFlag label="T" value={props.value} flag={psrFlags.T} />
-      </SimpleGrid>
+      <Tooltip label={formatHex(props.value)}>
+        <SimpleGrid cols={8}>
+          <CpsrFlag label="N" value={props.value} flag={psrFlags.N} />
+          <CpsrFlag label="Z" value={props.value} flag={psrFlags.Z} />
+          <CpsrFlag label="C" value={props.value} flag={psrFlags.C} />
+          <CpsrFlag label="V" value={props.value} flag={psrFlags.V} />
+          <CpsrFlag label="I" value={props.value} flag={psrFlags.I} />
+          <CpsrFlag label="F" value={props.value} flag={psrFlags.F} />
+          <CpsrFlag label="T" value={props.value} flag={psrFlags.T} />
+        </SimpleGrid>
+      </Tooltip>
     </Group>
   );
 }

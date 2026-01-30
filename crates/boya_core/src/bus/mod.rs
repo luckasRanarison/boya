@@ -7,7 +7,9 @@ use crate::{
     bus::{
         registers::{
             IORegister,
-            dma::{DmaAddressControl, DmaData, DmaResult, DmaSpecialTiming, DmaStartTiming},
+            dma::{
+                DmaAddressControl, DmaData, DmaResult, DmaSpecialTiming, DmaStartTiming, DmaTimer,
+            },
         },
         types::{
             Cycle, DataType, Interrupt, MemoryAccess, MemoryRegion, MemoryRegionData, WaitState,
@@ -59,7 +61,13 @@ impl GbaBus {
         let ovf2 = self.io.timer[2].tick(cycles, ovf1);
         let _ovf3 = self.io.timer[3].tick(cycles, ovf2);
 
-        self.apu.on_timer_overflow(ovf0, ovf1);
+        if ovf0 {
+            self.apu.on_timer_overflow(DmaTimer::Timer0);
+        }
+
+        if ovf1 {
+            self.apu.on_timer_overflow(DmaTimer::Timer1);
+        }
 
         let interrupt = self
             .ppu

@@ -175,7 +175,7 @@ pub enum DmaAddressControl {
     IncrementReload,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum DmaTimer {
     Timer0,
     Timer1,

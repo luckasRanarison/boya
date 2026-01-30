@@ -80,13 +80,6 @@ impl Gba {
         self.core.cpu.cpsr.value()
     }
 
-    #[wasm_bindgen(js_name = "currentInstruction")]
-    pub fn current_instruction(&self) -> Option<String> {
-        let pipeline = &self.core.cpu.pipeline;
-        let instruction = pipeline.current_instruction();
-        instruction.map(|instr| instr.get_data().format(10))
-    }
-
     #[wasm_bindgen(js_name = "nextInstructions")]
     pub fn next_instructions(&self, max_length: u16) -> Result<JsValue, JsValue> {
         let instructions = self

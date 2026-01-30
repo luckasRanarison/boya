@@ -36,8 +36,8 @@ function Header() {
           </Menu.Target>
 
           <Menu.Dropdown>
-            {views.map(({ name, sub, mobileOnly, icon: Icon }) =>
-              sub ? (
+            {views.map(({ name, icon: Icon, ...view }) =>
+              "sub" in view ? (
                 <Menu key={name} width="175" position="right-start" offset={15}>
                   <Menu.Target>
                     <Menu.Sub.Item leftSection={<Icon size={18} />}>
@@ -47,7 +47,7 @@ function Header() {
                     </Menu.Sub.Item>
                   </Menu.Target>
                   <Menu.Dropdown>
-                    {sub.map(({ icon: Icon, ...sub }) => (
+                    {view.sub.map(({ icon: Icon, ...sub }) => (
                       <Menu.Item
                         key={sub.name}
                         leftSection={<Icon size={18} />}
@@ -65,7 +65,7 @@ function Header() {
                   key={name}
                   leftSection={<Icon size={18} />}
                   onClick={() => setView({ name })}
-                  hiddenFrom={mobileOnly ? "sm" : undefined}
+                  hiddenFrom={"mobileOnly" in view ? "sm" : undefined}
                 >
                   <Text ml="xs" size="md">
                     {name}
