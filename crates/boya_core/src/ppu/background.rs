@@ -22,7 +22,7 @@ pub enum ColorSrc {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum BackgroundKind {
+pub enum BgKind {
     Text,
     Affine,
 }
@@ -77,9 +77,12 @@ impl Ppu {
         let bg_mode = self.registers.dispcnt.bg_mode();
 
         match (bg_mode, bg) {
-            (BgMode::Mode0, _) => self.get_bg_tile_pixel(x, y, bg, BackgroundKind::Text),
-            (BgMode::Mode1, _) => todo!(),
-            (BgMode::Mode2, _) => todo!(),
+            (BgMode::Mode0, _) => self.get_bg_tile_pixel(x, y, bg, BgKind::Text),
+            (BgMode::Mode1, Background::Bg0) => self.get_bg_tile_pixel(x, y, bg, BgKind::Text),
+            (BgMode::Mode1, Background::Bg1) => self.get_bg_tile_pixel(x, y, bg, BgKind::Text),
+            (BgMode::Mode1, Background::Bg2) => None, // TODO
+            (BgMode::Mode2, Background::Bg2) => None, // TODO
+            (BgMode::Mode2, Background::Bg3) => None, // TODO
             (BgMode::Mode3, Background::Bg2) => self.get_bg_bmp_pixel(x, y, ColorSrc::RGB, 1),
             (BgMode::Mode4, Background::Bg2) => self.get_bg_bmp_pixel(x, y, ColorSrc::Palette, 2),
             (BgMode::Mode5, Background::Bg2) => self.get_bg_bmp_pixel(x, y, ColorSrc::RGB, 2),
@@ -92,7 +95,7 @@ impl Ppu {
         x: u16,
         y: u16,
         bg: Background,
-        bg_kind: BackgroundKind,
+        bg_kind: BgKind,
     ) -> Option<Color15> {
         let bg_idx = bg.to_index();
         let bgcnt = self.registers.bgcnt[bg_idx];

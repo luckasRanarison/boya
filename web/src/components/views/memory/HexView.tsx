@@ -1,7 +1,20 @@
-import { Group, SimpleGrid, Stack, Text, Tooltip } from "@mantine/core";
+import {
+  Button,
+  Group,
+  Input,
+  Modal,
+  SimpleGrid,
+  Stack,
+  Text,
+  Tooltip,
+} from "@mantine/core";
 import { GBA } from "@/lib/gba";
-import { formatHex } from "@/utils/format";
+import { formatHex, parseHex } from "@/utils/format";
 import ColorView from "./ColorView";
+import { useDisclosure } from "@mantine/hooks";
+import { useState } from "react";
+import { IconArrowRight } from "@tabler/icons-react";
+import notifications from "@/lib/notifications";
 
 type ByteLine = {
   address: number;
@@ -11,6 +24,11 @@ type ByteLine = {
     | { type: "ascii"; value: number[] };
 };
 
+type Edit = {
+  address: number;
+  prev: number;
+};
+
 function HexView(props: {
   pageData: Uint8Array;
   baseAddress: number;
@@ -18,6 +36,8 @@ function HexView(props: {
   columns: number;
   rightSection?: "color" | "ascii";
 }) {
+  const [edit, setEdit] = useState<Edit | null>(null);
+  const [opened, { open, close }] = useDisclosure();
   const colors = props.rightSection === "color" && GBA.colorPalette();
 
   const generateLines = () => {
@@ -42,10 +62,37 @@ function HexView(props: {
     return lines;
   };
 
+  const handleEdit = (address: number, prev: number) => {
+    setEdit({ address, prev });
+    open();
+  };
+
+  const handleConfirm = (value: string) => {
+    const parsed = parseHex(value);
+
+    if (edit && !Number.isNaN(parsed)) {
+      GBA.writeByte(edit.address, parsed);
+      notifications.info(`${formatHex(edit.address)} has been written!`);
+      setEdit(null);
+    } else {
+      notifications.error("Invalid address");
+    }
+  };
+
   const lines = generateLines();
 
   return (
     <Stack p="xl" w="100%" ff={"monospace"} align="center">
+      {edit && (
+        <EditModal
+          address={edit.address}
+          prev={edit.prev}
+          opened={opened}
+          onClose={close}
+          onConfirm={handleConfirm}
+        />
+      )}
+
       {lines.map((line) => (
         <Group key={line.address} w="100%" justify="space-between">
           <Text c="indigo" fw={600}>
@@ -56,20 +103,22 @@ function HexView(props: {
             cols={{ base: 8, sm: 16 }}
             w={{ base: "100%", sm: "auto" }}
           >
-            {line.columns.map((byte, idx) => (
-              <Tooltip
-                key={line.address + idx}
-                label={formatHex(line.address + idx)}
-              >
-                <Text
-                  id={`${formatHex(line.address + idx)}`}
-                  c="gray"
-                  ta="center"
-                >
-                  {byte.toString(16).padStart(2, "0")}
-                </Text>
-              </Tooltip>
-            ))}
+            {line.columns.map((byte, idx) => {
+              const address = line.address + idx;
+
+              return (
+                <Tooltip key={address} label={formatHex(address)}>
+                  <Text
+                    id={`${formatHex(address)}`}
+                    c="gray"
+                    ta="center"
+                    onClick={() => handleEdit(address, byte)}
+                  >
+                    {byte.toString(16).padStart(2, "0")}
+                  </Text>
+                </Tooltip>
+              );
+            })}
           </SimpleGrid>
 
           {line.right.type === "color" && (
@@ -88,6 +137,63 @@ function HexView(props: {
         </Group>
       ))}
     </Stack>
+  );
+}
+
+function EditModal(props: {
+  address: number;
+  prev: number;
+  opened: boolean;
+  onClose: () => void;
+  onConfirm: (value: string) => void;
+}) {
+  const [value, setValue] = useState<string>("");
+
+  const handleSumbit: React.FormEventHandler = (event) => {
+    event.preventDefault();
+    props.onConfirm(value);
+    setValue("");
+  };
+
+  return (
+    <Modal
+      title="Edit memory location"
+      size="sm"
+      opened={props.opened}
+      onClose={props.onClose}
+      withCloseButton
+      centered
+    >
+      <form onSubmit={handleSumbit}>
+        <Stack gap="xl">
+          <Group ff="monospace">
+            <Text c="indigo" fw="bold">
+              {formatHex(props.address)}:
+            </Text>
+            <Input
+              w="60"
+              defaultValue={formatHex(props.prev, { width: 2 })}
+              bg="none"
+              readOnly
+            />
+            <IconArrowRight size={16} />
+            <Input
+              w="60"
+              placeholder="..."
+              value={value}
+              onChange={(e) => setValue(e.currentTarget.value)}
+              error={value && Number.isNaN(parseHex(value))}
+            />
+          </Group>
+          <Group grow>
+            <Button color="red" onClick={props.onClose} type="button">
+              Cancel
+            </Button>
+            <Button type="submit">Confirm</Button>
+          </Group>
+        </Stack>
+      </form>
+    </Modal>
   );
 }
 

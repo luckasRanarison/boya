@@ -19,7 +19,7 @@ impl Apu {
                 self.fifo_a_request = true;
             }
 
-            self.registers.fifo_a.buffer.pop();
+            self.registers.fifo_a.buffer.pop(); // TODO: implementation
         }
 
         if self.registers.soundcnt.timer_select_b() == timer {
@@ -27,7 +27,7 @@ impl Apu {
                 self.fifo_b_request = true;
             }
 
-            self.registers.fifo_b.buffer.pop();
+            self.registers.fifo_b.buffer.pop(); // TODO: implementation
         }
     }
 

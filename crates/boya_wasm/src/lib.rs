@@ -4,7 +4,7 @@ use boya_core::{Gba as GbaCore, bus::Bus, ppu::color::Color24, utils::Reset};
 use wasm_bindgen::prelude::*;
 use web_sys::js_sys::{Uint8Array, Uint32Array};
 
-use crate::types::{ColorMode, IOMap};
+use crate::types::{ColorMode, IOMap, MemoryRegion};
 
 #[wasm_bindgen]
 #[derive(Default)]
@@ -118,44 +118,18 @@ impl Gba {
         self.core.set_keyinput(value);
     }
 
-    #[wasm_bindgen]
-    pub fn bios(&self) -> Uint8Array {
-        unsafe { Uint8Array::view(self.core.bios()) }
+    #[wasm_bindgen(js_name = "getRegionSlice")]
+    pub fn get_region_slice(&self, region: MemoryRegion, start: usize, end: usize) -> Uint8Array {
+        let region = self.get_region(region);
+        let end = end.min(start + region.len());
+        let slice = &region[start..end];
+
+        unsafe { Uint8Array::view(slice) }
     }
 
-    #[wasm_bindgen]
-    pub fn ewram(&self) -> Uint8Array {
-        unsafe { Uint8Array::view(self.core.ewram()) }
-    }
-
-    #[wasm_bindgen]
-    pub fn iwram(&self) -> Uint8Array {
-        unsafe { Uint8Array::view(self.core.iwram()) }
-    }
-
-    #[wasm_bindgen]
-    pub fn palette(&self) -> Uint8Array {
-        unsafe { Uint8Array::view(self.core.palette()) }
-    }
-
-    #[wasm_bindgen]
-    pub fn vram(&self) -> Uint8Array {
-        unsafe { Uint8Array::view(self.core.vram()) }
-    }
-
-    #[wasm_bindgen]
-    pub fn oam(&self) -> Uint8Array {
-        unsafe { Uint8Array::view(self.core.oam()) }
-    }
-
-    #[wasm_bindgen]
-    pub fn rom(&self) -> Uint8Array {
-        unsafe { Uint8Array::view(self.core.rom()) }
-    }
-
-    #[wasm_bindgen]
-    pub fn sram(&self) -> Uint8Array {
-        unsafe { Uint8Array::view(self.core.sram()) }
+    #[wasm_bindgen(js_name = "getRegionLength")]
+    pub fn get_region_length(&self, region: MemoryRegion) -> usize {
+        self.get_region(region).len()
     }
 
     #[wasm_bindgen(js_name = "getMainRegisters")]
@@ -247,5 +221,19 @@ impl Gba {
     #[wasm_bindgen(js_name = "peekWord")]
     pub fn peek_word(&self, address: u32) -> u32 {
         self.core.cpu.bus.peek_word(address)
+    }
+
+    fn get_region(&self, region: MemoryRegion) -> &[u8] {
+        match region {
+            MemoryRegion::BIOS => self.core.bios(),
+            MemoryRegion::EWRAM => self.core.ewram(),
+            MemoryRegion::IWRAM => self.core.iwram(),
+            MemoryRegion::IO => &[],
+            MemoryRegion::ROM => self.core.rom(),
+            MemoryRegion::PALETTE => self.core.palette(),
+            MemoryRegion::VRAM => self.core.vram(),
+            MemoryRegion::OAM => self.core.oam(),
+            MemoryRegion::SRAM => self.core.sram(),
+        }
     }
 }

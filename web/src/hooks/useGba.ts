@@ -3,6 +3,7 @@ import {
   getCpuRegistersBank as getCpuRegisterBanks,
   getIoRegisters,
   getMemoryRegion,
+  memoryRegions,
 } from "@/lib/gba";
 import { useDebuggerStore } from "@/stores/debuggerStore";
 import { useRuntimeStore } from "@/stores/runtimeStore";
@@ -41,6 +42,7 @@ export function useGba() {
     },
 
     memory: {
+      regions: memoryRegions,
       getRegion: getMemoryRegion,
       getIoRegisters: () => getIoRegisters(ioMap),
     },

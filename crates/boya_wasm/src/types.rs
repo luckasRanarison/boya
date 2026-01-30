@@ -7,6 +7,19 @@ use tsify::Tsify;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
+pub enum MemoryRegion {
+    BIOS,
+    EWRAM,
+    IWRAM,
+    IO,
+    ROM,
+    PALETTE,
+    VRAM,
+    OAM,
+    SRAM,
+}
+
+#[wasm_bindgen]
 pub enum ColorMode {
     Palette16,
     Palette256,

@@ -1,6 +1,6 @@
 import { useViewStore } from "@/stores/viewStore";
 import { useRuntimeStore } from "@/stores/runtimeStore";
-import type { MemoryRegion } from "@/lib/gba";
+import type { MemoryRegionName } from "@/lib/gba";
 import MemoryView from "../views/memory/MemoryView";
 import DebuggerView from "../views/debugger/DebuggerView";
 import SettingsView from "../views/settings/SettingsView";
@@ -22,7 +22,7 @@ function Main() {
   if (view.name === "memory" && view.sub) {
     return (
       <MemoryView
-        region={view.sub.name as MemoryRegion}
+        region={view.sub.name as MemoryRegionName}
         mode={view.sub.metadata?.mode ?? "hex"}
         jump={view.sub.metadata?.jump}
       />

@@ -19,7 +19,7 @@ function CallStack(props: { disabled: boolean }) {
       ) : (
         <Flex justify="center">
           <Text size="sm" c="gray">
-            &lt;EMPTY CALLSTACK&gt;
+            (EMPTY CALLSTACK)
           </Text>
         </Flex>
       )}

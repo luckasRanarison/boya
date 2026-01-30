@@ -1,11 +1,13 @@
 import type { MemoryViewMode } from "@/components/views/memory/MemoryView";
-import { memoryRegions } from "@/lib/gba";
 import notifications from "@/lib/notifications";
 import { useViewActions } from "@/stores/viewStore";
 import { formatHex } from "@/utils/format";
+import { useGba } from "./useGba";
+import type { MemoryRegionName } from "@/lib/gba";
 
 export function useGotoMemory() {
   const { setView } = useViewActions();
+  const { memory } = useGba();
 
   return (params: {
     address: number;
@@ -15,7 +17,7 @@ export function useGotoMemory() {
     const hex = formatHex(params.address);
 
     const findElement = (depth = 0) => {
-      if (depth > 1) {
+      if (depth > 3) {
         return notifications.error(`Invalid jump address: ${hex}`);
       }
 
@@ -27,7 +29,7 @@ export function useGotoMemory() {
         link.click();
         link.remove();
 
-        return setTimeout(() => findElement(depth + 1), 200); // add timeout to avoid busy loop
+        return setTimeout(() => findElement(depth + 1), 100); // add timeout to avoid busy loop
       }
 
       elem.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -41,23 +43,30 @@ export function useGotoMemory() {
       }
     };
 
-    const region = Object.entries(memoryRegions).find(([, data]) => {
-      return params.address < data.offset + data.length;
+    const region = Object.keys(memory.regions).find((name) => {
+      const region = memory.getRegion(name as MemoryRegionName);
+
+      return (
+        params.address >= region.offset &&
+        params.address < region.offset + region.getLength()
+      );
     });
 
-    if (region) {
-      setView({
-        name: "memory",
-        sub: {
-          name: region[0],
-          metadata: {
-            mode: params.mode ?? "code",
-            jump: { address: params.address },
-          },
-        },
-      });
-
-      findElement();
+    if (!region) {
+      return notifications.error(`Invalid jump address: ${hex}`);
     }
+
+    setView({
+      name: "memory",
+      sub: {
+        name: region,
+        metadata: {
+          mode: params.mode ?? "code",
+          jump: { address: params.address },
+        },
+      },
+    });
+
+    findElement();
   };
 }

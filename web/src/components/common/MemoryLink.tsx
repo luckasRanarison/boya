@@ -9,25 +9,30 @@ function MemoryLink(props: {
   address: number;
   mode?: MemoryViewMode;
   disabled?: boolean;
+  tooltip?: boolean;
 }) {
-  const gotoMemory = useGotoMemory();
   const { view } = useViewStore();
+  const gotoMemory = useGotoMemory();
+
+  const handleGoto = () => {
+    gotoMemory({
+      address: props.address,
+      mode:
+        props.mode ??
+        (view.name === "memory" ? view.sub?.metadata?.mode : undefined) ??
+        "code",
+      hightlight: true,
+    });
+  };
 
   return (
-    <Tooltip label={`Go to ${formatHex(props.address)}`}>
+    <Tooltip
+      label={props.tooltip !== false && `Go to ${formatHex(props.address)}`}
+    >
       <ActionIcon
         variant="subtle"
         disabled={props.disabled}
-        onClick={() =>
-          gotoMemory({
-            address: props.address,
-            mode:
-              props.mode ??
-              (view.name === "memory" ? view.sub?.metadata?.mode : undefined) ??
-              "code",
-            hightlight: true,
-          })
-        }
+        onClick={handleGoto}
       >
         <IconExternalLink size={18} />
       </ActionIcon>

@@ -1,52 +1,43 @@
-import { Gba, type IOMap } from "boya_wasm";
+import { Gba, MemoryRegion, type IOMap } from "boya_wasm";
 
 export const GBA = new Gba();
 
 export const memoryRegions = {
   bios: {
     offset: 0x0000_0000,
-    length: 0x4000,
-    getData: () => GBA.bios(),
+    ref: MemoryRegion.BIOS,
   },
   ewram: {
     offset: 0x0200_0000,
-    length: 0x40000,
-    getData: () => GBA.ewram(),
+    ref: MemoryRegion.EWRAM,
   },
   iwram: {
     offset: 0x0300_0000,
-    length: 0x8000,
-    getData: () => GBA.iwram(),
+    ref: MemoryRegion.IWRAM,
   },
   io: {
     offset: 0x0400_0000,
-    length: 0x210,
-    getData: () => new Uint8Array(),
+    ref: MemoryRegion.IO,
   },
   palette: {
     offset: 0x0500_0000,
-    length: 0x400,
-    getData: () => GBA.palette(),
+    ref: MemoryRegion.PALETTE,
   },
   vram: {
     offset: 0x0600_0000,
-    length: 0x18000,
-    getData: () => GBA.vram(),
+    ref: MemoryRegion.VRAM,
   },
   oam: {
     offset: 0x0700_0000,
-    length: 0x400,
-    getData: () => GBA.oam(),
+    ref: MemoryRegion.OAM,
   },
   rom: {
     offset: 0x0800_0000,
-    length: 0xffff_ffff,
-    getData: () => GBA.rom(),
+    ref: MemoryRegion.ROM,
   },
   sram: {
     offset: 0x0e00_0000,
-    length: 0x1000,
-    getData: () => GBA.sram(),
+    ref: MemoryRegion.SRAM,
   },
 };
 
@@ -112,16 +103,19 @@ export function getIoRegisters(ioMap: IOMap) {
   });
 }
 
-export function getMemoryRegion(name: MemoryRegion) {
+export function getMemoryRegion(name: MemoryRegionName) {
   const region = memoryRegions[name];
 
   return {
-    lenght: region.length,
     offset: region.offset,
-    data: region.getData(),
+
+    getLength: () => GBA.getRegionLength(region.ref),
+    getData: (start: number, end: number) =>
+      GBA.getRegionSlice(region.ref, start, end),
   };
 }
 
-export type MemoryRegion = keyof typeof memoryRegions;
+export type MemoryRegionName = keyof typeof memoryRegions;
 export type IORegister = ReturnType<typeof getIoRegisters>;
 export type CPURegisterBank = ReturnType<typeof getCpuRegistersBank>;
+export type MemoryChunk = { start: number; end: number };

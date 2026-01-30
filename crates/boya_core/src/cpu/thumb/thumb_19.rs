@@ -31,8 +31,8 @@ impl Executable for Instruction {
 
     fn get_data(&self) -> InstructionData {
         InstructionData {
-            keyword: format!("{:#06X}", ((self.h as u16) << 11) | self.nn),
-            args: vec![],
+            keyword: (if self.h { "BLH" } else { "BLL" }).to_string(),
+            args: vec![InstructionParam::Operand(self.nn.imm())],
             kind: InstructionKind::thumb(19),
         }
     }

@@ -20,14 +20,9 @@ function DebuggerView() {
   const running = useRuntimeStore((state) => state.running);
   const debugPannel = useViewStore((state) => state.debugPannel);
   const view = useViewStore((state) => state.view);
+  const [activeMenu, setActiveMenu] = useState(["status", "pipeline"]);
   const { toggleDebugPannel, moveDebugPannel } = useViewActions();
   const { decode, pushStack, popStack } = useDebuggerActions();
-
-  const [activeMenu, setActiveMenu] = useState([
-    "status",
-    "pipeline",
-    "callstack",
-  ]);
 
   useEffect(() => {
     const pc = GBA.execAddress();

@@ -15,7 +15,7 @@ function show(data: NotificationData) {
 }
 
 const notifications = {
-  info: (message: string) => {
+  info: (message: React.ReactNode) => {
     show({
       title: "Info",
       color: "green",
@@ -23,7 +23,7 @@ const notifications = {
       message,
     });
   },
-  error: (message: string) => {
+  error: (message: React.ReactNode) => {
     show({
       title: "Error",
       color: "red",

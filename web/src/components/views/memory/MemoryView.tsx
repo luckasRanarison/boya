@@ -2,16 +2,16 @@ import {
   ActionIcon,
   AppShell,
   Group,
+  Input,
   Menu,
   Pagination,
-  Select,
   Stack,
   Text,
   ThemeIcon,
   Tooltip,
 } from "@mantine/core";
 import { useEffect, useState } from "react";
-import { formatHex } from "@/utils/format";
+import { formatHex, parseHex } from "@/utils/format";
 import {
   IconDotsVertical,
   IconGridDots,
@@ -20,13 +20,14 @@ import {
   IconSourceCode,
   IconStackFront,
 } from "@tabler/icons-react";
-import type { MemoryRegion } from "@/lib/gba";
 import { useMemoryPage } from "@/hooks/useMemoryPage";
 import { useGba } from "@/hooks/useGba";
 
 import HexView from "./HexView";
 import TileView from "./TileView";
 import CodeView from "./CodeView";
+import type { MemoryRegionName } from "@/lib/gba";
+import { useGotoMemory } from "@/hooks/useGotoMemory";
 
 const viewModes = {
   hex: {
@@ -46,7 +47,7 @@ const viewModes = {
 export type MemoryViewMode = keyof typeof viewModes;
 
 export type MemoryViewProps = {
-  region: MemoryRegion;
+  region: MemoryRegionName;
   mode: MemoryViewMode;
   columns?: number;
   jump?: { address: number };
@@ -56,38 +57,25 @@ function MemoryView(props: MemoryViewProps) {
   const { memory, cpu } = useGba();
   const [currentMode, setCurrentMode] = useState(props.mode ?? "hex");
 
-  const { offset, data } = memory.getRegion(props.region);
+  const { offset, ...region } = memory.getRegion(props.region);
   const { pageSize, icon: ModeIcon } = viewModes[currentMode];
 
   const [{ pageId }, dispatch] = useMemoryPage({ offset, pageSize });
 
   const columns = props.columns ?? 16;
   const pageStart = (pageId - 1) * pageSize;
-  const total = Math.ceil(data.length / pageSize);
-  const selectRegion = formatHex(offset + pageStart);
-  const currentPage = data.slice(pageStart, pageStart + pageSize);
+  const total = Math.ceil(region.getLength() / pageSize);
+  const currentPage = region.getData(pageStart, pageStart + pageSize);
 
-  const generateAddresses = () => {
-    const addresses: string[] = [];
+  const gotoMemory = useGotoMemory();
 
-    for (let i = 0; i < total; i += 1) {
-      const rawAddr = offset + i * pageSize;
-      const hexaddr = formatHex(rawAddr);
-      addresses.push(hexaddr);
-    }
-
-    return addresses;
+  const handleGoto = (address: number) => {
+    gotoMemory({
+      mode: currentMode,
+      hightlight: true,
+      address,
+    });
   };
-
-  const handleSelect = (value: string | null) => {
-    if (value) {
-      const basePageAddress = parseInt(value, 16) - offset;
-      const newPage = basePageAddress / pageSize + 1;
-      dispatch({ type: "select", pageId: newPage });
-    }
-  };
-
-  const addresses = generateAddresses();
 
   useEffect(() => {
     if (props.jump !== undefined) {
@@ -97,7 +85,7 @@ function MemoryView(props: MemoryViewProps) {
 
   return (
     <Stack flex={1} mb="80px" align="center">
-      {data.length ? (
+      {currentPage.length ? (
         <>
           {currentMode === "hex" && (
             <HexView
@@ -158,7 +146,7 @@ function MemoryView(props: MemoryViewProps) {
               </ThemeIcon>
               <Text ff="monospace">
                 {formatHex(offset + pageStart)}{" "}
-                {data.length ? (
+                {currentPage.length ? (
                   <>- {formatHex(offset + pageId * pageSize)}</>
                 ) : undefined}
               </Text>
@@ -171,13 +159,7 @@ function MemoryView(props: MemoryViewProps) {
                 <ModeIcon />
               </ThemeIcon>
             </Tooltip>
-            <Select
-              value={selectRegion}
-              data={addresses}
-              onChange={handleSelect}
-              flex={1}
-              searchable
-            />
+            <AddressInput onConfirm={handleGoto} />
             <Pagination
               value={pageId}
               onChange={(pageId) => dispatch({ type: "select", pageId })}
@@ -188,6 +170,31 @@ function MemoryView(props: MemoryViewProps) {
         </Group>
       </AppShell.Footer>
     </Stack>
+  );
+}
+
+function AddressInput(props: { onConfirm: (value: number) => void }) {
+  const [value, setValue] = useState("");
+
+  const handleConfirm: React.FormEventHandler = (event) => {
+    const parsed = parseHex(value);
+
+    if (!Number.isNaN(parsed)) {
+      props.onConfirm(parsed);
+    }
+
+    event.preventDefault();
+  };
+
+  return (
+    <form style={{ flex: 1 }} onSubmit={handleConfirm}>
+      <Input
+        placeholder="Go to address..."
+        onChange={(e) => setValue(e.currentTarget.value)}
+        error={value && Number.isNaN(parseHex(value))}
+        value={value}
+      />
+    </form>
   );
 }
 
