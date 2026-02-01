@@ -29,10 +29,10 @@ impl Dispcnt {
         self.value.has(5)
     }
 
-    pub fn obj_vram_mapping(&self) -> ObjMemoryMap {
+    pub fn obj_vram_mapping(&self) -> VramMapping {
         match self.value.get(6) {
-            0 => ObjMemoryMap::Map2D,
-            _ => ObjMemoryMap::Map1D,
+            0 => VramMapping::Map2D,
+            _ => VramMapping::Map1D,
         }
     }
 
@@ -89,7 +89,7 @@ impl BgMode {
 }
 
 #[derive(Debug)]
-pub enum ObjMemoryMap {
+pub enum VramMapping {
     Map1D,
     Map2D,
 }

@@ -9,11 +9,11 @@ import { GBA } from "./lib/gba";
 import DebuggerControls from "./components/views/debugger/DebuggerControls";
 import { useViewStore } from "./stores/viewStore";
 
-function App() {
-  const mantineTheme = createTheme({
-    primaryColor: "indigo",
-  });
+const mantineTheme = createTheme({
+  primaryColor: "indigo",
+});
 
+function App() {
   const { bios, theme: colorScheme } = usePersistantStore();
   const debugPannel = useViewStore((state) => state.debugPannel);
 

@@ -1,6 +1,8 @@
 pub mod background;
+pub mod character;
 pub mod color;
 pub mod debug;
+pub mod object;
 pub mod registers;
 
 use crate::{
@@ -206,6 +208,25 @@ impl Default for RenderPipeline {
                 Background::Bg2,
                 Background::Bg3,
             ],
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct TransformParam {
+    pub pa: u16,
+    pub pb: u16,
+    pub pc: u16,
+    pub pd: u16,
+}
+
+impl Default for TransformParam {
+    fn default() -> Self {
+        Self {
+            pa: 256,
+            pb: 0,
+            pc: 0,
+            pd: 256,
         }
     }
 }
