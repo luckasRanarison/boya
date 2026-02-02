@@ -88,7 +88,7 @@ impl BgMode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum VramMapping {
     Map1D,
     Map2D,
