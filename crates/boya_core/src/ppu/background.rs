@@ -45,25 +45,16 @@ impl From<u16> for BgScreen {
 }
 
 impl Ppu {
-    pub fn write_pixel(&mut self) {
-        let x = self.dot;
-        let y = self.scanline as u16;
-        let idx = (y as usize * LCD_WIDTH + x as usize) * 4;
-        let Color24 { r, g, b } = self.get_pixel(x, y).into();
-
-        self.frame_buffer[idx] = r;
-        self.frame_buffer[idx + 1] = g;
-        self.frame_buffer[idx + 2] = b;
+    pub fn read_bg_palette(&self, index: u32) -> Color15 {
+        self.palette.read_hword(index * 2).into()
     }
 
-    pub fn get_pixel(&mut self, x: u16, y: u16) -> Color15 {
-        for bg in self.pipeline.bg_prio {
-            if let Some(pixel15) = self.get_bg_pixel(x, y, bg) {
-                return pixel15;
-            }
-        }
-
-        Color15::default()
+    pub fn sort_bg(&mut self) {
+        self.pipeline.bg_prio.sort_by(|a, b| {
+            let a_prio = self.registers.bgcnt[a.to_index()].bg_priority();
+            let b_prio = self.registers.bgcnt[b.to_index()].bg_priority();
+            b_prio.cmp(&a_prio)
+        });
     }
 
     pub fn get_bg_pixel(&mut self, x: u16, y: u16, bg: Background) -> Option<Color15> {
@@ -87,7 +78,7 @@ impl Ppu {
         }
     }
 
-    pub fn get_bg_tile_pixel(
+    fn get_bg_tile_pixel(
         &self,
         x: u16,
         y: u16,
@@ -134,7 +125,7 @@ impl Ppu {
         self.get_char_pixel(cx, cy, char_data)
     }
 
-    pub fn get_bg_bmp_pixel(
+    fn get_bg_bmp_pixel(
         &self,
         x: u16,
         y: u16,
@@ -167,17 +158,5 @@ impl Ppu {
             ColorSrc::RGB => Some(entry.into()),
             ColorSrc::Palette => Some(self.read_bg_palette(entry as u32)),
         }
-    }
-
-    pub fn sort_bg(&mut self) {
-        self.pipeline.bg_prio.sort_by(|a, b| {
-            let a_prio = self.registers.bgcnt[a.to_index()].bg_priority();
-            let b_prio = self.registers.bgcnt[b.to_index()].bg_priority();
-            b_prio.cmp(&a_prio)
-        });
-    }
-
-    pub fn read_bg_palette(&self, index: u32) -> Color15 {
-        self.palette.read_hword(index * 2).into()
     }
 }

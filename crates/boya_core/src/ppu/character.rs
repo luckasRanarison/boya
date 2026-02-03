@@ -66,7 +66,7 @@ impl Ppu {
             return None;
         }
 
-        let color_addr = base_palette.unwrap_or_default() + rel_color_id as u32;
+        let color_addr = base_palette.unwrap_or_default() * 16 + rel_color_id as u32;
 
         let color = match char.kind {
             CharacterKind::Background => self.read_bg_palette(color_addr),

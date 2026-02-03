@@ -90,15 +90,19 @@ impl Obj {
     pub fn palette(&self) -> u8 {
         self.attr[2].get_bits_u8(12, 15)
     }
+
+    const fn placeholder() -> Self {
+        Self { attr: [0; 3] }
+    }
 }
 
 impl Ppu {
-    pub fn get_object(&self, id: u32) -> Obj {
+    pub fn get_object(&self, id: u8) -> Obj {
         Obj {
             attr: [
-                self.oam.read_hword(id * 4),
-                self.oam.read_hword(id * 4 + 1),
-                self.oam.read_hword(id * 4 + 2),
+                self.oam.read_hword(id as u32 * 4),
+                self.oam.read_hword(id as u32 * 4 + 1),
+                self.oam.read_hword(id as u32 * 4 + 2),
             ],
         }
     }
@@ -119,6 +123,26 @@ impl Ppu {
     pub fn read_obj_palette(&self, index: u32) -> Color15 {
         self.palette.read_hword(512 + index * 2).into()
     }
+
+    pub fn load_obj_pool(&mut self) {
+        self.pipeline.obj_pool.clear();
+
+        if !self.registers.dispcnt.is_obj_enabled() {
+            return;
+        }
+
+        for id in 0..128 {
+            let obj = self.get_object(id);
+            let (_width, height) = obj.dimmensions();
+            let top = obj.y();
+            let bottom = top + height as u16;
+            let scanline = self.scanline as u16;
+
+            if scanline >= top && scanline <= bottom {
+                self.pipeline.obj_pool.push(obj);
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -126,4 +150,30 @@ pub enum ObjMode {
     Normal,
     SemiTransparent,
     Window,
+}
+
+#[derive(Debug)]
+pub struct ObjPool {
+    pool: [Obj; 128],
+    len: usize,
+}
+
+impl Default for ObjPool {
+    fn default() -> Self {
+        Self {
+            pool: [const { Obj::placeholder() }; 128],
+            len: 0,
+        }
+    }
+}
+
+impl ObjPool {
+    pub fn push(&mut self, value: Obj) {
+        self.pool[self.len] = value;
+        self.len += 1;
+    }
+
+    pub fn clear(&mut self) {
+        self.len = 0;
+    }
 }

@@ -8,7 +8,8 @@ pub mod registers;
 use crate::{
     bus::types::Interrupt,
     ppu::{
-        color::Color15,
+        color::{Color15, Color24},
+        object::{Obj, ObjPool},
         registers::{PpuRegister, dispcnt::Background, dispstat::Dispstat},
     },
     utils::{Reset, bitflags::Bitflag},
@@ -83,10 +84,6 @@ impl Ppu {
     }
 
     pub fn step(&mut self) {
-        if self.scanline < 160 && self.dot < 240 {
-            self.write_pixel();
-        }
-
         self.registers.vcount = self.scanline.into();
         self.handle_scanline();
         self.handle_dot();
@@ -98,6 +95,28 @@ impl Ppu {
 
     pub fn write_vram(&mut self, address: u32, value: u8) {
         self.vram[self.vram_offset(address)] = value;
+    }
+
+    pub fn write_pixel(&mut self) {
+        let x = self.dot;
+        let y = self.scanline as u16;
+        let idx = (y as usize * LCD_WIDTH + x as usize) * 4;
+        let color15 = self.get_pixel(x, y);
+        let color24 = Color24::from(color15);
+
+        self.frame_buffer[idx] = color24.r;
+        self.frame_buffer[idx + 1] = color24.g;
+        self.frame_buffer[idx + 2] = color24.b;
+    }
+
+    pub fn get_pixel(&mut self, x: u16, y: u16) -> Color15 {
+        for bg in self.pipeline.bg_prio {
+            if let Some(pixel15) = self.get_bg_pixel(x, y, bg) {
+                return pixel15;
+            }
+        }
+
+        Color15::default()
     }
 
     fn vram_offset(&self, address: u32) -> usize {
@@ -114,6 +133,7 @@ impl Ppu {
         match self.dot {
             0 => {
                 self.registers.dispstat.clear(Dispstat::HBLANK);
+                self.load_obj_pool();
             }
             239..=306 if self.scanline < 160 => {
                 self.registers.dispstat.set(Dispstat::HBLANK);
@@ -129,6 +149,10 @@ impl Ppu {
                 return;
             }
             _ => {}
+        }
+
+        if self.scanline < 160 && self.dot < 240 {
+            self.write_pixel();
         }
 
         self.dot += 1;
@@ -184,7 +208,7 @@ impl Reset for Ppu {
 #[derive(Debug)]
 pub struct RenderPipeline {
     bg_prio: [Background; 4],
-    sprite_pool: Vec<u8>,
+    obj_pool: ObjPool,
 }
 
 impl Default for RenderPipeline {
@@ -196,7 +220,7 @@ impl Default for RenderPipeline {
                 Background::Bg2,
                 Background::Bg3,
             ],
-            sprite_pool: Vec::new(),
+            obj_pool: ObjPool::default(),
         }
     }
 }
