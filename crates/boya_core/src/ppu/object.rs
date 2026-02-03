@@ -105,12 +105,15 @@ impl Ppu {
 
     pub fn get_obj_transform_params(&self, obj: &Obj) -> TransformParam {
         let id = obj.transform_parameter() as u32;
-        let pa = self.oam.read_hword(id * 16 + 3);
-        let pb = self.oam.read_hword(id * 16 + 7);
-        let pc = self.oam.read_hword(id * 16 + 11);
-        let pd = self.oam.read_hword(id * 16 + 15);
 
-        TransformParam { pa, pb, pc, pd }
+        TransformParam {
+            pa: self.oam.read_hword(id * 16 + 3),
+            pb: self.oam.read_hword(id * 16 + 7),
+            pc: self.oam.read_hword(id * 16 + 11),
+            pd: self.oam.read_hword(id * 16 + 15),
+            x: 0,
+            y: 0,
+        }
     }
 
     pub fn read_obj_palette(&self, index: u32) -> Color15 {

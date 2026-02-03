@@ -5,7 +5,7 @@ use crate::{
         common::Exception,
         debug::types::{GbaStep, GbaStepKind},
     },
-    ppu::{background::TILE_BUFFER_SIZE, color::Color15, registers::bgcnt::ColorMode},
+    ppu::{character::TILE_BUFFER_SIZE, color::Color15, registers::bgcnt::ColorMode},
     utils::Reset,
 };
 

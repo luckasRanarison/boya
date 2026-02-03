@@ -2,7 +2,7 @@ use crate::{
     bus::Bus,
     ppu::{
         PALETTE_SIZE, Ppu,
-        background::TILE_BUFFER_SIZE,
+        character::TILE_BUFFER_SIZE,
         color::{Color15, Color24},
         registers::bgcnt::ColorMode,
     },

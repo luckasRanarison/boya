@@ -181,22 +181,10 @@ impl Reset for Ppu {
     }
 }
 
-#[derive(Debug, Default, Clone, Copy)]
-pub struct Pixel(u16);
-
-impl Pixel {
-    pub fn is_transparent(self) -> bool {
-        self.0.has(15)
-    }
-
-    pub fn get_color(self) -> Color15 {
-        Color15::from(self.0 & 0x7FFF)
-    }
-}
-
 #[derive(Debug)]
 pub struct RenderPipeline {
     bg_prio: [Background; 4],
+    sprite_pool: Vec<u8>,
 }
 
 impl Default for RenderPipeline {
@@ -208,16 +196,19 @@ impl Default for RenderPipeline {
                 Background::Bg2,
                 Background::Bg3,
             ],
+            sprite_pool: Vec::new(),
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TransformParam {
     pub pa: u16,
     pub pb: u16,
     pub pc: u16,
     pub pd: u16,
+    pub x: u32,
+    pub y: u32,
 }
 
 impl Default for TransformParam {
@@ -227,7 +218,19 @@ impl Default for TransformParam {
             pb: 0,
             pc: 0,
             pd: 256,
+            x: 0,
+            y: 0,
         }
+    }
+}
+
+impl TransformParam {
+    pub fn map(&self, x: u16, y: u16) -> (u16, u16) {
+        let ax = self.pa as i32 * x as i32 + self.pb as i32 * y as i32 + self.x as i32;
+        let ay = self.pc as i32 * x as i32 + self.pd as i32 * y as i32 + self.y as i32;
+        let tx = (ax >> 8) as u16;
+        let ty = (ay >> 8) as u16;
+        (tx, ty)
     }
 }
 

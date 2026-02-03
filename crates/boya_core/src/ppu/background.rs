@@ -12,10 +12,6 @@ use crate::{
     utils::bitflags::Bitflag,
 };
 
-pub const TILE_BUFFER_SIZE: usize = 8 * 8 * 4;
-pub const TILE4BPP_SIZE: usize = 32;
-pub const TILE8BPP_SIZE: usize = 64;
-
 #[derive(Debug, Clone, Copy)]
 pub enum ColorSrc {
     Palette,
@@ -81,9 +77,9 @@ impl Ppu {
             (BgMode::Mode0, _) => self.get_bg_tile_pixel(x, y, bg, BgKind::Text),
             (BgMode::Mode1, Background::Bg0) => self.get_bg_tile_pixel(x, y, bg, BgKind::Text),
             (BgMode::Mode1, Background::Bg1) => self.get_bg_tile_pixel(x, y, bg, BgKind::Text),
-            (BgMode::Mode1, Background::Bg2) => None, // TODO
-            (BgMode::Mode2, Background::Bg2) => None, // TODO
-            (BgMode::Mode2, Background::Bg3) => None, // TODO
+            (BgMode::Mode1, Background::Bg2) => self.get_bg_tile_pixel(x, y, bg, BgKind::Affine),
+            (BgMode::Mode2, Background::Bg2) => self.get_bg_tile_pixel(x, y, bg, BgKind::Affine),
+            (BgMode::Mode2, Background::Bg3) => self.get_bg_tile_pixel(x, y, bg, BgKind::Affine),
             (BgMode::Mode3, Background::Bg2) => self.get_bg_bmp_pixel(x, y, ColorSrc::RGB, 1),
             (BgMode::Mode4, Background::Bg2) => self.get_bg_bmp_pixel(x, y, ColorSrc::Palette, 2),
             (BgMode::Mode5, Background::Bg2) => self.get_bg_bmp_pixel(x, y, ColorSrc::RGB, 2),
@@ -116,17 +112,23 @@ impl Ppu {
         let raw_bg_screen = self.vram.read_hword(screen_block_offset);
         let bg_screen = BgScreen::from(raw_bg_screen);
 
+        let transform = match (bg_kind, bg) {
+            (BgKind::Affine, Background::Bg2) => Some(self.registers.bg2trans.params.clone()),
+            (BgKind::Affine, Background::Bg3) => Some(self.registers.bg3trans.params.clone()),
+            _ => None,
+        };
+
         let char_data = CharacterData {
             name: bg_screen.character,
             base_offset: base_char_offset,
             hflip: bg_screen.hflip,
             vflip: bg_screen.vflip,
-            transform: None,
             color: bgcnt.color_mode(),
             palette: bg_screen.palette,
             kind: CharacterKind::Background,
             height: 8,
             width: 8,
+            transform,
         };
 
         self.get_char_pixel(cx, cy, char_data)
@@ -145,19 +147,15 @@ impl Ppu {
             (ColorSrc::Palette, _) => (240, 160, 1),
         };
 
-        let t = &self.registers.bg2trans;
         let bgcnt = self.registers.bgcnt[2];
         let frame_buffer = self.registers.dispcnt.frame_buffer();
         let buffer_size = width * height * pixel_size;
         let buffer_start = frame_buffer as usize * pixel_size;
         let buffer_slice = &self.vram[buffer_start..buffer_start + buffer_size];
-        let tx = t.pa as i32 * x as i32 + t.pb as i32 * y as i32 + t.x as i32;
-        let ty = t.pc as i32 * x as i32 + t.pd as i32 * y as i32 + t.y as i32;
-        let sx = (tx >> 8) as usize;
-        let sy = (ty >> 8) as usize;
-        let idx = (sy * width + sx) * pixel_size;
+        let (tx, ty) = self.registers.bg2trans.params.map(x, y);
+        let idx = (ty as usize * width + tx as usize) * pixel_size;
 
-        if (sx >= width || sy >= height) && !bgcnt.overflow_wrap() {
+        if (tx as usize >= width || ty as usize >= height) && !bgcnt.overflow_wrap() {
             return None;
         }
 

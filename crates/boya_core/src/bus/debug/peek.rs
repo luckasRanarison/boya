@@ -65,12 +65,12 @@ impl Bgofs {
 impl Bgtrans {
     fn peek_byte(&self, address: u32) -> u8 {
         match address % 16 {
-            0..=1 => self.pa.read_byte(address),
-            2..=3 => self.pb.read_byte(address),
-            4..=5 => self.pc.read_byte(address),
-            6..=7 => self.pd.read_byte(address),
-            8..=11 => self.x.read_byte(address),
-            _ => self.y.read_byte(address),
+            0..=1 => self.params.pa.read_byte(address),
+            2..=3 => self.params.pb.read_byte(address),
+            4..=5 => self.params.pc.read_byte(address),
+            6..=7 => self.params.pd.read_byte(address),
+            8..=11 => self.params.x.read_byte(address),
+            _ => self.params.y.read_byte(address),
         }
     }
 }

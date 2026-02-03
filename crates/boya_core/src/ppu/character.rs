@@ -8,6 +8,7 @@ use crate::{
     utils::bitflags::Bitflag,
 };
 
+pub const TILE_BUFFER_SIZE: usize = 8 * 8 * 4;
 pub const TILE4BPP_SIZE: usize = 32;
 pub const TILE8BPP_SIZE: usize = 64;
 
@@ -37,31 +38,29 @@ impl Ppu {
         let mut cy = y;
 
         if char.hflip {
-            cx = char.width as u16 - cx;
+            cx = char.width as u16 - cx - 1;
         }
 
         if char.vflip {
-            cy = char.height as u16 - cy;
+            cy = char.height as u16 - cy - 1;
         }
 
-        if let Some(t) = &char.transform {
-            let tx = t.pa as i32 * x as i32 + t.pb as i32 * cy as i32;
-            let ty = t.pc as i32 * x as i32 + t.pd as i32 * cy as i32;
-            cx = (tx >> 8) as u16;
-            cy = (ty >> 8) as u16;
+        if let Some(transform) = &char.transform {
+            (cx, cy) = transform.map(cx, cy)
         }
 
-        let pixel_addr = self.get_pixel_address(x, y, &char);
+        let pixel_addr = self.get_pixel_address(cx, cy, &char);
         let pixel_byte = self.vram.read_byte(pixel_addr);
 
-        let mut base_palette = None;
-        let mut rel_color_id = pixel_byte;
-
-        if matches!(char.color, ColorMode::Palette16) {
-            let (b_start, b_end) = if x & 1 == 0 { (0, 3) } else { (4, 7) };
-            rel_color_id = pixel_byte.get_bits_u8(b_start, b_end);
-            base_palette = Some(char.palette as u32 * 16);
-        }
+        let (base_palette, rel_color_id) = match char.color {
+            ColorMode::Palette16 => {
+                let (b_start, b_end) = if cx & 1 == 0 { (0, 3) } else { (4, 7) };
+                let palette = Some(char.palette as u32);
+                let color_id = pixel_byte.get_bits(b_start, b_end);
+                (palette, color_id)
+            }
+            ColorMode::Palette256 => (None, pixel_byte),
+        };
 
         if rel_color_id == 0 {
             return None;
