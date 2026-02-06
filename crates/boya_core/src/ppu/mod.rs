@@ -111,8 +111,12 @@ impl Ppu {
 
     pub fn get_pixel(&mut self, x: u16, y: u16) -> Color15 {
         for bg in self.pipeline.bg_prio {
-            if let Some(pixel15) = self.get_bg_pixel(x, y, bg) {
-                return pixel15;
+            if let Some(pixel) = self.get_obj_pixel(x, y, bg) {
+                return pixel;
+            }
+
+            if let Some(pixel) = self.get_bg_pixel(x, y, bg) {
+                return pixel;
             }
         }
 
