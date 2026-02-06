@@ -1,6 +1,11 @@
 use crate::{
     bus::Bus,
-    ppu::{Ppu, TransformParam, color::Color15, registers::bgcnt::ColorMode},
+    ppu::{
+        Ppu, TransformParam,
+        character::{CharacterData, CharacterKind},
+        color::Color15,
+        registers::{bgcnt::ColorMode, dispcnt::Background},
+    },
     utils::bitflags::Bitflag,
 };
 
@@ -79,8 +84,8 @@ impl Obj {
         }
     }
 
-    pub fn character(&self) -> u8 {
-        self.attr[2].get_bits_u8(0, 9)
+    pub fn character(&self) -> u16 {
+        self.attr[2].get_bits(0, 9)
     }
 
     pub fn bg_priority(&self) -> u8 {
@@ -125,8 +130,6 @@ impl Ppu {
     }
 
     pub fn load_obj_pool(&mut self) {
-        self.pipeline.obj_pool.clear();
-
         if !self.registers.dispcnt.is_obj_enabled() {
             return;
         }
@@ -138,10 +141,38 @@ impl Ppu {
             let bottom = top + height as u16;
             let scanline = self.scanline as u16;
 
-            if scanline >= top && scanline <= bottom {
+            if scanline >= top && scanline < bottom {
                 self.pipeline.obj_pool.push(obj);
             }
         }
+    }
+
+    pub fn get_obj_pixel(&self, x: u16, y: u16, layer: Background) -> Option<Color15> {
+        if !self.registers.dispcnt.is_obj_enabled() {
+            return None;
+        }
+
+        let obj = self.pipeline.obj_pool.get(x, layer)?;
+        let cx = x - obj.x();
+        let cy = y - obj.y();
+        let (width, height) = obj.dimmensions();
+        let transform = obj.transform().then(|| self.get_obj_transform_params(obj));
+        let vram_mapping = self.registers.dispcnt.obj_vram_mapping();
+
+        let char_data = CharacterData {
+            name: obj.character().into(),
+            base_offset: 0x10_000,
+            hflip: obj.hflip(),
+            vflip: obj.vflip(),
+            color: obj.color_mode(),
+            palette: obj.palette(),
+            kind: CharacterKind::Object(vram_mapping),
+            height,
+            width,
+            transform,
+        };
+
+        self.get_char_pixel(cx, cy, char_data)
     }
 }
 
@@ -175,5 +206,21 @@ impl ObjPool {
 
     pub fn clear(&mut self) {
         self.len = 0;
+    }
+
+    pub fn get(&self, x: u16, layer: Background) -> Option<&Obj> {
+        for obj in &self.pool[..self.len] {
+            if obj.bg_priority() == layer as u8 {
+                let (width, _height) = obj.dimmensions();
+                let left = obj.x();
+                let right = left + width as u16;
+
+                if x >= left && x < right {
+                    return Some(obj);
+                }
+            }
+        }
+
+        None
     }
 }
