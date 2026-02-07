@@ -7,6 +7,7 @@ import SettingsView from "../views/settings/SettingsView";
 import EmulatorView from "../views/main/EmulatorView";
 import UploadView from "../views/main/UploadView";
 import AboutView from "../views/about/AboutView";
+import ObjectView from "../views/objects/ObjectView";
 import RegisterView, {
   type RegisterSubMenu,
 } from "../views/registers/RegisterView";
@@ -18,6 +19,7 @@ function Main() {
   if (view.name === "about") return <AboutView />;
   if (view.name === "debugger") return <DebuggerView />;
   if (view.name === "settings") return <SettingsView />;
+  if (view.name === "objects") return <ObjectView />;
 
   if (view.name === "memory" && view.sub) {
     return (

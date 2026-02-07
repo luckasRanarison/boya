@@ -5,7 +5,7 @@ use crate::{
         common::Exception,
         debug::types::{GbaStep, GbaStepKind},
     },
-    ppu::{character::TILE_BUFFER_SIZE, color::Color15, registers::bgcnt::ColorMode},
+    ppu::{character::TILE_BUFFER_SIZE, color::Color15, object::Obj, registers::bgcnt::ColorMode},
     utils::Reset,
 };
 
@@ -144,6 +144,10 @@ impl Gba {
 impl Gba {
     pub fn color_palette(&self) -> Vec<Color15> {
         self.cpu.bus.ppu.color_palette()
+    }
+
+    pub fn objects(&self) -> Vec<Obj> {
+        self.cpu.bus.ppu.objects()
     }
 
     pub fn render_tile(

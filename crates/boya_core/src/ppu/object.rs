@@ -4,7 +4,10 @@ use crate::{
         Ppu, TransformParam,
         character::{CharacterData, CharacterKind},
         color::Color15,
-        registers::{bgcnt::ColorMode, dispcnt::Background},
+        registers::{
+            bgcnt::ColorMode,
+            dispcnt::{Background, BgMode},
+        },
     },
     utils::bitflags::Bitflag,
 };
@@ -156,20 +159,29 @@ impl Ppu {
         let cx = x - obj.x();
         let cy = y - obj.y();
         let (width, height) = obj.dimmensions();
-        let transform = obj.transform().then(|| self.get_obj_transform_params(obj));
         let vram_mapping = self.registers.dispcnt.obj_vram_mapping();
 
+        let (hflip, vflip, transform) = match obj.transform() {
+            false => (obj.hflip(), obj.vflip(), None),
+            true => (false, false, self.get_obj_transform_params(obj).into()),
+        };
+
+        let base_offset = match self.registers.dispcnt.bg_mode() {
+            BgMode::Mode0 | BgMode::Mode1 | BgMode::Mode2 => 0x10000,
+            BgMode::Mode3 | BgMode::Mode4 | BgMode::Mode5 => 0x14000,
+        };
+
         let char_data = CharacterData {
-            name: obj.character().into(),
-            base_offset: 0x10_000,
-            hflip: obj.hflip(),
-            vflip: obj.vflip(),
+            name: obj.character(),
             color: obj.color_mode(),
             palette: obj.palette(),
             kind: CharacterKind::Object(vram_mapping),
             height,
             width,
+            hflip,
+            vflip,
             transform,
+            base_offset,
         };
 
         self.get_char_pixel(cx, cy, char_data)
