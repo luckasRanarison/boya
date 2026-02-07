@@ -20,6 +20,7 @@ pub enum MemoryRegion {
 }
 
 #[wasm_bindgen]
+#[derive(Clone, Copy)]
 pub enum ColorMode {
     Palette16,
     Palette256,
@@ -30,6 +31,15 @@ impl From<ColorMode> for ppu::registers::bgcnt::ColorMode {
         match value {
             ColorMode::Palette16 => ppu::registers::bgcnt::ColorMode::Palette16,
             ColorMode::Palette256 => ppu::registers::bgcnt::ColorMode::Palette256,
+        }
+    }
+}
+
+impl From<ppu::registers::bgcnt::ColorMode> for ColorMode {
+    fn from(value: ppu::registers::bgcnt::ColorMode) -> Self {
+        match value {
+            ppu::registers::bgcnt::ColorMode::Palette16 => ColorMode::Palette16,
+            ppu::registers::bgcnt::ColorMode::Palette256 => ColorMode::Palette256,
         }
     }
 }
@@ -97,5 +107,44 @@ pub struct IOMap(pub Vec<RegisterEntry>);
 impl Default for IOMap {
     fn default() -> Self {
         Self(IO_MAP.iter().map(|r| r.into()).collect())
+    }
+}
+
+#[wasm_bindgen]
+pub struct Obj {
+    pub x: u16,
+    pub y: u16,
+    pub width: u8,
+    pub height: u8,
+    pub priority: u8,
+    pub palette: u8,
+    pub character: u16,
+    pub color_mode: ColorMode,
+    pub transform: bool,
+    pub hflip: bool,
+    pub vflip: bool,
+    pub mosaic: bool,
+    pub double_size: bool,
+}
+
+impl From<ppu::object::Obj> for Obj {
+    fn from(value: ppu::object::Obj) -> Self {
+        let (width, height) = value.dimmensions();
+
+        Self {
+            x: value.x(),
+            y: value.y(),
+            priority: value.bg_priority(),
+            palette: value.palette(),
+            character: value.character(),
+            color_mode: value.color_mode().into(),
+            transform: value.transform(),
+            hflip: value.hflip(),
+            vflip: value.vflip(),
+            mosaic: value.mosaic(),
+            double_size: value.double_size(),
+            width,
+            height,
+        }
     }
 }

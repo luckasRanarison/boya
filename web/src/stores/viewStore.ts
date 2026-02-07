@@ -44,6 +44,7 @@ export const views = [
       { name: "i/o", icon: IconBlocks },
     ],
   },
+  { name: "objects", icon: IconCube },
   { name: "about", icon: IconInfoCircle, mobileOnly: true },
   { name: "debugger", icon: IconBug, mobileOnly: true },
   { name: "settings", icon: IconSettings, mobileOnly: true },

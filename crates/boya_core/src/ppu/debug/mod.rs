@@ -1,9 +1,10 @@
 use crate::{
     bus::Bus,
     ppu::{
-        PALETTE_SIZE, Ppu,
+        OBJ_COUNT, PALETTE_SIZE, Ppu,
         character::TILE_BUFFER_SIZE,
         color::{Color15, Color24},
+        object::Obj,
         registers::bgcnt::ColorMode,
     },
     utils::bitflags::Bitflag,
@@ -15,6 +16,10 @@ impl Ppu {
             .chunks_exact(2)
             .map(|color| u16::from_le_bytes([color[0], color[1]]).into())
             .collect()
+    }
+
+    pub fn objects(&self) -> Vec<Obj> {
+        (0..OBJ_COUNT).map(|id| self.get_object(id)).collect()
     }
 
     pub fn render_tile(

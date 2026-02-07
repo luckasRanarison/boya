@@ -4,7 +4,7 @@ use boya_core::{Gba as GbaCore, bus::Bus, ppu::color::Color24, utils::Reset};
 use wasm_bindgen::prelude::*;
 use web_sys::js_sys::{Uint8Array, Uint32Array};
 
-use crate::types::{ColorMode, IOMap, MemoryRegion};
+use crate::types::{ColorMode, IOMap, MemoryRegion, Obj};
 
 #[wasm_bindgen]
 #[derive(Default)]
@@ -188,6 +188,15 @@ impl Gba {
             .color_palette()
             .into_iter()
             .map(|c| Color24::from(c).into())
+            .collect()
+    }
+
+    #[wasm_bindgen]
+    pub fn objects(&self) -> Vec<Obj> {
+        self.core
+            .objects()
+            .into_iter()
+            .map(|obj| obj.into())
             .collect()
     }
 
