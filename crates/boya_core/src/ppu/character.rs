@@ -46,7 +46,8 @@ impl Ppu {
         }
 
         if let Some(transform) = &char.transform {
-            (cx, cy) = transform.map(cx, cy)
+            // FIXME
+            // (cx, cy) = transform.map(cx, cy)
         }
 
         let pixel_addr = self.get_pixel_address(cx, cy, &char);
@@ -77,18 +78,37 @@ impl Ppu {
     }
 
     fn get_pixel_address(&self, x: u16, y: u16, char: &CharacterData) -> u32 {
-        let base_offset = match char.kind {
+        match char.kind {
             CharacterKind::Background | CharacterKind::Object(VramMapping::Map1D) => {
-                y as u32 * char.width as u32 + x as u32
+                let base_offset = y as u32 * char.width as u32 + x as u32;
+
+                let (tile_size, offset) = match char.color {
+                    ColorMode::Palette16 => (TILE4BPP_SIZE, base_offset / 2),
+                    ColorMode::Palette256 => (TILE8BPP_SIZE, base_offset),
+                };
+
+                char.base_offset + char.name as u32 * tile_size as u32 + offset
             }
-            CharacterKind::Object(VramMapping::Map2D) => y as u32 * 32 * 8 + x as u32,
-        };
+            CharacterKind::Object(VramMapping::Map2D) => {
+                let tx = x / 8;
+                let ty = y / 8;
+                let px = x % 8;
+                let py = y % 8;
 
-        let (tile_size, offset) = match char.color {
-            ColorMode::Palette16 => (TILE4BPP_SIZE, base_offset / 2),
-            ColorMode::Palette256 => (TILE8BPP_SIZE, base_offset),
-        };
+                let tx_offset = match char.color {
+                    ColorMode::Palette16 => tx,
+                    ColorMode::Palette256 => tx * 2,
+                };
 
-        char.base_offset + char.name as u32 * tile_size as u32 + offset
+                let tile_index = char.name as u32 + (ty as u32 * 32) + tx_offset as u32;
+
+                let pixel_offset = match char.color {
+                    ColorMode::Palette16 => (py * 4) + (px / 2),
+                    ColorMode::Palette256 => (py * 8) + px,
+                };
+
+                char.base_offset + (tile_index * 32) + pixel_offset as u32
+            }
+        }
     }
 }

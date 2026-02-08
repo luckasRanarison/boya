@@ -137,6 +137,8 @@ impl Ppu {
             return;
         }
 
+        self.pipeline.obj_pool.clear();
+
         for id in 0..128 {
             let obj = self.get_object(id);
             let (_width, height) = obj.dimmensions();
@@ -155,7 +157,22 @@ impl Ppu {
             return None;
         }
 
-        let obj = self.pipeline.obj_pool.get(x, layer)?;
+        let mut offset = 0;
+
+        loop {
+            let (id, obj) = self.pipeline.obj_pool.get(x, layer, offset)?;
+
+            if let Some(pixel) = self.get_obj_pixel_inner(x, y, obj) {
+                return Some(pixel);
+            } else {
+                offset = id + 1
+            }
+        }
+
+        None
+    }
+
+    fn get_obj_pixel_inner(&self, x: u16, y: u16, obj: &Obj) -> Option<Color15> {
         let cx = x - obj.x();
         let cy = y - obj.y();
         let (width, height) = obj.dimmensions();
@@ -211,25 +228,35 @@ impl Default for ObjPool {
 }
 
 impl ObjPool {
-    pub fn push(&mut self, value: Obj) {
+    fn push(&mut self, value: Obj) {
         self.pool[self.len] = value;
         self.len += 1;
     }
 
-    pub fn clear(&mut self) {
+    fn clear(&mut self) {
         self.len = 0;
     }
 
-    pub fn get(&self, x: u16, layer: Background) -> Option<&Obj> {
-        for obj in &self.pool[..self.len] {
-            if obj.bg_priority() == layer as u8 {
+    fn get(&self, x: u16, layer: Background, offset: usize) -> Option<(usize, &Obj)> {
+        if offset > self.len {
+            return None;
+        }
+
+        for (i, obj) in self.pool[offset..self.len].iter().enumerate() {
+            let prio = obj.bg_priority();
+
+            if prio == layer as u8 {
                 let (width, _height) = obj.dimmensions();
                 let left = obj.x();
                 let right = left + width as u16;
 
                 if x >= left && x < right {
-                    return Some(obj);
+                    return Some((offset + i, obj));
                 }
+            }
+
+            if prio > layer as u8 {
+                break;
             }
         }
 
