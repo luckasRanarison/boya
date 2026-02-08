@@ -136,13 +136,12 @@ impl Ppu {
 
     fn handle_dot(&mut self) {
         match self.dot {
-            0 => {
+            0 if self.scanline < 160 => {
                 self.registers.dispstat.clear(Dispstat::HBLANK);
                 self.load_obj_pool();
             }
             239..=306 if self.scanline < 160 => {
                 self.registers.dispstat.set(Dispstat::HBLANK);
-                self.pipeline.obj_pool.clear();
 
                 if !self.mask_hblank && self.registers.dispstat.has(Dispstat::HBLANK_IRQ) {
                     self.pending_irq = Some(Interrupt::HBlank);
