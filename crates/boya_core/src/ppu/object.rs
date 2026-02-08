@@ -108,9 +108,9 @@ impl Ppu {
     pub fn get_object(&self, id: u8) -> Obj {
         Obj {
             attr: [
-                self.oam.read_hword(id as u32 * 4),
-                self.oam.read_hword(id as u32 * 4 + 1),
-                self.oam.read_hword(id as u32 * 4 + 2),
+                self.oam.read_hword(id as u32 * 8),
+                self.oam.read_hword(id as u32 * 8 + 2),
+                self.oam.read_hword(id as u32 * 8 + 4),
             ],
         }
     }
@@ -119,10 +119,10 @@ impl Ppu {
         let id = obj.transform_parameter() as u32;
 
         TransformParam {
-            pa: self.oam.read_hword(id * 16 + 3),
-            pb: self.oam.read_hword(id * 16 + 7),
-            pc: self.oam.read_hword(id * 16 + 11),
-            pd: self.oam.read_hword(id * 16 + 15),
+            pa: self.oam.read_hword(id * 32 + 6),
+            pb: self.oam.read_hword(id * 32 + 14),
+            pc: self.oam.read_hword(id * 32 + 22),
+            pd: self.oam.read_hword(id * 32 + 30),
             x: 0,
             y: 0,
         }
