@@ -89,17 +89,32 @@ impl Ppu {
         let bgcnt = self.registers.bgcnt[bg_idx];
         let bgofs = self.registers.bgofs[bg_idx];
 
-        let tx = x + bgofs.x;
-        let ty = y + bgofs.y;
-        let sx = (tx / 8) as u32;
-        let sy = (ty / 8) as u32;
-        let cx = (tx % 8);
-        let cy = (ty % 8);
-
-        let (width, _height) = bgcnt.screen_mode().text_size();
+        let (width, height) = bgcnt.screen_mode().text_size();
         let base_screen_offset = bgcnt.screen_block_offset();
         let base_char_offset = bgcnt.char_block_offset();
-        let screen_block_offset = base_screen_offset + (sx + sy * (width / 8) as u32) * 2;
+
+        let ox = (x + bgofs.x) % width;
+        let oy = (y + bgofs.y) % height;
+        let char_x = (ox % 8);
+        let char_y = (oy % 8);
+        let screen_x = (ox / 8) as u32;
+        let screen_y = (oy / 8) as u32;
+
+        let block_x = screen_x / 32;
+        let block_y = screen_y / 32;
+        let tile_x = screen_x % 32;
+        let tile_y = screen_y % 32;
+
+        let block_id = match (bg_kind, width, height) {
+            (BgKind::Text, 512, 256) => block_x,
+            (BgKind::Text, 256, 512) => block_y,
+            (BgKind::Text, 512, 512) => block_x + block_y * 2,
+            _ => 0,
+        };
+
+        let block_address = base_screen_offset + block_id * 2048;
+        let local_tile_id = tile_y * 32 + tile_x;
+        let screen_block_offset = block_address + local_tile_id * 2;
         let raw_bg_screen = self.vram.read_hword(screen_block_offset);
         let bg_screen = BgScreen::from(raw_bg_screen);
 
@@ -122,7 +137,7 @@ impl Ppu {
             transform,
         };
 
-        self.get_char_pixel(cx, cy, char_data)
+        self.get_char_pixel(char_x, char_y, char_data)
     }
 
     fn get_bg_bmp_pixel(

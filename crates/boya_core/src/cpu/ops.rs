@@ -454,7 +454,7 @@ impl Arm7tdmi {
         let fiq = exception.disable_fiq() || self.cpsr.has(Psr::F);
         let first_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
         let is_swi = matches!(exception, Exception::SoftwareInterrupt);
-        let mut return_addr = self.pc();
+        let mut return_addr = self.exec_address();
 
         if is_swi {
             return_addr += self.instr_size() as u32;
