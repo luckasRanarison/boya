@@ -50,22 +50,6 @@ impl Gba {
         self.sync(cycles);
     }
 
-    pub fn debug_step(&mut self) -> GbaStep {
-        let value = self
-            .cpu
-            .try_irq()
-            .map(GbaStepKind::Interrupt)
-            .or_else(|| self.cpu.bus.try_dma().map(GbaStepKind::Dma))
-            .unwrap_or_else(|| GbaStepKind::Instruction(self.cpu.debug_step()));
-
-        let step = GbaStep { value };
-        let cycles = step.cycles();
-
-        self.sync(cycles);
-
-        step
-    }
-
     pub fn step_frame(&mut self) {
         self.step_visible_frame();
         self.step_vblank();
@@ -142,6 +126,22 @@ impl Gba {
 }
 
 impl Gba {
+    pub fn debug_step(&mut self) -> GbaStep {
+        let value = self
+            .cpu
+            .try_irq()
+            .map(GbaStepKind::Interrupt)
+            .or_else(|| self.cpu.bus.try_dma().map(GbaStepKind::Dma))
+            .unwrap_or_else(|| GbaStepKind::Instruction(self.cpu.debug_step()));
+
+        let step = GbaStep { value };
+        let cycles = step.cycles();
+
+        self.sync(cycles);
+
+        step
+    }
+
     pub fn color_palette(&self) -> Vec<Color15> {
         self.cpu.bus.ppu.color_palette()
     }

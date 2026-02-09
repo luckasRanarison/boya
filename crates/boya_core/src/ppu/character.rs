@@ -95,17 +95,12 @@ impl Ppu {
                 let px = x % 8;
                 let py = y % 8;
 
-                let tx_offset = match char.color {
-                    ColorMode::Palette16 => tx,
-                    ColorMode::Palette256 => tx * 2,
+                let (tx_offset, pixel_offset) = match char.color {
+                    ColorMode::Palette16 => (tx, (py * 8 + px) / 2),
+                    ColorMode::Palette256 => (tx * 2, py * 8 + px),
                 };
 
                 let tile_index = char.name as u32 + (ty as u32 * 32) + tx_offset as u32;
-
-                let pixel_offset = match char.color {
-                    ColorMode::Palette16 => (py * 4) + (px / 2),
-                    ColorMode::Palette256 => (py * 8) + px,
-                };
 
                 char.base_offset + (tile_index * 32) + pixel_offset as u32
             }

@@ -13,8 +13,8 @@ import RegisterView, {
 } from "../views/registers/RegisterView";
 
 function Main() {
-  const { view } = useViewStore();
-  const { romLoaded } = useRuntimeStore();
+  const view = useViewStore((state) => state.view);
+  const romLoaded = useRuntimeStore((state) => state.romLoaded);
 
   if (view.name === "about") return <AboutView />;
   if (view.name === "debugger") return <DebuggerView />;

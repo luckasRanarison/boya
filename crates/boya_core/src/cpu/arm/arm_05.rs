@@ -107,11 +107,7 @@ impl Executable for Instruction {
     }
 
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
-        if self.s && self.rd.reg().is_pc() {
-            cpu.restore_cpsr();
-        }
-
-        match self.op {
+        let cycles = match self.op {
             Opcode::AND => cpu.and(self.rd, self.rn, self.op2, self.s),
             Opcode::EOR => cpu.eor(self.rd, self.rn, self.op2, self.s),
             Opcode::SUB => cpu.sub(self.rd, self.rn, self.op2, self.s),
@@ -128,7 +124,13 @@ impl Executable for Instruction {
             Opcode::CMN => cpu.cmn(self.rn, self.op2, self.s),
             Opcode::MOV => cpu.mov(self.rd, self.op2, self.s),
             Opcode::MVN => cpu.mvn(self.rd, self.op2, self.s),
+        };
+
+        if self.s && self.rd.reg().is_pc() {
+            cpu.restore_cpsr();
         }
+
+        cycles
     }
 
     fn get_data(&self) -> InstructionData {
