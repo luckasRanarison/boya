@@ -78,26 +78,30 @@ impl Ppu {
     }
 
     fn get_pixel_address(&self, x: u16, y: u16, char: &CharacterData) -> u32 {
+        let tx = x / 8;
+        let ty = y / 8;
+        let px = x % 8;
+        let py = y % 8;
+        let base_pixel_offset = py * 8 + px;
+
         match char.kind {
             CharacterKind::Background | CharacterKind::Object(VramMapping::Map1D) => {
-                let base_offset = y as u32 * char.width as u32 + x as u32;
+                let tiles_wide = char.width / 8;
+                let tile_index = (ty * tiles_wide as u16) + tx;
 
-                let (tile_size, offset) = match char.color {
-                    ColorMode::Palette16 => (TILE4BPP_SIZE, base_offset / 2),
-                    ColorMode::Palette256 => (TILE8BPP_SIZE, base_offset),
+                let (tile_size, pixel_offset) = match char.color {
+                    ColorMode::Palette16 => (TILE4BPP_SIZE, base_pixel_offset / 2),
+                    ColorMode::Palette256 => (TILE8BPP_SIZE, base_pixel_offset),
                 };
 
-                char.base_offset + char.name as u32 * tile_size as u32 + offset
+                char.base_offset
+                    + (char.name as u32 + tile_index as u32) * tile_size as u32
+                    + pixel_offset as u32
             }
             CharacterKind::Object(VramMapping::Map2D) => {
-                let tx = x / 8;
-                let ty = y / 8;
-                let px = x % 8;
-                let py = y % 8;
-
                 let (tx_offset, pixel_offset) = match char.color {
-                    ColorMode::Palette16 => (tx, (py * 8 + px) / 2),
-                    ColorMode::Palette256 => (tx * 2, py * 8 + px),
+                    ColorMode::Palette16 => (tx, base_pixel_offset / 2),
+                    ColorMode::Palette256 => (tx * 2, base_pixel_offset),
                 };
 
                 let tile_index = char.name as u32 + (ty as u32 * 32) + tx_offset as u32;
