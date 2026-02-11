@@ -4,6 +4,7 @@ use crate::{
     Gba,
     bus::{BIOS_SIZE, Bus, types::DataType},
     cpu::{Arm7tdmi, psr::Psr},
+    debug::cpu::inspect::Inspectable,
     test::asm::FAKE_BIOS,
 };
 
@@ -154,7 +155,7 @@ impl GbaTestBuilder {
     fn debug_instruction(&self, cpu: &Arm7tdmi) {
         let curr_addr = cpu.pipeline.current_address();
         let curr_instr = cpu.pipeline.current_instruction().unwrap();
-        let instr_fmt = curr_instr.get_data().format(10);
+        let instr_fmt = curr_instr.inspect().format(10);
 
         println!("{curr_addr:#08x}: {instr_fmt}",);
         // println!("{:?}", cpu.cpsr);

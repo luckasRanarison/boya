@@ -10,9 +10,9 @@ use crate::cpu::isa::prelude::*;
 /// +-----------------------------------------------------------------+
 #[derive(Debug)]
 pub struct Instruction {
-    cd: Condition,
-    op: Opcode,
-    psr: PsrKind,
+    pub cd: Condition,
+    pub op: Opcode,
+    pub psr: PsrKind,
 }
 
 impl From<u32> for Instruction {
@@ -30,7 +30,7 @@ impl From<u32> for Instruction {
 }
 
 #[derive(Debug)]
-enum Opcode {
+pub enum Opcode {
     MRS { rd: u8 },
     MSR { fd: PsrField, op: Operand },
 }
@@ -67,28 +67,6 @@ impl Executable for Instruction {
         match self.op {
             Opcode::MRS { rd } => cpu.store_psr_op(rd, self.psr),
             Opcode::MSR { fd, op } => cpu.update_psr_op(op, fd.mask, self.psr),
-        }
-    }
-
-    fn get_data(&self) -> InstructionData {
-        let (keyword, args) = match &self.op {
-            Opcode::MRS { rd } => ("MRS", vec![rd.reg().into()]),
-            Opcode::MSR { fd, op } => (
-                "MSR",
-                vec![
-                    InstructionParam::PsrUpdate(PsrUpdate {
-                        kind: self.psr,
-                        fields: fd.clone(),
-                    }),
-                    op.clone().into(),
-                ],
-            ),
-        };
-
-        InstructionData {
-            keyword: keyword.to_string(),
-            kind: InstructionKind::arm(6, self.cd.into(), None, false),
-            args,
         }
     }
 }

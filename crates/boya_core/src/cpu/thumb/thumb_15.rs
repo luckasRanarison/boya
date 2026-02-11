@@ -8,9 +8,9 @@ use crate::cpu::isa::prelude::*;
 /// +-------------------------------------------------------------------------------+
 #[derive(Debug)]
 pub struct Instruction {
-    op: Opcode,
-    rb: u8,
-    rlist: u8,
+    pub op: Opcode,
+    pub rb: u8,
+    pub rlist: u8,
 }
 
 impl From<u16> for Instruction {
@@ -24,7 +24,7 @@ impl From<u16> for Instruction {
 }
 
 #[derive(Debug)]
-enum Opcode {
+pub enum Opcode {
     STMIA,
     LDMIA,
 }
@@ -44,22 +44,6 @@ impl Executable for Instruction {
         match self.op {
             Opcode::STMIA => cpu.stm(self.rlist.into(), self.rb, AddrMode::IA, true, false),
             Opcode::LDMIA => cpu.ldm(self.rlist.into(), self.rb, AddrMode::IA, true, false),
-        }
-    }
-
-    fn get_data(&self) -> InstructionData {
-        let offset = RegisterOffsetData {
-            amod: AddrMode::IA,
-            base: RegisterOffsetBase::Plain(self.rb),
-            offset: None,
-            wb: true,
-        };
-        let rlist = RegisterList::new(self.rlist.into());
-
-        InstructionData {
-            keyword: format!("{:?}", self.op),
-            args: vec![offset.into(), rlist.into()],
-            kind: InstructionKind::thumb(15),
         }
     }
 }

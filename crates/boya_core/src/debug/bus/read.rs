@@ -21,6 +21,14 @@ impl Bus for IOPeeker<'_> {
             0x0400_001C..=0x0400_001F => ppu.bgofs[3].peek_byte(address),
             0x0400_0020..=0x0400_002F => ppu.bg2trans.peek_byte(address),
             0x0400_0030..=0x0400_003F => ppu.bg3trans.peek_byte(address),
+            0x040 => ppu.winh[0].x1,
+            0x041 => ppu.winh[0].x2,
+            0x042 => ppu.winh[1].x1,
+            0x043 => ppu.winh[1].x2,
+            0x044 => ppu.winv[0].y1,
+            0x045 => ppu.winv[0].y2,
+            0x046 => ppu.winv[1].y1,
+            0x047 => ppu.winv[1].y2,
             _ => self.0.read_byte(address),
         }
     }

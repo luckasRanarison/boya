@@ -8,10 +8,10 @@ use crate::cpu::isa::prelude::*;
 /// +-------------------------------------------------------------------------------+
 #[derive(Debug)]
 pub struct Instruction {
-    op: Opcode,
-    nn: u16,
-    rb: u8,
-    rd: u8,
+    pub op: Opcode,
+    pub nn: u16,
+    pub rb: u8,
+    pub rd: u8,
 }
 
 impl From<u16> for Instruction {
@@ -26,7 +26,7 @@ impl From<u16> for Instruction {
 }
 
 #[derive(Debug)]
-enum Opcode {
+pub enum Opcode {
     STRH,
     LDRH,
 }
@@ -49,16 +49,6 @@ impl Executable for Instruction {
         match self.op {
             Opcode::STRH => cpu.strh(self.rd, self.rb, offset),
             Opcode::LDRH => cpu.ldrh(self.rd, self.rb, offset),
-        }
-    }
-
-    fn get_data(&self) -> InstructionData {
-        let offset = RegisterOffsetData::simple(self.rb, self.nn.imm());
-
-        InstructionData {
-            keyword: format!("{:?}", self.op),
-            args: vec![self.rd.reg().into(), offset.into()],
-            kind: InstructionKind::thumb(10),
         }
     }
 }

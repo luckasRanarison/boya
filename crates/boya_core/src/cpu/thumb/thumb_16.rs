@@ -8,8 +8,8 @@ use crate::cpu::isa::prelude::*;
 /// +-------------------------------------------------------------------------------+
 #[derive(Debug)]
 pub struct Instruction {
-    op: Opcode,
-    of: i16,
+    pub op: Opcode,
+    pub of: i16,
 }
 
 impl From<u16> for Instruction {
@@ -22,7 +22,7 @@ impl From<u16> for Instruction {
 }
 
 #[derive(Debug)]
-enum Opcode {
+pub enum Opcode {
     BEQ,
     BNE,
     BCS,
@@ -78,14 +78,6 @@ impl Executable for Instruction {
             Opcode::BLT => cpu.blt(self.of),
             Opcode::BGT => cpu.bgt(self.of),
             Opcode::BLE => cpu.ble(self.of),
-        }
-    }
-
-    fn get_data(&self) -> InstructionData {
-        InstructionData {
-            keyword: format!("{:?}", self.op),
-            args: vec![InstructionParam::BranchOffset(self.of.into())],
-            kind: InstructionKind::thumb(16),
         }
     }
 }

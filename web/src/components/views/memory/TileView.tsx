@@ -3,8 +3,8 @@ import { useState } from "react";
 import { GBA } from "@/lib/gba";
 import { ColorMode } from "boya_wasm";
 
-import Tile from "./Tile";
 import ColorView from "./ColorView";
+import Tile from "@/components/common/Tile";
 
 const tileConfig = {
   "4bpp": { tileSize: 32, paletteSize: 16 },
@@ -13,7 +13,7 @@ const tileConfig = {
 
 type TileMode = "4bpp" | "8bpp";
 
-function TileView(props: { pageData: Uint8Array }) {
+function TileView(props: { pageStart: number; pageData: Uint8Array }) {
   const [currentMode, setCurrentMode] = useState<TileMode>("4bpp");
   const [currentPaletteId, setCurrentPaletteId] = useState(0);
   const { tileSize, paletteSize } = tileConfig[currentMode];
@@ -47,15 +47,22 @@ function TileView(props: { pageData: Uint8Array }) {
       style={{ overflow: "scroll" }}
     >
       <SimpleGrid cols={8} spacing={0} mx="auto">
-        {tiles.map((t, i) => (
+        {tiles.map((_, id) => (
           <Tile
-            key={i}
-            rawData={t}
-            paletteId={currentPaletteId}
-            mode={
-              currentMode === "4bpp"
-                ? ColorMode.Palette16
-                : ColorMode.Palette256
+            key={id}
+            width={40}
+            height={40}
+            innerWidth={8}
+            innerHeight={8}
+            render={() =>
+              GBA.renderTileBuffer(
+                id,
+                props.pageStart,
+                currentMode === "4bpp"
+                  ? ColorMode.Palette16
+                  : ColorMode.Palette256,
+                currentPaletteId,
+              )
             }
           />
         ))}

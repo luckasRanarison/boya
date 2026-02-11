@@ -1,7 +1,6 @@
 pub mod background;
 pub mod character;
 pub mod color;
-pub mod debug;
 pub mod object;
 pub mod registers;
 
@@ -9,10 +8,10 @@ use crate::{
     bus::types::Interrupt,
     ppu::{
         color::{Color15, Color24},
-        object::{Obj, ObjPool},
+        object::ObjPool,
         registers::{PpuRegister, dispcnt::Background, dispstat::Dispstat},
     },
-    utils::{Reset, bitflags::Bitflag},
+    utils::Reset,
 };
 
 pub const PALETTE_RAM_SIZE: usize = 0x400; // 1kb
@@ -112,7 +111,7 @@ impl Ppu {
 
     pub fn get_pixel(&mut self, x: u16, y: u16) -> Color15 {
         for bg in self.pipeline.bg_prio {
-            if let Some(pixel) = self.get_obj_pixel(x, y, bg) {
+            if let Some(pixel) = self.get_obj_pixel(x, y, bg as u8) {
                 return pixel;
             }
 

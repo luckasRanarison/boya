@@ -48,7 +48,11 @@ function IORegisterView(props: {
               </Accordion.Control>
               <Accordion.Panel>
                 {register.flags.length ? (
-                  <FlagList value={register.value} flags={register.flags} />
+                  <FlagList
+                    value={register.value}
+                    flags={register.flags}
+                    showBits
+                  />
                 ) : (
                   <Group>
                     <Text size="sm">Value: </Text>

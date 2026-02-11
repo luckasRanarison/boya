@@ -8,7 +8,6 @@ use crate::{
     utils::bitflags::Bitflag,
 };
 
-pub const TILE_BUFFER_SIZE: usize = 8 * 8 * 4;
 pub const TILE4BPP_SIZE: usize = 32;
 pub const TILE8BPP_SIZE: usize = 64;
 
@@ -33,7 +32,7 @@ pub struct CharacterData {
 }
 
 impl Ppu {
-    pub fn get_char_pixel(&self, x: u16, y: u16, char: CharacterData) -> Option<Color15> {
+    pub fn get_char_pixel(&self, x: u16, y: u16, char: &CharacterData) -> Option<Color15> {
         let width = char.width as u16;
         let height = char.height as u16;
 
@@ -49,7 +48,7 @@ impl Ppu {
             return None;
         }
 
-        let pixel_addr = self.get_pixel_address(cx, cy, &char);
+        let pixel_addr = self.get_pixel_address(cx, cy, char);
         let pixel_byte = self.vram.read_byte(pixel_addr);
 
         let (base_palette, rel_color_id) = match char.color {

@@ -8,7 +8,7 @@ use crate::cpu::isa::prelude::*;
 /// +-------------------------------------------------------------------------------+
 #[derive(Debug)]
 pub struct Instruction {
-    nn: Operand, // 0-1020, step 4
+    pub nn: Operand, // 0-1020, step 4
 }
 
 impl From<u16> for Instruction {
@@ -32,14 +32,6 @@ impl Executable for Instruction {
         match self.nn.negate {
             true => cpu.sub(sp, sp, nn, false),
             false => cpu.add(sp, sp, nn, false),
-        }
-    }
-
-    fn get_data(&self) -> InstructionData {
-        InstructionData {
-            keyword: "ADD".to_string(),
-            args: vec![NamedRegister::SP.into(), self.nn.clone().into()],
-            kind: InstructionKind::thumb(13),
         }
     }
 }

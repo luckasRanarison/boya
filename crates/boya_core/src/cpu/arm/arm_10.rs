@@ -12,13 +12,13 @@ use crate::cpu::isa::prelude::*;
 /// +-----------------------------------------------------------------+
 #[derive(Debug)]
 pub struct Instruction {
-    op: Opcode,
-    cd: Condition,
-    amod: AddrMode,
-    wb: bool,
-    rd: u8,
-    rn: u8,
-    of: Operand,
+    pub op: Opcode,
+    pub cd: Condition,
+    pub amod: AddrMode,
+    pub wb: bool,
+    pub rd: u8,
+    pub rn: u8,
+    pub of: Operand,
 }
 
 impl From<u32> for Instruction {
@@ -50,7 +50,7 @@ impl From<u32> for Instruction {
 }
 
 #[derive(Debug)]
-enum Opcode {
+pub enum Opcode {
     STRH,
     LDRH,
     LDSB,
@@ -83,21 +83,6 @@ impl Executable for Instruction {
             Opcode::LDRH => cpu.ldrh(self.rd, self.rn, offset),
             Opcode::LDSB => cpu.ldsb(self.rd, self.rn, offset),
             Opcode::LDSH => cpu.ldsh(self.rd, self.rn, offset),
-        }
-    }
-
-    fn get_data(&self) -> InstructionData {
-        let offset = RegisterOffsetData {
-            amod: self.amod,
-            base: RegisterOffsetBase::Plain(self.rn),
-            offset: Some(self.of.clone()),
-            wb: self.wb,
-        };
-
-        InstructionData {
-            keyword: format!("{:?}", self.op),
-            args: vec![self.rd.reg().into(), offset.into()],
-            kind: InstructionKind::arm(10, self.cd.into(), None, false),
         }
     }
 }

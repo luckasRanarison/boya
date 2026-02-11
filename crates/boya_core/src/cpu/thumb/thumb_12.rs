@@ -8,9 +8,9 @@ use crate::cpu::isa::prelude::*;
 /// +-------------------------------------------------------------------------------+
 #[derive(Debug)]
 pub struct Instruction {
-    rs: NamedRegister,
-    nn: u16, // 0-1020, steps 4
-    rd: u8,
+    pub rs: NamedRegister,
+    pub nn: u16, // 0-1020, steps 4
+    pub rd: u8,
 }
 
 impl From<u16> for Instruction {
@@ -30,14 +30,6 @@ impl From<u16> for Instruction {
 impl Executable for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         cpu.add(self.rd, self.rs as u8, self.nn.imm(), false)
-    }
-
-    fn get_data(&self) -> InstructionData {
-        InstructionData {
-            keyword: "ADD".to_string(),
-            args: vec![self.rd.reg().into(), self.rs.into(), self.nn.imm().into()],
-            kind: InstructionKind::thumb(12),
-        }
     }
 }
 

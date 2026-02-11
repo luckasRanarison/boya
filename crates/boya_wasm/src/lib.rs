@@ -4,7 +4,7 @@ use boya_core::{Gba as GbaCore, bus::Bus, ppu::color::Color24, utils::Reset};
 use wasm_bindgen::prelude::*;
 use web_sys::js_sys::{Uint8Array, Uint32Array};
 
-use crate::types::{ColorMode, IOMap, MemoryRegion, Obj};
+use crate::types::{Background, ColorMode, IOMap, MemoryRegion, Obj};
 
 #[wasm_bindgen]
 #[derive(Default)]
@@ -191,6 +191,15 @@ impl Gba {
             .collect()
     }
 
+    #[wasm_bindgen(js_name = "getObjectPalette")]
+    pub fn get_object_palette(&self, id: u8) -> Vec<u32> {
+        self.core
+            .object_palette(id)
+            .into_iter()
+            .map(|c| Color24::from(c).into())
+            .collect()
+    }
+
     #[wasm_bindgen]
     pub fn objects(&self) -> Vec<Obj> {
         self.core
@@ -200,16 +209,25 @@ impl Gba {
             .collect()
     }
 
-    #[wasm_bindgen(js_name = "writeTileBuffer")]
-    pub fn write_tile_buffer(
+    #[wasm_bindgen(js_name = "renderTileBuffer")]
+    pub fn render_tile_buffer(
         &self,
-        image_data: &mut [u8],
-        tile: &[u8],
-        color_mode: ColorMode,
-        palette_id: usize,
-    ) {
-        let buffer = self.core.render_tile(tile, color_mode.into(), palette_id);
-        image_data.copy_from_slice(buffer.as_slice());
+        id: u16,
+        offset: u32,
+        color: ColorMode,
+        palette_id: u8,
+    ) -> Vec<u8> {
+        self.core.render_tile(id, offset, color.into(), palette_id)
+    }
+
+    #[wasm_bindgen(js_name = "renderBgBuffer")]
+    pub fn render_bg_buffer(&self, bg: Background) -> Vec<u8> {
+        self.core.render_bg(bg.into())
+    }
+
+    #[wasm_bindgen(js_name = "renderObjBuffer")]
+    pub fn render_obj_buffer(&self, id: u8) -> Vec<u8> {
+        self.core.render_obj(id)
     }
 
     #[wasm_bindgen(js_name = "generateIOMap")]

@@ -2,7 +2,15 @@ import { getFlagValue } from "@/utils/bitflag";
 import { Stack, Group, Text } from "@mantine/core";
 import type { Flag } from "boya_wasm";
 
-export function FlagList({ flags, value }: { value: number; flags: Flag[] }) {
+export function FlagList({
+  flags,
+  value,
+  showBits,
+}: {
+  value: number;
+  flags: Flag[];
+  showBits?: boolean;
+}) {
   return (
     <Stack>
       {flags
@@ -12,13 +20,15 @@ export function FlagList({ flags, value }: { value: number; flags: Flag[] }) {
 
           return (
             <Group key={flag.name + flag.start}>
-              <Text c="indigo" size="sm" w="7ch">
-                [
-                {flag.length === 1
-                  ? flag.start
-                  : `${flag.start}-${flag.start + flag.length - 1}`}
-                ]
-              </Text>
+              {showBits && (
+                <Text c="indigo" size="sm" w="7ch">
+                  [
+                  {flag.length === 1
+                    ? flag.start
+                    : `${flag.start}-${flag.start + flag.length - 1}`}
+                  ]
+                </Text>
+              )}
               <Group flex={1}>
                 <Text size="sm">{flag.name}:</Text>
                 <Text size="sm" c="gray">

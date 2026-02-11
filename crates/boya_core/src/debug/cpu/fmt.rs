@@ -3,8 +3,10 @@ use std::fmt;
 use crate::{
     cpu::{
         common::*,
-        debug::types::*,
         psr::{Psr, PsrField},
+    },
+    debug::cpu::types::{
+        InstructionParam, PsrUpdate, RegisterList, RegisterOffsetBase, RegisterOffsetData,
     },
     utils::bitflags::BitIter,
 };

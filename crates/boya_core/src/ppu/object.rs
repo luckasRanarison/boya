@@ -4,10 +4,7 @@ use crate::{
         Ppu, TransformParam,
         character::{CharacterData, CharacterKind},
         color::Color15,
-        registers::{
-            bgcnt::ColorMode,
-            dispcnt::{Background, BgMode},
-        },
+        registers::{bgcnt::ColorMode, dispcnt::BgMode},
     },
     utils::bitflags::Bitflag,
 };
@@ -30,6 +27,9 @@ impl Obj {
         self.attr[0].has(9)
     }
 
+    /// # Panics
+    ///
+    /// Panics if the prohibited code is used.
     pub fn mode(&self) -> ObjMode {
         match self.attr[0].get_bits(10, 11) {
             0 => ObjMode::Normal,
@@ -66,6 +66,9 @@ impl Obj {
         self.attr[1].has(13)
     }
 
+    /// # Panics
+    ///
+    /// Panics if a prohibited code is used.
     pub fn dimmensions(&self) -> (u8, u8) {
         let shape = self.attr[0].get_bits_u8(14, 15);
         let size = self.attr[1].get_bits_u8(14, 15);
@@ -153,7 +156,7 @@ impl Ppu {
         }
     }
 
-    pub fn get_obj_pixel(&self, x: u16, y: u16, layer: Background) -> Option<Color15> {
+    pub fn get_obj_pixel(&self, x: u16, y: u16, layer: u8) -> Option<Color15> {
         if !self.registers.dispcnt.is_obj_enabled() {
             return None;
         }
@@ -162,20 +165,18 @@ impl Ppu {
 
         loop {
             let (id, obj) = self.pipeline.obj_pool.get(x, layer, offset)?;
+            let cx = x - obj.x();
+            let cy = y - obj.y();
 
-            if let Some(pixel) = self.get_obj_pixel_inner(x, y, obj) {
+            if let Some(pixel) = self.get_obj_pixel_inner(cx, cy, obj) {
                 return Some(pixel);
             } else {
                 offset = id + 1
             }
         }
-
-        None
     }
 
-    fn get_obj_pixel_inner(&self, x: u16, y: u16, obj: &Obj) -> Option<Color15> {
-        let cx = x - obj.x();
-        let cy = y - obj.y();
+    pub fn get_obj_pixel_inner(&self, x: u16, y: u16, obj: &Obj) -> Option<Color15> {
         let (width, height) = obj.dimmensions();
         let vram_mapping = self.registers.dispcnt.obj_vram_mapping();
 
@@ -202,7 +203,7 @@ impl Ppu {
             base_offset,
         };
 
-        self.get_char_pixel(cx, cy, char_data)
+        self.get_char_pixel(x, y, &char_data)
     }
 }
 
@@ -238,7 +239,7 @@ impl ObjPool {
         self.len = 0;
     }
 
-    fn get(&self, x: u16, layer: Background, offset: usize) -> Option<(usize, &Obj)> {
+    fn get(&self, x: u16, layer: u8, offset: usize) -> Option<(usize, &Obj)> {
         if offset > self.len {
             return None;
         }
@@ -246,7 +247,7 @@ impl ObjPool {
         for (i, obj) in self.pool[offset..self.len].iter().enumerate() {
             let prio = obj.bg_priority();
 
-            if prio == layer as u8 {
+            if prio == layer {
                 let (width, _height) = obj.dimmensions();
                 let left = obj.x();
                 let right = left + width as u16;
@@ -256,7 +257,7 @@ impl ObjPool {
                 }
             }
 
-            if prio > layer as u8 {
+            if prio > layer {
                 break;
             }
         }

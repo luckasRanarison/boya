@@ -5,6 +5,9 @@ edition = "2024"
 
 [dependencies]
 
+[features]
+debug = []
+
 [lints.clippy]
 missing_panics_doc = "deny"
 upper_case_acronyms = "allow"

@@ -9,23 +9,18 @@ use crate::{
     },
 };
 
-#[derive(Debug)]
-pub struct GbaStep {
-    pub value: GbaStepKind,
-}
-
-impl GbaStep {
+impl Step {
     pub fn cycles(&self) -> Cycle {
-        match &self.value {
-            GbaStepKind::Instruction(data) => data.cycles,
-            GbaStepKind::Dma(data) => data.cycles,
-            GbaStepKind::Interrupt(data) => data.cycles,
+        match &self {
+            Step::Instruction(data) => data.cycles,
+            Step::Dma(data) => data.cycles,
+            Step::Interrupt(data) => data.cycles,
         }
     }
 }
 
 #[derive(Debug)]
-pub enum GbaStepKind {
+pub enum Step {
     Instruction(InstructionResult),
     Dma(DmaResult),
     Interrupt(InterruptResult),

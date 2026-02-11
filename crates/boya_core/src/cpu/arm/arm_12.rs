@@ -10,11 +10,11 @@ use crate::cpu::isa::prelude::*;
 /// +-----------------------------------------------------------------+
 #[derive(Debug)]
 pub struct Instruction {
-    cd: Condition,
-    b: bool,
-    rd: u8,
-    rn: u8,
-    rm: u8,
+    pub cd: Condition,
+    pub b: bool,
+    pub rd: u8,
+    pub rn: u8,
+    pub rm: u8,
 }
 
 impl From<u32> for Instruction {
@@ -36,18 +36,6 @@ impl Executable for Instruction {
 
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         cpu.swp(self.rd, self.rm, self.rn, self.b)
-    }
-
-    fn get_data(&self) -> InstructionData {
-        InstructionData {
-            keyword: format!("SWP{}", if self.b { "B" } else { "" }),
-            args: vec![
-                self.rd.reg().into(),
-                self.rm.reg().into(),
-                InstructionParam::Address(self.rn.reg()),
-            ],
-            kind: InstructionKind::arm(13, None, None, false),
-        }
     }
 }
 

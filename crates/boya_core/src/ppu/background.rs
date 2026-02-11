@@ -1,13 +1,10 @@
 use crate::{
     bus::Bus,
     ppu::{
-        LCD_WIDTH, PALETTE_SIZE, Ppu, TransformParam,
+        Ppu,
         character::{CharacterData, CharacterKind},
-        color::{Color15, Color24},
-        registers::{
-            bgcnt::{Bgcnt, ColorMode},
-            dispcnt::{Background, BgMode, FrameBuffer, TransBackground, VramMapping},
-        },
+        color::Color15,
+        registers::dispcnt::{Background, BgMode},
     },
     utils::bitflags::Bitflag,
 };
@@ -57,7 +54,7 @@ impl Ppu {
         });
     }
 
-    pub fn get_bg_pixel(&mut self, x: u16, y: u16, bg: Background) -> Option<Color15> {
+    pub fn get_bg_pixel(&self, x: u16, y: u16, bg: Background) -> Option<Color15> {
         if !self.registers.dispcnt.is_bg_enabled(bg) {
             return None;
         }
@@ -95,8 +92,8 @@ impl Ppu {
 
         let ox = (x + bgofs.x) % width;
         let oy = (y + bgofs.y) % height;
-        let char_x = (ox % 8);
-        let char_y = (oy % 8);
+        let char_x = ox % 8;
+        let char_y = oy % 8;
         let screen_x = (ox / 8) as u32;
         let screen_y = (oy / 8) as u32;
 
@@ -137,7 +134,7 @@ impl Ppu {
             transform,
         };
 
-        self.get_char_pixel(char_x, char_y, char_data)
+        self.get_char_pixel(char_x, char_y, &char_data)
     }
 
     fn get_bg_bmp_pixel(

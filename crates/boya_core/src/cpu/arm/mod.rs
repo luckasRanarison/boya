@@ -1,14 +1,14 @@
-mod arm_03;
-mod arm_04;
-mod arm_05;
-mod arm_06;
-mod arm_07;
-mod arm_08;
-mod arm_09;
-mod arm_10;
-mod arm_11;
-mod arm_12;
-mod arm_13;
+pub mod arm_03;
+pub mod arm_04;
+pub mod arm_05;
+pub mod arm_06;
+pub mod arm_07;
+pub mod arm_08;
+pub mod arm_09;
+pub mod arm_10;
+pub mod arm_11;
+pub mod arm_12;
+pub mod arm_13;
 
 use crate::utils::bitflags::BitArray;
 
@@ -39,25 +39,6 @@ pub enum Arm {
     Arm13(arm_13::Instruction),
     /// Undefined ARM instruction
     Undefined(u32),
-}
-
-impl Arm {
-    pub fn get_data(&self) -> InstructionData {
-        match self {
-            Arm::Arm03(op) => op.get_data(),
-            Arm::Arm04(op) => op.get_data(),
-            Arm::Arm05(op) => op.get_data(),
-            Arm::Arm06(op) => op.get_data(),
-            Arm::Arm07(op) => op.get_data(),
-            Arm::Arm08(op) => op.get_data(),
-            Arm::Arm09(op) => op.get_data(),
-            Arm::Arm10(op) => op.get_data(),
-            Arm::Arm11(op) => op.get_data(),
-            Arm::Arm12(op) => op.get_data(),
-            Arm::Arm13(op) => op.get_data(),
-            Arm::Undefined(op) => InstructionData::undefined_arm(*op),
-        }
-    }
 }
 
 impl Arm7tdmi {
