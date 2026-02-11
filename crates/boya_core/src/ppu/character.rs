@@ -34,20 +34,19 @@ pub struct CharacterData {
 
 impl Ppu {
     pub fn get_char_pixel(&self, x: u16, y: u16, char: CharacterData) -> Option<Color15> {
-        let mut cx = x;
-        let mut cy = y;
+        let width = char.width as u16;
+        let height = char.height as u16;
 
-        if char.hflip {
-            cx = char.width as u16 - cx - 1;
-        }
+        let (cx, cy) = if let Some(transform) = &char.transform {
+            transform.map(x.into(), y.into())
+        } else {
+            let cx = if char.hflip { width - x - 1 } else { x };
+            let cy = if char.vflip { height - y - 1 } else { y };
+            (cx, cy)
+        };
 
-        if char.vflip {
-            cy = char.height as u16 - cy - 1;
-        }
-
-        if let Some(transform) = &char.transform {
-            // FIXME
-            // (cx, cy) = transform.map(cx, cy)
+        if cx >= width || cy >= height {
+            return None;
         }
 
         let pixel_addr = self.get_pixel_address(cx, cy, &char);

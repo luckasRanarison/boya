@@ -254,12 +254,16 @@ impl Default for TransformParam {
 }
 
 impl TransformParam {
-    pub fn map(&self, x: u16, y: u16) -> (u16, u16) {
-        let ax = self.pa as i32 * x as i32 + self.pb as i32 * y as i32 + self.x as i32;
-        let ay = self.pc as i32 * x as i32 + self.pd as i32 * y as i32 + self.y as i32;
-        let tx = (ax >> 8) as u16;
-        let ty = (ay >> 8) as u16;
-        (tx, ty)
+    pub fn map(&self, x: i32, y: i32) -> (u16, u16) {
+        let pa = self.pa as i16 as i32;
+        let pb = self.pb as i16 as i32;
+        let pc = self.pc as i16 as i32;
+        let pd = self.pd as i16 as i32;
+
+        let tx = (self.x as i32).wrapping_add(x * pa).wrapping_add(y * pb) >> 8;
+        let ty = (self.y as i32).wrapping_add(x * pc).wrapping_add(y * pd) >> 8;
+
+        (tx as u16, ty as u16)
     }
 }
 

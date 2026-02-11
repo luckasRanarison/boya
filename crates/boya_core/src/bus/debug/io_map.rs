@@ -121,6 +121,64 @@ impl RegisterEntry {
         }
     }
 
+    const fn winh(name: &'static str, address: u32) -> Self {
+        RegisterEntry {
+            name,
+            address,
+            size: RegisterSize::HWord,
+            flags: const { &[Flag::new("X2", 0, 8), Flag::new("X1", 8, 8)] },
+        }
+    }
+
+    const fn winv(name: &'static str, address: u32) -> Self {
+        RegisterEntry {
+            name,
+            address,
+            size: RegisterSize::HWord,
+            flags: const { &[Flag::new("Y2", 0, 8), Flag::new("Y1", 8, 8)] },
+        }
+    }
+
+    const fn winin() -> Self {
+        RegisterEntry {
+            name: "WININ",
+            address: 0x048,
+            size: RegisterSize::HWord,
+            flags: const {
+                &[
+                    Flag::new("Window 0 BG0-BG3 enable", 0, 4),
+                    Flag::new("Window 0 OBJ enable", 4, 1),
+                    Flag::new("Window 0 Color special effect", 5, 1),
+                    Flag::unused(6, 2),
+                    Flag::new("Window 1 BG0-BG3 enable", 8, 4),
+                    Flag::new("Window 1 OBJ enable", 12, 1),
+                    Flag::new("Window 1 Color special effect", 13, 1),
+                    Flag::unused(14, 2),
+                ]
+            },
+        }
+    }
+
+    const fn winout() -> Self {
+        RegisterEntry {
+            name: "WINOUT",
+            address: 0x04A,
+            size: RegisterSize::HWord,
+            flags: const {
+                &[
+                    Flag::new("Outiside BG0-BG3 enable", 0, 4),
+                    Flag::new("Outiside OBJ enable", 4, 1),
+                    Flag::new("Outiside Color special effect", 5, 1),
+                    Flag::unused(6, 2),
+                    Flag::new("OBJ Window BG0-BG3 enable", 8, 4),
+                    Flag::new("OBJ Window OBJ enable", 12, 1),
+                    Flag::new("OBJ Window Color special effect", 13, 1),
+                    Flag::unused(14, 2),
+                ]
+            },
+        }
+    }
+
     const fn soundcnt_l() -> Self {
         RegisterEntry {
             name: "SOUNDCNT_L",
@@ -411,6 +469,12 @@ pub const IO_MAP: &[RegisterEntry] = &[
     RegisterEntry::float16("BG3PD", 0x036),
     RegisterEntry::float28("BG3X", 0x038),
     RegisterEntry::float28("BG3Y", 0x03C),
+    RegisterEntry::winh("WIN0H", 0x040),
+    RegisterEntry::winh("WIN1H", 0x042),
+    RegisterEntry::winv("WIN0V", 0x044),
+    RegisterEntry::winv("WIN1V", 0x046),
+    RegisterEntry::winin(),
+    RegisterEntry::winout(),
     RegisterEntry::soundcnt_l(),
     RegisterEntry::soundcnt_h(),
     RegisterEntry::sg_bias(),

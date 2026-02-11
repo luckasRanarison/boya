@@ -158,7 +158,7 @@ impl Ppu {
         let buffer_size = width * height * pixel_size;
         let buffer_start = frame_buffer as usize * pixel_size;
         let buffer_slice = &self.vram[buffer_start..buffer_start + buffer_size];
-        let (tx, ty) = self.registers.bg2trans.params.map(x, y);
+        let (tx, ty) = self.registers.bg2trans.params.map(x.into(), y.into());
         let idx = (ty as usize * width + tx as usize) * pixel_size;
 
         if (tx as usize >= width || ty as usize >= height) && !bgcnt.overflow_wrap() {

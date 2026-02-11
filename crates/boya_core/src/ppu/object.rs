@@ -117,14 +117,15 @@ impl Ppu {
 
     pub fn get_obj_transform_params(&self, obj: &Obj) -> TransformParam {
         let id = obj.transform_parameter() as u32;
+        let (width, height) = obj.dimmensions();
 
         TransformParam {
             pa: self.oam.read_hword(id * 32 + 6),
             pb: self.oam.read_hword(id * 32 + 14),
             pc: self.oam.read_hword(id * 32 + 22),
             pd: self.oam.read_hword(id * 32 + 30),
-            x: 0,
-            y: 0,
+            x: (width as u32) << 7,
+            y: (height as u32) << 7,
         }
     }
 
@@ -193,8 +194,8 @@ impl Ppu {
             color: obj.color_mode(),
             palette: obj.palette(),
             kind: CharacterKind::Object(vram_mapping),
-            height,
             width,
+            height,
             hflip,
             vflip,
             transform,
