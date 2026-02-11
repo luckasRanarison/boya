@@ -1,6 +1,5 @@
 pub mod arm;
 pub mod common;
-pub mod debug;
 pub mod isa;
 pub mod ops;
 pub mod pipeline;
@@ -19,7 +18,6 @@ use crate::{
     },
     cpu::{
         common::{Exception, NamedRegister, Shift},
-        debug::types::InstructionResult,
         isa::Instruction,
         register::Register,
     },
@@ -228,16 +226,6 @@ impl Arm7tdmi {
         if let Some(spsr) = self.registers.get_spsr(op_mode) {
             self.cpsr = spsr;
         }
-    }
-
-    pub fn debug_step(&mut self) -> InstructionResult {
-        let instruction = self.pipeline.take();
-        let data = instruction.get_data();
-        let cycles = self.exec(instruction);
-
-        self.sync_pipeline();
-
-        InstructionResult { data, cycles }
     }
 }
 

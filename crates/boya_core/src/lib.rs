@@ -1,11 +1,6 @@
 use crate::{
     bus::{BIOS_SIZE, types::Cycle},
-    cpu::{
-        Arm7tdmi,
-        common::Exception,
-        debug::types::{GbaStep, GbaStepKind},
-    },
-    ppu::{character::TILE_BUFFER_SIZE, color::Color15, object::Obj, registers::bgcnt::ColorMode},
+    cpu::{Arm7tdmi, common::Exception},
     utils::Reset,
 };
 
@@ -13,9 +8,11 @@ use crate::{
 pub mod apu; // TODO: APU implmentation
 pub mod bus;
 pub mod cpu;
-#[allow(unused)]
 pub mod ppu;
 pub mod utils;
+
+#[cfg(feature = "debug")]
+pub mod debug;
 
 #[cfg(test)]
 mod test;
@@ -122,78 +119,6 @@ impl Gba {
 
         self.cpu.bus.tick(count);
         self.cycles += count as u64;
-    }
-}
-
-impl Gba {
-    pub fn debug_step(&mut self) -> GbaStep {
-        let value = self
-            .cpu
-            .try_irq()
-            .map(GbaStepKind::Interrupt)
-            .or_else(|| self.cpu.bus.try_dma().map(GbaStepKind::Dma))
-            .unwrap_or_else(|| GbaStepKind::Instruction(self.cpu.debug_step()));
-
-        let step = GbaStep { value };
-        let cycles = step.cycles();
-
-        self.sync(cycles);
-
-        step
-    }
-
-    pub fn color_palette(&self) -> Vec<Color15> {
-        self.cpu.bus.ppu.color_palette()
-    }
-
-    pub fn objects(&self) -> Vec<Obj> {
-        self.cpu.bus.ppu.objects()
-    }
-
-    pub fn render_tile(
-        &self,
-        tile: &[u8],
-        color_mode: ColorMode,
-        palette_id: usize,
-    ) -> Box<[u8; TILE_BUFFER_SIZE]> {
-        self.cpu.bus.ppu.render_tile(tile, color_mode, palette_id)
-    }
-
-    pub fn step_scanline(&mut self) {
-        let initial_scanline = self.cpu.bus.ppu.scanline;
-
-        while self.cpu.bus.ppu.scanline == initial_scanline {
-            self.step();
-        }
-    }
-
-    pub fn step_frame_with_hook(&mut self, breakpoints: &[u32], irq: bool) -> bool {
-        let inital_state = self.is_rendering();
-        let mut state_switch = false;
-
-        loop {
-            if inital_state != self.is_rendering() {
-                state_switch = true;
-            }
-
-            if !breakpoints.is_empty() {
-                let curr_addr = self.cpu.exec_address();
-
-                if breakpoints.contains(&curr_addr) {
-                    return true;
-                }
-            }
-
-            if state_switch && inital_state == self.is_rendering() {
-                break false; // frame completed
-            }
-
-            let step = self.debug_step();
-
-            if irq && matches!(step.value, GbaStepKind::Interrupt(_)) {
-                return true;
-            }
-        }
     }
 }
 

@@ -1,4 +1,50 @@
-use crate::bus::debug::types::{Flag, RegisterEntry, RegisterSize};
+#[derive(Debug, Clone, Copy)]
+pub enum RegisterSize {
+    Byte,
+    HWord,
+    Word,
+}
+
+#[derive(Debug)]
+pub struct RegisterEntry {
+    pub name: &'static str,
+    pub address: u32,
+    pub size: RegisterSize,
+    pub flags: &'static [Flag],
+}
+
+#[derive(Debug)]
+pub struct Flag {
+    pub name: &'static str,
+    pub start: u8,
+    pub length: u8,
+    pub mappings: Option<&'static [(u8, &'static str)]>,
+}
+
+impl Flag {
+    pub const fn new(name: &'static str, start: u8, length: u8) -> Self {
+        Self {
+            name,
+            start,
+            length,
+            mappings: None,
+        }
+    }
+
+    pub const fn unused(start: u8, length: u8) -> Self {
+        Self {
+            name: "unused",
+            start,
+            length,
+            mappings: None,
+        }
+    }
+
+    pub const fn map(mut self, mappings: &'static [(u8, &'static str)]) -> Self {
+        self.mappings = Some(mappings);
+        self
+    }
+}
 
 impl RegisterEntry {
     const fn dispcnt() -> Self {
@@ -116,6 +162,64 @@ impl RegisterEntry {
                     Flag::new("Integer Portion", 8, 19),
                     Flag::new("Sign", 27, 1),
                     Flag::unused(28, 4),
+                ]
+            },
+        }
+    }
+
+    const fn winh(name: &'static str, address: u32) -> Self {
+        RegisterEntry {
+            name,
+            address,
+            size: RegisterSize::HWord,
+            flags: const { &[Flag::new("X2", 0, 8), Flag::new("X1", 8, 8)] },
+        }
+    }
+
+    const fn winv(name: &'static str, address: u32) -> Self {
+        RegisterEntry {
+            name,
+            address,
+            size: RegisterSize::HWord,
+            flags: const { &[Flag::new("Y2", 0, 8), Flag::new("Y1", 8, 8)] },
+        }
+    }
+
+    const fn winin() -> Self {
+        RegisterEntry {
+            name: "WININ",
+            address: 0x048,
+            size: RegisterSize::HWord,
+            flags: const {
+                &[
+                    Flag::new("Window 0 BG0-BG3 enable", 0, 4),
+                    Flag::new("Window 0 OBJ enable", 4, 1),
+                    Flag::new("Window 0 Color special effect", 5, 1),
+                    Flag::unused(6, 2),
+                    Flag::new("Window 1 BG0-BG3 enable", 8, 4),
+                    Flag::new("Window 1 OBJ enable", 12, 1),
+                    Flag::new("Window 1 Color special effect", 13, 1),
+                    Flag::unused(14, 2),
+                ]
+            },
+        }
+    }
+
+    const fn winout() -> Self {
+        RegisterEntry {
+            name: "WINOUT",
+            address: 0x04A,
+            size: RegisterSize::HWord,
+            flags: const {
+                &[
+                    Flag::new("Outiside BG0-BG3 enable", 0, 4),
+                    Flag::new("Outiside OBJ enable", 4, 1),
+                    Flag::new("Outiside Color special effect", 5, 1),
+                    Flag::unused(6, 2),
+                    Flag::new("OBJ Window BG0-BG3 enable", 8, 4),
+                    Flag::new("OBJ Window OBJ enable", 12, 1),
+                    Flag::new("OBJ Window Color special effect", 13, 1),
+                    Flag::unused(14, 2),
                 ]
             },
         }
@@ -383,7 +487,7 @@ impl RegisterEntry {
     }
 }
 
-pub const IO_MAP: &[RegisterEntry] = &[
+pub const IO_REGISTERS: &[RegisterEntry] = &[
     RegisterEntry::dispcnt(),
     RegisterEntry::dispstat(),
     RegisterEntry::vcount(),
@@ -411,6 +515,12 @@ pub const IO_MAP: &[RegisterEntry] = &[
     RegisterEntry::float16("BG3PD", 0x036),
     RegisterEntry::float28("BG3X", 0x038),
     RegisterEntry::float28("BG3Y", 0x03C),
+    RegisterEntry::winh("WIN0H", 0x040),
+    RegisterEntry::winh("WIN1H", 0x042),
+    RegisterEntry::winv("WIN0V", 0x044),
+    RegisterEntry::winv("WIN1V", 0x046),
+    RegisterEntry::winin(),
+    RegisterEntry::winout(),
     RegisterEntry::soundcnt_l(),
     RegisterEntry::soundcnt_h(),
     RegisterEntry::sg_bias(),

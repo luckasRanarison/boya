@@ -4,7 +4,6 @@ pub mod prelude {
     pub use crate::bus::types::Cycle;
     pub use crate::cpu::Arm7tdmi;
     pub use crate::cpu::common::*;
-    pub use crate::cpu::debug::types::*;
     pub use crate::cpu::isa::Executable;
     pub use crate::cpu::psr::*;
     pub use crate::cpu::register::Register;
@@ -28,38 +27,8 @@ pub enum Instruction {
     Thumb(Thumb),
 }
 
-impl Instruction {
-    pub fn get_data(&self) -> InstructionData {
-        match self {
-            Instruction::Arm(op) => op.get_data(),
-            Instruction::Thumb(op) => op.get_data(),
-        }
-    }
-
-    pub fn is_branch(&self) -> bool {
-        match self {
-            Instruction::Arm(Arm::Arm03(_))
-            | Instruction::Arm(Arm::Arm04(_))
-            | Instruction::Thumb(Thumb::Format16(_))
-            | Instruction::Thumb(Thumb::Format18(_))
-            | Instruction::Thumb(Thumb::Format19(_)) => true,
-            Instruction::Thumb(Thumb::Format05(instr)) => instr.is_branch(),
-            _ => false,
-        }
-    }
-
-    pub fn is_branch_link(&self) -> bool {
-        match self {
-            Instruction::Thumb(Thumb::Format19(instr)) => instr.is_second_part(),
-            Instruction::Arm(Arm::Arm04(instr)) => instr.is_link(),
-            _ => false,
-        }
-    }
-}
-
 pub trait Executable: Sized {
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle;
-    fn get_data(&self) -> InstructionData;
 
     fn condition(&self) -> Condition {
         Condition::AL

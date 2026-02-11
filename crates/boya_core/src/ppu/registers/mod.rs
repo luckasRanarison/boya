@@ -1,7 +1,12 @@
 use crate::{
     bus::Bus,
     ppu::registers::{
-        bgcnt::Bgcnt, bgofs::Bgofs, bgtrans::Bgtrans, dispcnt::Dispcnt, dispstat::Dispstat,
+        bgcnt::Bgcnt,
+        bgofs::Bgofs,
+        bgtrans::Bgtrans,
+        dispcnt::Dispcnt,
+        dispstat::Dispstat,
+        window::{WinH, WinV, Winin, Winout},
     },
 };
 
@@ -10,6 +15,7 @@ pub mod bgofs;
 pub mod bgtrans;
 pub mod dispcnt;
 pub mod dispstat;
+pub mod window;
 
 #[derive(Debug, Default)]
 pub struct PpuRegister {
@@ -29,6 +35,14 @@ pub struct PpuRegister {
     pub bg2trans: Bgtrans,
     /// 0x030: Background 2 Transform parameters (W)
     pub bg3trans: Bgtrans,
+    /// 0x040: Window 0 Horizontal Dimension (W)
+    pub winh: [WinH; 2],
+    /// 0x044: Window 0 Vertical Dimension (W)
+    pub winv: [WinV; 2],
+    /// 0x048: Control of Inside of Window (R/W)
+    pub winin: Winin,
+    /// 0x04A: Control of Outiside of Window (R/W)
+    pub winout: Winout,
 }
 
 impl Bus for PpuRegister {
@@ -43,6 +57,8 @@ impl Bus for PpuRegister {
             0x00A..=0x00B => self.bgcnt[1].value.read_byte(address),
             0x00C..=0x00D => self.bgcnt[2].value.read_byte(address),
             0x00E..=0x00F => self.bgcnt[3].value.read_byte(address),
+            0x048..=0x049 => self.winin.value.read_byte(address),
+            0x04A..=0x04B => self.winout.value.read_byte(address),
             _ => 0, // TODO: open bus
         }
     }
@@ -63,6 +79,16 @@ impl Bus for PpuRegister {
             0x01C..=0x01F => self.bgofs[3].write_byte(address, value),
             0x020..=0x02F => self.bg2trans.write_byte(address, value),
             0x030..=0x03F => self.bg3trans.write_byte(address, value),
+            0x040 => self.winh[0].x1 = value,
+            0x041 => self.winh[0].x2 = value,
+            0x042 => self.winh[1].x1 = value,
+            0x043 => self.winh[1].x2 = value,
+            0x044 => self.winv[0].y1 = value,
+            0x045 => self.winv[0].y2 = value,
+            0x046 => self.winv[1].y1 = value,
+            0x047 => self.winv[1].y2 = value,
+            0x048..=0x049 => self.winin.value.write_byte(address, value),
+            0x04A..=0x04B => self.winout.value.write_byte(address, value),
             _ => {}
         }
     }

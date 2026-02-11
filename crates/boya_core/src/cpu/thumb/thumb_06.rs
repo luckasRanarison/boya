@@ -8,8 +8,8 @@ pub use crate::cpu::isa::prelude::*;
 /// +-------------------------------------------------------------------------------+
 #[derive(Debug)]
 pub struct Instruction {
-    rd: u8,
-    nn: u16, // 0-1020, steps 4
+    pub rd: u8,
+    pub nn: u16, // 0-1020, steps 4
 }
 
 impl From<u16> for Instruction {
@@ -28,21 +28,6 @@ impl Executable for Instruction {
         let pc = NamedRegister::PC as u8;
 
         cpu.ldr(self.rd, pc, offset)
-    }
-
-    fn get_data(&self) -> InstructionData {
-        let offset = RegisterOffsetData {
-            amod: AddrMode::IB,
-            base: RegisterOffsetBase::Named(NamedRegister::PC),
-            offset: Some(self.nn.imm()),
-            wb: false,
-        };
-
-        InstructionData {
-            keyword: "LDR".to_string(),
-            args: vec![self.rd.reg().into(), offset.into()],
-            kind: InstructionKind::thumb(6),
-        }
     }
 }
 

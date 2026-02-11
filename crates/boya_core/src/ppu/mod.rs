@@ -1,7 +1,6 @@
 pub mod background;
 pub mod character;
 pub mod color;
-pub mod debug;
 pub mod object;
 pub mod registers;
 
@@ -9,10 +8,10 @@ use crate::{
     bus::types::Interrupt,
     ppu::{
         color::{Color15, Color24},
-        object::{Obj, ObjPool},
+        object::ObjPool,
         registers::{PpuRegister, dispcnt::Background, dispstat::Dispstat},
     },
-    utils::{Reset, bitflags::Bitflag},
+    utils::Reset,
 };
 
 pub const PALETTE_RAM_SIZE: usize = 0x400; // 1kb
@@ -112,7 +111,7 @@ impl Ppu {
 
     pub fn get_pixel(&mut self, x: u16, y: u16) -> Color15 {
         for bg in self.pipeline.bg_prio {
-            if let Some(pixel) = self.get_obj_pixel(x, y, bg) {
+            if let Some(pixel) = self.get_obj_pixel(x, y, bg as u8) {
                 return pixel;
             }
 
@@ -254,12 +253,16 @@ impl Default for TransformParam {
 }
 
 impl TransformParam {
-    pub fn map(&self, x: u16, y: u16) -> (u16, u16) {
-        let ax = self.pa as i32 * x as i32 + self.pb as i32 * y as i32 + self.x as i32;
-        let ay = self.pc as i32 * x as i32 + self.pd as i32 * y as i32 + self.y as i32;
-        let tx = (ax >> 8) as u16;
-        let ty = (ay >> 8) as u16;
-        (tx, ty)
+    pub fn map(&self, x: i32, y: i32) -> (u16, u16) {
+        let pa = self.pa as i16 as i32;
+        let pb = self.pb as i16 as i32;
+        let pc = self.pc as i16 as i32;
+        let pd = self.pd as i16 as i32;
+
+        let tx = (self.x as i32).wrapping_add(x * pa).wrapping_add(y * pb) >> 8;
+        let ty = (self.y as i32).wrapping_add(x * pc).wrapping_add(y * pd) >> 8;
+
+        (tx as u16, ty as u16)
     }
 }
 

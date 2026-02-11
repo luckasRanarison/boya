@@ -10,9 +10,9 @@ use crate::cpu::isa::prelude::*;
 /// +-----------------------------------------------------------------+
 #[derive(Debug)]
 pub struct Instruction {
-    cd: Condition,
-    op: Opcode,
-    nn: i32,
+    pub cd: Condition,
+    pub op: Opcode,
+    pub nn: i32,
 }
 
 impl From<u32> for Instruction {
@@ -26,7 +26,7 @@ impl From<u32> for Instruction {
 }
 
 #[derive(Debug)]
-enum Opcode {
+pub enum Opcode {
     B,
     BL,
 }
@@ -53,14 +53,6 @@ impl Executable for Instruction {
         }
 
         cpu.b(self.nn)
-    }
-
-    fn get_data(&self) -> InstructionData {
-        InstructionData {
-            keyword: format!("{:?}", self.op),
-            args: vec![InstructionParam::BranchOffset(self.nn)],
-            kind: InstructionKind::arm(4, self.cd.into(), None, false),
-        }
     }
 }
 

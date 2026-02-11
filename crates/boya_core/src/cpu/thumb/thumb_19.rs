@@ -8,8 +8,8 @@ use crate::cpu::isa::prelude::*;
 /// +-------------------------------------------------------------------------------+
 #[derive(Debug)]
 pub struct Instruction {
-    h: bool,
-    nn: u16,
+    pub h: bool,
+    pub nn: u16,
 }
 
 impl From<u16> for Instruction {
@@ -26,14 +26,6 @@ impl Executable for Instruction {
         match self.h {
             false => cpu.branch_long_first_op(self.nn),
             true => cpu.branch_long_second_op(self.nn),
-        }
-    }
-
-    fn get_data(&self) -> InstructionData {
-        InstructionData {
-            keyword: (if self.h { "BLH" } else { "BLL" }).to_string(),
-            args: vec![InstructionParam::Operand(self.nn.imm())],
-            kind: InstructionKind::thumb(19),
         }
     }
 }

@@ -1,22 +1,22 @@
-mod thumb_01;
-mod thumb_02;
-mod thumb_03;
-mod thumb_04;
-mod thumb_05;
-mod thumb_06;
-mod thumb_07;
-mod thumb_08;
-mod thumb_09;
-mod thumb_10;
-mod thumb_11;
-mod thumb_12;
-mod thumb_13;
-mod thumb_14;
-mod thumb_15;
-mod thumb_16;
-mod thumb_17;
-mod thumb_18;
-mod thumb_19;
+pub mod thumb_01;
+pub mod thumb_02;
+pub mod thumb_03;
+pub mod thumb_04;
+pub mod thumb_05;
+pub mod thumb_06;
+pub mod thumb_07;
+pub mod thumb_08;
+pub mod thumb_09;
+pub mod thumb_10;
+pub mod thumb_11;
+pub mod thumb_12;
+pub mod thumb_13;
+pub mod thumb_14;
+pub mod thumb_15;
+pub mod thumb_16;
+pub mod thumb_17;
+pub mod thumb_18;
+pub mod thumb_19;
 
 use crate::utils::bitflags::BitArray;
 
@@ -63,33 +63,6 @@ pub enum Thumb {
     Format19(thumb_19::Instruction),
     /// Undefined THUMB instruction
     Undefined(u16),
-}
-
-impl Thumb {
-    pub fn get_data(&self) -> InstructionData {
-        match self {
-            Thumb::Format01(op) => op.get_data(),
-            Thumb::Format02(op) => op.get_data(),
-            Thumb::Format03(op) => op.get_data(),
-            Thumb::Format04(op) => op.get_data(),
-            Thumb::Format05(op) => op.get_data(),
-            Thumb::Format06(op) => op.get_data(),
-            Thumb::Format07(op) => op.get_data(),
-            Thumb::Format08(op) => op.get_data(),
-            Thumb::Format09(op) => op.get_data(),
-            Thumb::Format10(op) => op.get_data(),
-            Thumb::Format11(op) => op.get_data(),
-            Thumb::Format12(op) => op.get_data(),
-            Thumb::Format13(op) => op.get_data(),
-            Thumb::Format14(op) => op.get_data(),
-            Thumb::Format15(op) => op.get_data(),
-            Thumb::Format16(op) => op.get_data(),
-            Thumb::Format17(op) => op.get_data(),
-            Thumb::Format18(op) => op.get_data(),
-            Thumb::Format19(op) => op.get_data(),
-            Thumb::Undefined(op) => InstructionData::undefined_thumb(*op),
-        }
-    }
 }
 
 impl Arm7tdmi {

@@ -8,7 +8,7 @@ use crate::cpu::isa::prelude::*;
 /// +-------------------------------------------------------------------------------+
 #[derive(Debug)]
 pub struct Instruction {
-    nn: u8,
+    pub nn: u8,
 }
 
 impl From<u16> for Instruction {
@@ -22,14 +22,6 @@ impl From<u16> for Instruction {
 impl Executable for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         cpu.swi()
-    }
-
-    fn get_data(&self) -> InstructionData {
-        InstructionData {
-            keyword: "SWI".into(),
-            args: vec![self.nn.imm().into()],
-            kind: InstructionKind::thumb(17),
-        }
     }
 }
 

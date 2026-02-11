@@ -1,6 +1,9 @@
 use boya_core::{
-    bus::{self, debug::io_map::IO_MAP},
-    ppu,
+    debug::{self, bus::registers::IO_REGISTERS},
+    ppu::{
+        self,
+        registers::{bgcnt, dispcnt},
+    },
 };
 use serde::Serialize;
 use tsify::Tsify;
@@ -20,26 +23,45 @@ pub enum MemoryRegion {
 }
 
 #[wasm_bindgen]
+pub enum Background {
+    BG0,
+    BG1,
+    BG2,
+    BG3,
+}
+
+impl From<Background> for dispcnt::Background {
+    fn from(value: Background) -> Self {
+        match value {
+            Background::BG0 => dispcnt::Background::Bg0,
+            Background::BG1 => dispcnt::Background::Bg1,
+            Background::BG2 => dispcnt::Background::Bg2,
+            Background::BG3 => dispcnt::Background::Bg3,
+        }
+    }
+}
+
+#[wasm_bindgen]
 #[derive(Clone, Copy)]
 pub enum ColorMode {
     Palette16,
     Palette256,
 }
 
-impl From<ColorMode> for ppu::registers::bgcnt::ColorMode {
+impl From<ColorMode> for bgcnt::ColorMode {
     fn from(value: ColorMode) -> Self {
         match value {
-            ColorMode::Palette16 => ppu::registers::bgcnt::ColorMode::Palette16,
-            ColorMode::Palette256 => ppu::registers::bgcnt::ColorMode::Palette256,
+            ColorMode::Palette16 => bgcnt::ColorMode::Palette16,
+            ColorMode::Palette256 => bgcnt::ColorMode::Palette256,
         }
     }
 }
 
-impl From<ppu::registers::bgcnt::ColorMode> for ColorMode {
-    fn from(value: ppu::registers::bgcnt::ColorMode) -> Self {
+impl From<bgcnt::ColorMode> for ColorMode {
+    fn from(value: bgcnt::ColorMode) -> Self {
         match value {
-            ppu::registers::bgcnt::ColorMode::Palette16 => ColorMode::Palette16,
-            ppu::registers::bgcnt::ColorMode::Palette256 => ColorMode::Palette256,
+            bgcnt::ColorMode::Palette16 => ColorMode::Palette16,
+            bgcnt::ColorMode::Palette256 => ColorMode::Palette256,
         }
     }
 }
@@ -51,12 +73,12 @@ pub enum RegisterSize {
     Word,
 }
 
-impl From<bus::debug::types::RegisterSize> for RegisterSize {
-    fn from(value: bus::debug::types::RegisterSize) -> Self {
+impl From<debug::bus::registers::RegisterSize> for RegisterSize {
+    fn from(value: debug::bus::registers::RegisterSize) -> Self {
         match value {
-            bus::debug::types::RegisterSize::Byte => RegisterSize::Byte,
-            bus::debug::types::RegisterSize::HWord => RegisterSize::HWord,
-            bus::debug::types::RegisterSize::Word => RegisterSize::Word,
+            debug::bus::registers::RegisterSize::Byte => RegisterSize::Byte,
+            debug::bus::registers::RegisterSize::HWord => RegisterSize::HWord,
+            debug::bus::registers::RegisterSize::Word => RegisterSize::Word,
         }
     }
 }
@@ -69,8 +91,8 @@ pub struct RegisterEntry {
     pub flags: Vec<Flag>,
 }
 
-impl From<&bus::debug::types::RegisterEntry> for RegisterEntry {
-    fn from(value: &bus::debug::types::RegisterEntry) -> Self {
+impl From<&debug::bus::registers::RegisterEntry> for RegisterEntry {
+    fn from(value: &debug::bus::registers::RegisterEntry) -> Self {
         Self {
             name: value.name,
             address: value.address,
@@ -88,8 +110,8 @@ pub struct Flag {
     pub mappings: Option<Vec<&'static str>>,
 }
 
-impl From<&bus::debug::types::Flag> for Flag {
-    fn from(value: &bus::debug::types::Flag) -> Self {
+impl From<&debug::bus::registers::Flag> for Flag {
+    fn from(value: &debug::bus::registers::Flag) -> Self {
         Self {
             name: value.name,
             start: value.start,
@@ -106,7 +128,7 @@ pub struct IOMap(pub Vec<RegisterEntry>);
 
 impl Default for IOMap {
     fn default() -> Self {
-        Self(IO_MAP.iter().map(|r| r.into()).collect())
+        Self(IO_REGISTERS.iter().map(|r| r.into()).collect())
     }
 }
 

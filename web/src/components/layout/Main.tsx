@@ -11,6 +11,7 @@ import ObjectView from "../views/objects/ObjectView";
 import RegisterView, {
   type RegisterSubMenu,
 } from "../views/registers/RegisterView";
+import BackgroundView from "../views/backgrounds/BackgroundView";
 
 function Main() {
   const view = useViewStore((state) => state.view);
@@ -20,6 +21,7 @@ function Main() {
   if (view.name === "debugger") return <DebuggerView />;
   if (view.name === "settings") return <SettingsView />;
   if (view.name === "objects") return <ObjectView />;
+  if (view.name === "backgrounds") return <BackgroundView />;
 
   if (view.name === "memory" && view.sub) {
     return (

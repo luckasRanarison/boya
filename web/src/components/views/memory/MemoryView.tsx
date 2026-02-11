@@ -97,7 +97,9 @@ function MemoryView(props: MemoryViewProps) {
             />
           )}
 
-          {currentMode === "tile" && <TileView pageData={currentPage} />}
+          {currentMode === "tile" && (
+            <TileView pageStart={pageStart} pageData={currentPage} />
+          )}
 
           {currentMode === "code" && (
             <CodeView

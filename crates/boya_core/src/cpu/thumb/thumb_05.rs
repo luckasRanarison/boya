@@ -8,9 +8,9 @@ pub use crate::cpu::isa::prelude::*;
 /// +-------------------------------------------------------------------------------+
 #[derive(Debug)]
 pub struct Instruction {
-    op: Opcode,
-    rs: u8,
-    rd: u8,
+    pub op: Opcode,
+    pub rs: u8,
+    pub rd: u8,
 }
 
 impl From<u16> for Instruction {
@@ -30,7 +30,7 @@ impl From<u16> for Instruction {
 }
 
 #[derive(Debug)]
-enum Opcode {
+pub enum Opcode {
     ADD,
     CMP,
     MOV,
@@ -57,25 +57,6 @@ impl Executable for Instruction {
             Opcode::MOV => cpu.mov(self.rd, self.rs.reg(), false),
             Opcode::BX => cpu.bx(self.rs),
         }
-    }
-
-    fn get_data(&self) -> InstructionData {
-        let args = match &self.op {
-            Opcode::BX => vec![self.rs.reg().into()],
-            _ => vec![self.rd.reg().into(), self.rs.reg().into()],
-        };
-
-        InstructionData {
-            keyword: format!("{:?}", self.op),
-            kind: InstructionKind::thumb(5),
-            args,
-        }
-    }
-}
-
-impl Instruction {
-    pub fn is_branch(&self) -> bool {
-        matches!(self.op, Opcode::BX)
     }
 }
 

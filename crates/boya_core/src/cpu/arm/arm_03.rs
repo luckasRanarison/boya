@@ -10,8 +10,8 @@ use crate::cpu::isa::prelude::*;
 /// +-----------------------------------------------------------------+
 #[derive(Debug)]
 pub struct Instruction {
-    cd: Condition,
-    rn: u8,
+    pub cd: Condition,
+    pub rn: u8,
 }
 
 impl From<u32> for Instruction {
@@ -30,14 +30,6 @@ impl Executable for Instruction {
 
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
         cpu.bx(self.rn)
-    }
-
-    fn get_data(&self) -> InstructionData {
-        InstructionData {
-            keyword: "BX".into(),
-            args: vec![self.rn.reg().into()],
-            kind: InstructionKind::arm(3, self.cd.into(), None, false),
-        }
     }
 }
 
