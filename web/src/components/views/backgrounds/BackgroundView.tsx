@@ -1,13 +1,12 @@
 import Tile from "@/components/common/Tile";
 import { useGba } from "@/hooks/useGba";
-import { GBA } from "@/lib/gba";
 import { Box, Card, SimpleGrid, Stack, Text, Tooltip } from "@mantine/core";
 import { useMemo } from "react";
 import { FlagList } from "../registers/FlagList";
 
 function BackgroundView() {
   const backgrounds = [0, 1, 2, 3];
-  const { memory } = useGba();
+  const { memory, renderBg } = useGba();
 
   const bgcnts = useMemo(() => {
     const registers = memory.getIoRegisters();
@@ -30,7 +29,7 @@ function BackgroundView() {
             >
               <Box>
                 <Tile
-                  render={() => GBA.renderBgBuffer(bg)}
+                  render={() => renderBg(bg)}
                   width={240 * 1.5}
                   height={160 * 1.5}
                   innerWidth={240}

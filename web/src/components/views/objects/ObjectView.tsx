@@ -13,11 +13,13 @@ import { useDisclosure } from "@mantine/hooks";
 import type { Obj } from "boya_wasm";
 import { useState } from "react";
 import ColorView from "../memory/ColorView";
+import { useGba } from "@/hooks/useGba";
 
 function ObjectView() {
   const [objId, setObjId] = useState<number | null>(null);
   const [opened, { close, open }] = useDisclosure();
-  const objects = GBA.objects();
+  const { memory, renderObj } = useGba();
+  const objects = memory.getObjects();
 
   return (
     <Group flex={1} py="xl" px="md" justify="center">
@@ -33,13 +35,14 @@ function ObjectView() {
       <SimpleGrid cols={{ base: 5, md: 8, lg: 10, xl: 12 }}>
         {objects.map((obj, id) => (
           <Box
+            key={id}
             onClick={() => {
               open();
               setObjId(id);
             }}
           >
             <Tile
-              render={() => GBA.renderObjBuffer(id)}
+              render={() => renderObj(id)}
               width={60}
               height={60}
               innerWidth={obj.width}
@@ -111,7 +114,7 @@ function ObjectModal(props: {
           </Group>
           <Divider />
           {flags.map((f) => (
-            <Group justify="space-between">
+            <Group key={f.label} justify="space-between">
               <Box>{f.label}: </Box>
               <CheckboxIndicator checked={f.value} />
             </Group>

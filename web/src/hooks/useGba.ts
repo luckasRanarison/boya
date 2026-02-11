@@ -45,10 +45,16 @@ export function useGba() {
       regions: memoryRegions,
       getRegion: getMemoryRegion,
       getIoRegisters: () => getIoRegisters(ioMap),
+      getPalette: GBA.colorPalette.bind(GBA),
+      getObjects: GBA.objects.bind(GBA),
     },
 
     cycles,
     scanline: GBA.scanline(),
     booted: romLoaded,
+
+    renderObj: GBA.renderObjBuffer.bind(GBA),
+    renderBg: GBA.renderBgBuffer.bind(GBA),
+    renderTile: GBA.renderTileBuffer.bind(GBA),
   };
 }
