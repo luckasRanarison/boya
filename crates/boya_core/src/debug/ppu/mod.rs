@@ -67,12 +67,12 @@ impl Ppu {
 
         for y in 0..8 {
             for x in 0..8 {
-                let pixel = self.get_char_pixel(x, y, &char_data).unwrap_or_default();
+                let pixel = self.get_char_pixel(x, y, &char_data);
                 buffer.push(pixel);
             }
         }
 
-        buffer.into()
+        buffer.into_data()
     }
 
     pub fn render_bg(&self, bg: Background) -> Vec<u8> {
@@ -80,12 +80,12 @@ impl Ppu {
 
         for y in 0..160 {
             for x in 0..240 {
-                let pixel = self.get_bg_pixel(x, y, bg).unwrap_or_default();
+                let pixel = self.get_bg_pixel(x, y, bg);
                 buffer.push(pixel);
             }
         }
 
-        buffer.into()
+        buffer.into_data()
     }
 
     pub fn render_obj(&self, id: u8) -> Vec<u8> {
@@ -95,11 +95,11 @@ impl Ppu {
 
         for y in 0..width as u16 {
             for x in 0..height as u16 {
-                let pixel = self.get_obj_pixel_inner(x, y, &obj).unwrap_or_default();
+                let pixel = self.get_obj_pixel_inner(x, y, &obj);
                 buffer.push(pixel);
             }
         }
 
-        buffer.into()
+        buffer.into_data()
     }
 }
