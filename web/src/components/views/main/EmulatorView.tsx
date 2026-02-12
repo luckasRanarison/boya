@@ -5,6 +5,7 @@ import EmulatorFooter from "./EmulatorFooter";
 import { useGamepadHandler } from "@/hooks/useGamepadHandler";
 import { useViewActions } from "@/stores/viewStore";
 import { useBreakpoints } from "@/stores/debuggerStore";
+import { GBA } from "@/lib/gba";
 
 function EmulatorView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -17,8 +18,9 @@ function EmulatorView() {
   useEffect(() => {
     if (canvasRef.current) {
       setCanvas(canvasRef.current);
+      renderFrame(GBA);
     }
-  }, [setCanvas]);
+  }, [setCanvas, renderFrame]);
 
   useEffect(() => {
     document.addEventListener("keydown", handleKey);

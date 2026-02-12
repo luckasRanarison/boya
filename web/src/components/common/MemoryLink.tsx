@@ -1,4 +1,4 @@
-import { ActionIcon, Tooltip } from "@mantine/core";
+import { ActionIcon } from "@mantine/core";
 import { IconExternalLink } from "@tabler/icons-react";
 import type { MemoryViewMode } from "../views/memory/MemoryView";
 import { formatHex } from "@/utils/format";
@@ -26,17 +26,14 @@ function MemoryLink(props: {
   };
 
   return (
-    <Tooltip
-      label={props.tooltip !== false && `Go to ${formatHex(props.address)}`}
+    <ActionIcon
+      variant="subtle"
+      disabled={props.disabled}
+      onClick={handleGoto}
+      title={`Go to ${formatHex(props.address)}`}
     >
-      <ActionIcon
-        variant="subtle"
-        disabled={props.disabled}
-        onClick={handleGoto}
-      >
-        <IconExternalLink size={18} />
-      </ActionIcon>
-    </Tooltip>
+      <IconExternalLink size={18} />
+    </ActionIcon>
   );
 }
 

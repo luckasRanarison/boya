@@ -9,7 +9,6 @@ import {
   SimpleGrid,
   Stack,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
 import type { Obj } from "boya_wasm";
 import { useState } from "react";
 import ColorView from "../memory/ColorView";
@@ -17,7 +16,6 @@ import { useGba } from "@/hooks/useGba";
 
 function ObjectView() {
   const [objId, setObjId] = useState<number | null>(null);
-  const [opened, { close, open }] = useDisclosure();
   const { memory, renderObj } = useGba();
   const objects = memory.getObjects();
 
@@ -27,20 +25,14 @@ function ObjectView() {
         <ObjectModal
           id={objId}
           object={objects[objId]}
-          onClose={close}
-          opened={opened}
+          onClose={() => setObjId(null)}
+          opened
         />
       )}
 
       <SimpleGrid cols={{ base: 5, md: 8, lg: 10, xl: 12 }}>
         {objects.map((obj, id) => (
-          <Box
-            key={id}
-            onClick={() => {
-              open();
-              setObjId(id);
-            }}
-          >
+          <Box key={id} onClick={() => setObjId(id)}>
             <Tile
               render={() => renderObj(id)}
               width={60}

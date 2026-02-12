@@ -7,7 +7,6 @@ import {
   Menu,
   Portal,
   ThemeIcon,
-  Tooltip,
 } from "@mantine/core";
 import {
   IconArrowBack,
@@ -194,20 +193,16 @@ function DebuggerControls(props: { position?: Position }) {
         {controlActions.map(
           ({ icon: Icon, label, disabled, onClick, options: sub }) => {
             const button = (
-              <Tooltip
-                offset={props.position ? 25 : undefined}
+              <ActionIcon
                 key={label}
-                label={label}
+                title={label}
+                variant="subtle"
+                onClick={onClick}
+                disabled={disabled}
+                bg={disabled ? "none" : undefined}
               >
-                <ActionIcon
-                  variant="subtle"
-                  onClick={onClick}
-                  disabled={disabled}
-                  bg={disabled ? "none" : undefined}
-                >
-                  <Icon />
-                </ActionIcon>
-              </Tooltip>
+                <Icon />
+              </ActionIcon>
             );
 
             if (!sub) return button;

@@ -48,6 +48,7 @@ function App() {
       </AppShell>
 
       <Notifications />
+
       {debugPannel.floating && (
         <DebuggerControls position={debugPannel.position} />
       )}
