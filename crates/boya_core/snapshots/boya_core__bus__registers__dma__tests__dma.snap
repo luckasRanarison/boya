@@ -1,0 +1,23 @@
+---
+source: crates/boya_core/src/bus/registers/dma.rs
+expression: snapshot
+---
+steps: 17
+cycles: 158
+---
+0x8000000: B      12                           ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (20)
+0x8000014: MOV    R0, #0x1, ROR #6             ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (06)
+0x8000018: MOV    R1, #0xB0                    ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (06)
+0x800001c: SUB    R2, R15, #0x20               ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (06)
+0x8000020: STR    R2, [R0, R1, LSL #32]        ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (09)
+0x8000024: MOV    R1, #0xB4                    ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (06)
+0x8000028: MOV    R2, #0x3, ROR #8             ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (06)
+0x800002c: STR    R2, [R0, R1, LSL #32]        ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (09)
+0x8000030: MOV    R1, #0xB8                    ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (06)
+0x8000034: MOV    R2, #0x8                     ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (06)
+0x8000038: STRH   R2, [R0, R1]                 ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (09)
+0x800003c: MOV    R1, #0xBA                    ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (06)
+0x8000040: MOV    R2, #0x0                     ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (06)
+0x8000044: ORR    R2, R2, #0x1, ROR #18        ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (06)
+0x8000048: ORR    R2, R2, #0x2, ROR #18        ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (06)
+0x800004c: STRH   R2, [R0, R1]                 ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (09)

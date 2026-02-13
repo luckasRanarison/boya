@@ -42,8 +42,8 @@ impl From<u16> for BgScreen {
 }
 
 impl Ppu {
-    pub fn read_bg_palette(&self, index: u32) -> Color15 {
-        self.palette.read_hword(index * 2).into()
+    pub fn read_bg_palette(&self, id: u8) -> Color15 {
+        self.palette.read_hword(id as u32 * 2).into()
     }
 
     pub fn sort_bg(&mut self) {
@@ -168,7 +168,7 @@ impl Ppu {
 
         match color_mode {
             ColorSrc::RGB => Some(entry.into()),
-            ColorSrc::Palette => Some(self.read_bg_palette(entry as u32)),
+            ColorSrc::Palette => Some(self.read_bg_palette(entry_lo)),
         }
     }
 }

@@ -98,6 +98,6 @@ mod tests {
             .assert_word(SP_START + 4, 2)
             .assert_word(SP_START + 8, ARM_MAIN_START + 20) // 8 + 12
             .assert_reg(13, SP_START + 12)
-            .run(3)
+            .run(3);
     }
 }

@@ -22,6 +22,7 @@ use crate::{
     cpu::{arm::Arm, register::Register, thumb::Thumb},
 };
 
+#[derive(Debug)]
 pub enum Instruction {
     Arm(Arm),
     Thumb(Thumb),

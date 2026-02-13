@@ -45,6 +45,6 @@ mod tests {
             .assert_flag(Psr::T, false)
             .assert_reg(0, 0)
             .assert_reg(15, 16)
-            .run(1)
+            .run(1);
     }
 }

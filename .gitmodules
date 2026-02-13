@@ -1,3 +1,6 @@
 [submodule "submodules/gba-tests"]
 	path = submodules/gba-tests
 	url = https://github.com/jsmolka/gba-tests
+[submodule "submodules/armwrestler-gba-fixed"]
+	path = submodules/armwrestler-gba-fixed
+	url = https://github.com/destoer/armwrestler-gba-fixed

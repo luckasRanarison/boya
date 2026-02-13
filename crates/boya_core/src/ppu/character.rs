@@ -54,22 +54,21 @@ impl Ppu {
         let (base_palette, rel_color_id) = match char.color {
             ColorMode::Palette16 => {
                 let (b_start, b_end) = if cx & 1 == 0 { (0, 3) } else { (4, 7) };
-                let palette = Some(char.palette as u32);
                 let color_id = pixel_byte.get_bits(b_start, b_end);
-                (palette, color_id)
+                (char.palette, color_id)
             }
-            ColorMode::Palette256 => (None, pixel_byte),
+            ColorMode::Palette256 => (0, pixel_byte),
         };
 
         if rel_color_id == 0 {
             return None;
         }
 
-        let color_addr = base_palette.unwrap_or_default() * 16 + rel_color_id as u32;
+        let color_id = base_palette * 16 + rel_color_id;
 
         let color = match char.kind {
-            CharacterKind::Background => self.read_bg_palette(color_addr),
-            CharacterKind::Object(_) => self.read_obj_palette(color_addr),
+            CharacterKind::Background => self.read_bg_palette(color_id),
+            CharacterKind::Object(_) => self.read_obj_palette(color_id),
         };
 
         Some(color)

@@ -60,10 +60,10 @@ pub enum Opcode {
 impl From<u32> for Opcode {
     fn from(value: u32) -> Self {
         match (value.get(20), value.get_bits(5, 6)) {
-            (0, 0x1) => Self::STRH,
-            (1, 0x1) => Self::LDRH,
-            (1, 0x2) => Self::LDSB,
-            (1, 0x3) => Self::LDSH,
+            (0, 1) => Self::STRH,
+            (1, 1) => Self::LDRH,
+            (1, 2) => Self::LDSB,
+            (1, 3) => Self::LDSH,
             (_, op) => unreachable!("invalid arm 10 opcode: {op:#b}"),
         }
     }

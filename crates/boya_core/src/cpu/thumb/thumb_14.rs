@@ -72,6 +72,6 @@ mod tests {
             .assert_reg(4, 13)
             .assert_reg(5, 25)
             .assert_reg(13, SP_START)
-            .run(5)
+            .run(5);
     }
 }

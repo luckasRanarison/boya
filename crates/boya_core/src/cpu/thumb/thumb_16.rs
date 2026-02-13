@@ -103,7 +103,7 @@ mod tests {
             .thumb()
             .asm(asm)
             .assert_reg(2, 2)
-            .run(4)
+            .run(4);
     }
 
     #[test]
@@ -127,6 +127,6 @@ mod tests {
             .assert_reg(3, 0)
             .assert_reg(1, 3)
             .assert_reg(2, 2)
-            .run(5)
+            .run(5);
     }
 }

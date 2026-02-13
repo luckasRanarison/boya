@@ -9,7 +9,7 @@ import {
   Modal,
   Title,
   Flex,
-  Paper,
+  Card,
 } from "@mantine/core";
 import {
   IconLayoutGrid,
@@ -89,18 +89,10 @@ function BackgroundView() {
       style={{ position: "relative", overflow: "hidden" }}
     >
       {mode === "stack" && (
-        <Paper
+        <Card
           withBorder
           p="xs"
-          style={{
-            position: "absolute",
-            top: 20,
-            right: 20,
-            zIndex: 100,
-            background: "rgba(255, 255, 255, 0.8)",
-            backdropFilter: "blur(8px)",
-            pointerEvents: "auto",
-          }}
+          style={{ zIndex: 50, position: "absolute", top: 20, right: 20 }}
         >
           <Stack gap="xs">
             <Text size="xs" fw="bold" c="dimmed">
@@ -110,7 +102,7 @@ function BackgroundView() {
               <Flex key={bg} align="center" gap="sm">
                 <ActionIcon
                   size="sm"
-                  variant="light"
+                  variant="subtle"
                   color={hiddenBgs[bg] ? "gray" : "blue"}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -132,7 +124,7 @@ function BackgroundView() {
               </Flex>
             ))}
           </Stack>
-        </Paper>
+        </Card>
       )}
 
       {focused !== null && (
@@ -165,7 +157,7 @@ function BackgroundView() {
         size="lg"
         variant="filled"
         style={{
-          position: "fixed",
+          position: "absolute",
           bottom: 25,
           right: 25,
           zIndex: 50,

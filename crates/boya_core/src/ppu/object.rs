@@ -132,8 +132,8 @@ impl Ppu {
         }
     }
 
-    pub fn read_obj_palette(&self, index: u32) -> Color15 {
-        self.palette.read_hword(512 + index * 2).into()
+    pub fn read_obj_palette(&self, id: u8) -> Color15 {
+        self.palette.read_hword(512 + id as u32 * 2).into()
     }
 
     pub fn load_obj_pool(&mut self) {

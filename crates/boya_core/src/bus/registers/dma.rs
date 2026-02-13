@@ -183,7 +183,7 @@ pub enum DmaTimer {
 
 #[cfg(test)]
 mod tests {
-    use crate::{bus::types::Interrupt, test::GbaTestBuilder};
+    use crate::{assert_snapshot, bus::types::Interrupt, test::GbaTestBuilder};
 
     #[test]
     fn test_dma() {
@@ -228,7 +228,7 @@ mod tests {
             .flatten()
             .collect::<Vec<_>>();
 
-        GbaTestBuilder::new()
+        let snapshot = GbaTestBuilder::new()
             .asm(asm)
             .setup(|cpu| {
                 cpu.bus.io.enable_master_irq();
@@ -244,26 +244,10 @@ mod tests {
                 assert!(!dma0.dma_enable(), "DMA0 should be disabled");
                 assert!(cpu.bus.io.has_irq(Interrupt::Dma0), "DMA0 pending irq");
             })
-            .assert_cycles([
-                20, // B   (2S + 1N)
-                6,  // MOV (1S)
-                6,  // MOV (1S)
-                6,  // SUB (1S)
-                9,  // STR (2N)
-                6,  // MOV (1S)
-                6,  // MOV (1S)
-                9,  // STR (2N)
-                6,  // MOV (1S)
-                6,  // MOV (1S)
-                9,  // STR (2N)
-                6,  // MOV (1S)
-                6,  // MOV (1S)
-                6,  // ORR (1S)
-                6,  // ORR (1S)
-                9,  // STR (2N)
-                36, // DMA (2N + 2(n-1)S + xI) ((N + 7S) + (N + 4 7S + 14) + 2I)
-            ])
-            .run(17);
+            .run(17)
+            .into_snapshot();
+
+        assert_snapshot!(snapshot);
     }
 }
 

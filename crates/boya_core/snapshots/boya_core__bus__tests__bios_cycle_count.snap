@@ -1,0 +1,11 @@
+---
+source: crates/boya_core/src/bus/mod.rs
+expression: snapshot
+---
+steps: 4
+cycles: 18
+---
+0x000000: B      24                           ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (03)
+0x000020: MOV    R13, #0x3, ROR #8            ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (01)
+0x000024: ADD    R13, R13, #0x7F, ROR #24     ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (01)
+0x000028: MOV    R15, #0x2, ROR #6            ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (13)

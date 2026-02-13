@@ -51,6 +51,6 @@ mod tests {
             .assert_reg(1, 2)
             .assert_reg(2, 4)
             .assert_reg(15, TMB_MAIN_START + 10) // + pre-fetch 6
-            .run(4)
+            .run(4);
     }
 }

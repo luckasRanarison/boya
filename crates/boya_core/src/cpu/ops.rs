@@ -180,10 +180,17 @@ impl Arm7tdmi {
         let res_hi = res.get_bits(32, 63) as u32;
         let res_lo = res as u32;
         let i = i_base + i_extra;
+        let is_long_mul = dst.hi.is_some();
 
         if update {
+            if is_long_mul {
+                self.cpsr.update(Psr::N, res.has(63));
+                self.cpsr.update(Psr::V, false);
+            } else {
+                self.cpsr.update(Psr::N, res.has(31));
+            }
+
             self.cpsr.update(Psr::Z, res == 0);
-            self.cpsr.update(Psr::N, res_hi.has(31));
             self.cpsr.update(Psr::C, false);
         }
 
@@ -543,19 +550,22 @@ impl Arm7tdmi {
         update: bool,
     ) -> u32 {
         let (result, carry) = match (shift, rhs) {
+            (ShiftKind::LSL, 0) if imm => (lhs, CarryUpdate::Unchanged),
             (ShiftKind::LSL, 33..) if update => (0, CarryUpdate::Clear),
             (ShiftKind::LSL, 32) => (0, CarryUpdate::Bit(0)),
             (ShiftKind::LSL, 1..) => (lhs.wrapping_shl(rhs), CarryUpdate::Bit(32 - (rhs & 31))),
-            (ShiftKind::LSL, 0) if imm => (lhs, CarryUpdate::Unchanged),
 
+            (ShiftKind::LSR, 0) if imm => (0, CarryUpdate::Bit(31)),
             (ShiftKind::LSR, 33..) if update => (0, CarryUpdate::Clear),
             (ShiftKind::LSR, 32) => (0, CarryUpdate::Bit(31)),
             (ShiftKind::LSR, 1..) => (lhs.wrapping_shr(rhs), CarryUpdate::Bit(rhs - 1)),
-            (ShiftKind::LSR, 0) if imm => (0, CarryUpdate::Bit(31)),
 
-            (ShiftKind::ASR, 32) => (lhs.extended_asr(rhs), CarryUpdate::Bit(31)),
-            (ShiftKind::ASR, 1..) => (lhs.extended_asr(rhs), CarryUpdate::Bit(rhs - 1)),
             (ShiftKind::ASR, 0) if imm => (lhs.extended_asr(31), CarryUpdate::Bit(31)),
+            (ShiftKind::ASR, 1..32) => (lhs.extended_asr(rhs), CarryUpdate::Bit(rhs - 1)),
+            (ShiftKind::ASR, 32) => (lhs.extended_asr(rhs), CarryUpdate::Bit(31)),
+            (ShiftKind::ASR, 33..) => {
+                (if lhs.has(31) { u32::MAX } else { 0 }, CarryUpdate::Bit(31))
+            }
 
             (ShiftKind::ROR, 1..) => (lhs.rotate_right(rhs), CarryUpdate::Bit(rhs - 1)),
             (ShiftKind::ROR, 0) if imm => (

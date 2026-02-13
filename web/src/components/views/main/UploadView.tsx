@@ -37,7 +37,8 @@ function UploadView() {
 
     if (files) {
       const [file] = files;
-      const bytes = await file.bytes();
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
       handleUpload(bytes, params.file);
     }
   };
@@ -49,7 +50,8 @@ function UploadView() {
     event.currentTarget.style.background = "none";
 
     const file = event.dataTransfer.files[0];
-    const bytes = await file.bytes();
+    const buffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
     const type = bytes.length === 0x4000 ? "bios" : "rom";
 
     handleUpload(bytes, type);

@@ -1,10 +1,11 @@
-mod asm;
+pub mod asm;
+pub mod snapshot;
 
 use crate::{
     Gba,
     bus::{BIOS_SIZE, Bus, types::DataType},
     cpu::{Arm7tdmi, psr::Psr},
-    debug::cpu::inspect::Inspectable,
+    debug::cpu::types::{InstructionResult, Step},
     test::asm::FAKE_BIOS,
 };
 
@@ -13,6 +14,8 @@ use asm::{compile_asm, format_bin_bytes, format_hex_bytes};
 pub const SP_START: u32 = 0x0300_7F00;
 pub const ARM_MAIN_START: u32 = 0x0800_0000;
 pub const TMB_MAIN_START: u32 = 0x0800_0012;
+
+const MAX_ITERATIONS: usize = 10_000;
 
 #[derive(Default)]
 pub struct GbaTestBuilder {
@@ -26,7 +29,11 @@ pub struct GbaTestBuilder {
     reg_assertions: Vec<(usize, u32)>,
     mem_assertions: Vec<(u32, u32, DataType)>,
     func_assertion: Option<Box<dyn Fn(&Arm7tdmi)>>,
-    cycle_assertions: Vec<u32>,
+    skip_subroutines: Vec<u32>,
+
+    snapshots: Vec<String>,
+    cycles: usize,
+    steps: usize,
 }
 
 impl GbaTestBuilder {
@@ -67,6 +74,11 @@ impl GbaTestBuilder {
         self
     }
 
+    pub fn skip_subroutines<I: IntoIterator<Item = u32>>(mut self, cycles: I) -> Self {
+        self.skip_subroutines = cycles.into_iter().collect();
+        self
+    }
+
     pub fn assert_byte(mut self, addr: u32, expected: u32) -> Self {
         self.mem_assertions.push((addr, expected, DataType::Byte));
         self
@@ -100,11 +112,6 @@ impl GbaTestBuilder {
         self
     }
 
-    pub fn assert_cycles<I: IntoIterator<Item = u32>>(mut self, cycles: I) -> Self {
-        self.cycle_assertions = cycles.into_iter().collect();
-        self
-    }
-
     pub fn setup<F>(mut self, func: F) -> Self
     where
         F: Fn(&mut Arm7tdmi) + 'static,
@@ -113,34 +120,60 @@ impl GbaTestBuilder {
         self
     }
 
-    pub fn run(self, steps: usize) {
+    pub fn run(self, steps: usize) -> Self {
         let mut i = 0;
 
         self.run_while(move |_| {
             i += 1;
             i <= steps
-        });
+        })
     }
 
-    pub fn run_while<F>(&self, mut func: F)
+    pub fn run_while<F>(mut self, mut func: F) -> Self
     where
         F: FnMut(&Arm7tdmi) -> bool + 'static,
     {
         self.debug_run();
 
         let mut gba = self.init_gba();
-        let mut cycles = Vec::new();
 
         while func(&gba.cpu) {
-            self.debug_instruction(&gba.cpu);
+            if self.steps == MAX_ITERATIONS {
+                break;
+            }
 
+            if self.should_skip_subroutines(&mut gba.cpu) {
+                continue;
+            }
+
+            let addr = gba.cpu.exec_address();
             let step = gba.debug_step();
             let count = step.cycles().count();
 
-            cycles.push(count);
+            if let Step::Instruction(instr) = step {
+                self.debug_instruction(addr, instr, gba.cpu.cpsr);
+            }
+
+            self.cycles += count as usize;
+            self.steps += 1;
         }
 
-        self.run_assertions(&gba, cycles.as_slice());
+        self.run_assertions(&gba);
+        self
+    }
+
+    pub fn into_snapshot(self) -> String {
+        let lines = [
+            format!("steps: {}", self.steps),
+            format!("cycles: {}", self.cycles),
+            "---".to_string(),
+        ]
+        .into_iter()
+        .chain(self.snapshots)
+        .collect::<Vec<_>>()
+        .join("\n");
+
+        lines
     }
 
     fn debug_run(&self) {
@@ -152,20 +185,20 @@ impl GbaTestBuilder {
         println!("bin: {formated_bits}\n");
     }
 
-    fn debug_instruction(&self, cpu: &Arm7tdmi) {
-        let curr_addr = cpu.pipeline.current_address();
-        let curr_instr = cpu.pipeline.current_instruction().unwrap();
-        let instr_fmt = curr_instr.inspect().format(10);
+    fn debug_instruction(&mut self, addr: u32, instr: InstructionResult, psr: Psr) {
+        let instr_fmt = instr.data.format(6);
 
-        println!("{curr_addr:#08x}: {instr_fmt}",);
-        // println!("{:?}", cpu.cpsr);
+        let line = format!(
+            "{addr:#08x}: {instr_fmt:<35} ; {} ({:02})",
+            psr,
+            instr.cycles.count()
+        );
+
+        println!("{line}");
+        self.snapshots.push(line);
     }
 
-    fn run_assertions(&self, gba: &Gba, cycles: &[u32]) {
-        if !self.cycle_assertions.is_empty() {
-            assert_eq!(&self.cycle_assertions, cycles);
-        }
-
+    fn run_assertions(&self, gba: &Gba) {
         if let Some(assert) = &self.func_assertion {
             assert(&gba.cpu);
         }
@@ -237,6 +270,22 @@ impl GbaTestBuilder {
         )
     }
 
+    fn should_skip_subroutines(&self, cpu: &mut Arm7tdmi) -> bool {
+        let pc = cpu.exec_address();
+
+        for subroutine in &self.skip_subroutines {
+            if pc == *subroutine {
+                let bx_lr = if cpu.cpsr.thumb() { 0x4770 } else { 0xE12FFF1E };
+                cpu.pipeline.flush();
+                cpu.exec(cpu.decode(bx_lr));
+                cpu.sync_pipeline();
+                return true;
+            }
+        }
+
+        false
+    }
+
     fn assert_mem_impl(&self, cpu: &Arm7tdmi, assertions: &[(u32, u32, DataType)]) {
         for (address, expected, data_type) in assertions {
             let value = match data_type {
@@ -276,4 +325,15 @@ impl GbaTestBuilder {
             )
         }
     }
+}
+
+#[macro_export]
+macro_rules! include_submodules {
+    ($path:expr) => {
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../submodules/",
+            $path
+        ))
+    };
 }

@@ -107,6 +107,6 @@ mod tests {
             .asm(asm)
             .assert_byte(0x0200_0F00, 5)
             .assert_reg(3, 5)
-            .run(5)
+            .run(5);
     }
 }

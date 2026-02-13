@@ -70,7 +70,7 @@ mod tests {
             .assert_word(0x0200_0000, 1)
             .assert_word(0x0200_0004, 2)
             .assert_word(0x0200_0008, 3)
-            .run(6)
+            .run(6);
     }
 
     #[test]
@@ -93,6 +93,6 @@ mod tests {
             .assert_reg(1, 1)
             .assert_reg(2, 2)
             .assert_reg(3, 3)
-            .run(3)
+            .run(3);
     }
 }

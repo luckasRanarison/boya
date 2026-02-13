@@ -26,11 +26,11 @@ impl Ppu {
         match obj.color_mode() {
             ColorMode::Palette16 => {
                 for i in 0..16 {
-                    buffer.push(self.read_obj_palette(obj.palette() as u32 * 16 + i));
+                    buffer.push(self.read_obj_palette(obj.palette() * 16 + i));
                 }
             }
             ColorMode::Palette256 => {
-                for i in 0..256 {
+                for i in 0..=255 {
                     buffer.push(self.read_obj_palette(i));
                 }
             }

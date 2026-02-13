@@ -22,6 +22,7 @@ use crate::utils::bitflags::BitArray;
 
 use super::isa::prelude::*;
 
+#[derive(Debug)]
 pub enum Thumb {
     /// Move shifted register
     Format01(thumb_01::Instruction),
@@ -124,17 +125,19 @@ impl Arm7tdmi {
 
 #[cfg(test)]
 mod tests {
+    use crate::{assert_snapshot, include_submodules};
+
     use super::*;
 
-    const TEST_REG: usize = 7;
-    const TEST_START: u32 = 0x0800_00FC;
-    const TEST_END: u32 = 0x0800_0930;
-
-    const TEST_FILE: &[u8] = include_bytes!("../../../../../submodules/gba-tests/thumb/thumb.gba");
-
     #[test]
-    fn test_thumb_suite() {
-        GbaTestBuilder::new()
+    fn test_gbatest_thumb_suite() {
+        const TEST_FILE: &[u8] = include_submodules!("gba-tests/thumb/thumb.gba");
+
+        const TEST_REG: usize = 7;
+        const TEST_START: u32 = 0x0800_00FC;
+        const TEST_END: u32 = 0x0800_0930;
+
+        let snapshot = GbaTestBuilder::new()
             .bytes(TEST_FILE)
             .setup(|cpu| {
                 cpu.cpsr.update(Psr::T, true);
@@ -144,6 +147,49 @@ mod tests {
                 let test = cpu.registers.get(TEST_REG, cpu.cpsr.op_mode());
                 assert_eq!(test, 0, "test t{test} failed");
             })
-            .run_while(|cpu| cpu.pc() < TEST_END);
+            .run_while(|cpu| cpu.exec_address() != TEST_END)
+            .into_snapshot();
+
+        assert_snapshot!(snapshot);
+    }
+
+    #[test]
+    fn test_thumbwrestler_suite() {
+        const TEST_FILE: &[u8] =
+            include_submodules!("armwrestler-gba-fixed/armwrestler-gba-fixed.gba");
+
+        const TEST_REG: usize = 6;
+
+        const TESTS: &[(u32, u32)] = &[
+            (0x0800_3b54, 0x8003da4),
+            (0x0800_3e10, 0x8003ece),
+            (0x0800_3f08, 0x8003f6a),
+        ];
+
+        const DRAW_TXT_SUBROUTINE: u32 = 0x0800_4074;
+        const DRAW_RES_SUBROUTINE: u32 = 0x0800_3fe4;
+
+        for (test_start, test_end) in TESTS {
+            let snapshot = GbaTestBuilder::new()
+                .bytes(TEST_FILE)
+                .setup(move |cpu| {
+                    cpu.cpsr.update(Psr::T, true);
+                    cpu.override_pc(*test_start);
+                })
+                .skip_subroutines([DRAW_TXT_SUBROUTINE, DRAW_RES_SUBROUTINE])
+                .assert_fn(|cpu| {
+                    let bitmask = cpu.registers.get(TEST_REG, cpu.cpsr.op_mode());
+                    assert_eq!(
+                        bitmask,
+                        0,
+                        "test failed at {:#010x}, bitmask: {bitmask:32b}",
+                        cpu.exec_address()
+                    );
+                })
+                .run_while(move |cpu| cpu.exec_address() != *test_end)
+                .into_snapshot();
+
+            assert_snapshot!(snapshot);
+        }
     }
 }

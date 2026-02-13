@@ -243,6 +243,7 @@ impl Arm7tdmi {
     pub fn override_pc(&mut self, value: u32) {
         self.registers.set_pc(value);
         self.pipeline.flush();
+        self.align_pc();
         self.load_pipeline();
     }
 }

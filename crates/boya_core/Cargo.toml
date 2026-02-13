@@ -11,3 +11,6 @@ debug = []
 [lints.clippy]
 missing_panics_doc = "deny"
 upper_case_acronyms = "allow"
+
+[dev-dependencies]
+insta = "1.46.3"

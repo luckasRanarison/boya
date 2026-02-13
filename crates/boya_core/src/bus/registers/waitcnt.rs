@@ -71,7 +71,7 @@ pub enum GamepakType {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::GbaTestBuilder;
+    use crate::{assert_snapshot, test::GbaTestBuilder};
 
     #[test]
     fn test_waitstate() {
@@ -85,16 +85,11 @@ mod tests {
             MOV     R4, R0
         ";
 
-        GbaTestBuilder::new()
+        let snapshot = GbaTestBuilder::new()
             .asm(asm)
-            .assert_cycles([
-                6, // MOV  (1S)
-                6, // MOV  (1S)
-                6, // MOV  (1S)
-                6, // ADD  (1S)
-                9, // STRH (2N) (N + 4 + S + 2) + N
-                4, // MOV  (1S)
-            ])
-            .run(6);
+            .run(6) //
+            .into_snapshot();
+
+        assert_snapshot!(snapshot);
     }
 }

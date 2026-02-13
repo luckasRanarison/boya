@@ -364,7 +364,7 @@ impl<const N: usize> Bus for [u8; N] {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::GbaTestBuilder;
+    use crate::{assert_snapshot, test::GbaTestBuilder};
 
     #[test]
     fn test_bios_cycle_count() {
@@ -376,14 +376,11 @@ mod tests {
         //     MOV     PC, 0x0800_0000
 
         // Because Gamepak has 16bit bus width, S is divided into 2 accesses, so it becomes 4(S + waitstate) + 1N
-        GbaTestBuilder::new()
+        let snapshot = GbaTestBuilder::new()
             .pc(0x00)
-            .assert_cycles([
-                3,  // B   (2S + 1N)
-                1,  // MOV (1S)
-                1,  // ADD (1S)
-                13, // MOV (2S + 1N)
-            ])
-            .run(4);
+            .run(4) //
+            .into_snapshot();
+
+        assert_snapshot!(snapshot);
     }
 }

@@ -1,0 +1,13 @@
+---
+source: crates/boya_core/src/bus/registers/waitcnt.rs
+expression: snapshot
+---
+steps: 6
+cycles: 37
+---
+0x8000000: MOV    R0, #0x14                    ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (06)
+0x8000004: MOV    R1, #0x1, ROR #6             ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (06)
+0x8000008: MOV    R2, #0x2, ROR #24            ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (06)
+0x800000c: ADD    R3, R1, R2, LSL #32          ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (06)
+0x8000010: STRH   R0, [R3, #0x4]               ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (09)
+0x8000014: MOV    R4, R0, LSL #32              ; N: 0, Z: 0, C: 0, V: 0, I: 1, F: 1, T: 0, M: SVC (04)
