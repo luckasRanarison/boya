@@ -457,7 +457,6 @@ impl Arm7tdmi {
     pub fn handle_exception(&mut self, exception: Exception) -> Cycle {
         let vector = exception.vector();
         let op_mode = exception.operating_mode();
-        let irq = exception.disable_irq() || self.registers.cpsr.has(Psr::I);
         let fiq = exception.disable_fiq() || self.registers.cpsr.has(Psr::F);
         let first_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
         let is_swi = matches!(exception, Exception::SoftwareInterrupt);
@@ -472,7 +471,7 @@ impl Arm7tdmi {
         self.registers.set(Register::LR, return_addr, op_mode);
 
         self.registers.cpsr.update(Psr::T, false);
-        self.registers.cpsr.update(Psr::I, irq);
+        self.registers.cpsr.update(Psr::I, true);
         self.registers.cpsr.update(Psr::F, fiq);
 
         self.registers.set_pc(vector);

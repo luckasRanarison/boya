@@ -7,7 +7,6 @@ import {
   ActionIcon,
   SimpleGrid,
   Modal,
-  Title,
   Flex,
   Card,
 } from "@mantine/core";
@@ -92,7 +91,7 @@ function BackgroundView() {
         <Card
           withBorder
           p="xs"
-          style={{ zIndex: 50, position: "fixed", top: 20, right: 20 }}
+          style={{ zIndex: 50, position: "absolute", top: 20, right: 20 }}
         >
           <Stack gap="xs">
             <Text size="xs" fw="bold" c="dimmed">
@@ -129,7 +128,7 @@ function BackgroundView() {
 
       {focused !== null && (
         <Modal
-          title={<Title order={5}>BG {focused}</Title>}
+          title={`BG ${focused}`}
           onClose={() => setFocused(null)}
           opened
           centered
@@ -157,7 +156,7 @@ function BackgroundView() {
         size="lg"
         variant="filled"
         style={{
-          position: "absolute",
+          position: "fixed",
           bottom: 25,
           right: 25,
           zIndex: 50,
@@ -181,7 +180,8 @@ function BackgroundView() {
         onPointerUp={stopDragging}
         onPointerLeave={stopDragging}
         style={{
-          touchAction: "none",
+          flex: 1,
+          touchAction: mode === "stack" ? "none" : "auto",
           cursor: isDragging
             ? "grabbing"
             : mode === "stack" && !flat
@@ -189,9 +189,6 @@ function BackgroundView() {
               : "default",
           userSelect: "none",
           perspective: 1200,
-          margin: "auto",
-          width: "100%",
-          height: "100%",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",

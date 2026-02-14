@@ -182,10 +182,10 @@ impl Ppu {
             _ => {}
         }
 
-        if self.scanline == self.registers.dispstat.vcount {
+        if self.registers.vcount == self.registers.dispstat.vcount.into() {
             self.registers.dispstat.set(Dispstat::VCOUNT);
 
-            if self.registers.dispstat.has(Dispstat::VCOUNT_IRQ) {
+            if self.dot == 0 && self.registers.dispstat.has(Dispstat::VCOUNT_IRQ) {
                 self.pending_irq = Some(Interrupt::VCount);
             }
         } else {

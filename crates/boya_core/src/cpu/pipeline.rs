@@ -23,10 +23,6 @@ impl Pipeline {
         self.next_pc
     }
 
-    pub fn current_address(&self) -> u32 {
-        self.curr_pc
-    }
-
     pub fn current_instruction(&self) -> Option<&Instruction> {
         self.curr_instr.as_ref()
     }

@@ -93,13 +93,6 @@ impl Exception {
         }
     }
 
-    pub fn disable_irq(self) -> bool {
-        matches!(
-            self,
-            Self::FastInterrupt | Self::NormalInterrupt | Self::Reset
-        )
-    }
-
     pub fn disable_fiq(self) -> bool {
         matches!(self, Self::Reset)
     }
