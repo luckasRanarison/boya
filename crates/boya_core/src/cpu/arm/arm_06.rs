@@ -94,8 +94,8 @@ mod tests {
             .assert_flag(Psr::Z, false)
             .assert_flag(Psr::C, true)
             .assert_fn(|cpu| {
-                let op_mode = cpu.cpsr.op_mode();
-                let spsr = cpu.registers.get_spsr_unchecked(op_mode);
+                let op_mode = cpu.operating_mode();
+                let spsr = cpu.registers.get_spsr(op_mode);
 
                 assert_eq!(op_mode, OperatingMode::FIQ);
                 assert_eq!(spsr.value(), 0b00100000_00000000_00000000_00010001);

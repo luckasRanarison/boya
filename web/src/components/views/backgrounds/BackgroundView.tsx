@@ -92,7 +92,7 @@ function BackgroundView() {
         <Card
           withBorder
           p="xs"
-          style={{ zIndex: 50, position: "absolute", top: 20, right: 20 }}
+          style={{ zIndex: 50, position: "fixed", top: 20, right: 20 }}
         >
           <Stack gap="xs">
             <Text size="xs" fw="bold" c="dimmed">

@@ -98,9 +98,9 @@ impl Psr {
 
     /// # Panics
     ///
-    /// If the function is called before reset handler.
-    pub fn op_mode(self) -> OperatingMode {
-        match self.0.get_bits(0, 4) {
+    /// Panics if an invalid operating mode is used.
+    pub fn operating_mode(self) -> OperatingMode {
+        match self.0.get_bits(0, 4) | 0b10000 {
             0b10000 => OperatingMode::USR,
             0b10001 => OperatingMode::FIQ,
             0b10010 => OperatingMode::IRQ,

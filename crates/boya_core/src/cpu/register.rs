@@ -8,7 +8,8 @@ pub struct Register {
     pub abt: [u32; 2],   // R13-R14
     pub irq: [u32; 2],   // R13-R14
     pub und: [u32; 2],   // R13-R14
-    pub psr: [Psr; 5],
+    pub spsr: [Psr; 5],
+    pub cpsr: Psr,
 }
 
 impl Register {
@@ -42,31 +43,24 @@ impl Register {
         }
     }
 
-    pub fn get_spsr(&self, op_mode: OperatingMode) -> Option<Psr> {
+    pub fn get_spsr(&self, op_mode: OperatingMode) -> Psr {
         self.operating_mode_index(op_mode)
-            .map(|index| self.psr[index])
-    }
-
-    /// # Panics
-    ///
-    /// If the operating mode has no SPSR bank.
-    pub fn get_spsr_unchecked(&self, op_mode: OperatingMode) -> Psr {
-        self.get_spsr(op_mode)
-            .unwrap_or_else(|| panic!("invalid SPSR access, mode: {op_mode:?}"))
+            .map(|index| self.spsr[index])
+            .unwrap_or(self.cpsr)
     }
 
     pub fn set_spsr(&mut self, op_mode: OperatingMode, psr: Psr) {
         if let Some(index) = self.operating_mode_index(op_mode) {
-            self.psr[index] = psr;
+            self.spsr[index] = psr;
         }
     }
 
     pub fn update_spsr(&mut self, op_mode: OperatingMode, fields: u32, mask: u32) {
         if let Some(index) = self.operating_mode_index(op_mode) {
-            let psr = self.psr[index];
+            let psr = self.spsr[index];
             let value = (psr.value() & !mask) | fields;
 
-            self.psr[index] = Psr::from(value);
+            self.spsr[index] = Psr::from(value);
         }
     }
 

@@ -47,7 +47,7 @@ impl From<u8> for Opcode {
 
 impl Executable for Instruction {
     fn dispatch(self, cpu: &mut Arm7tdmi) -> Cycle {
-        let value = cpu.registers.get(self.ro, cpu.cpsr.op_mode());
+        let value = cpu.registers.get(self.ro, cpu.operating_mode());
         let offset = RegisterOffset::new(value, AddrMode::IB, false);
 
         match self.op {

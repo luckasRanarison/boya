@@ -23,7 +23,7 @@ export const defaultKeymaps: Record<string, number | undefined> = {
   KeyX: keys.A,
   KeyZ: keys.B,
   Space: keys.Select,
-  Start: keys.Start,
+  Enter: keys.Start,
   ArrowRight: keys.Right,
   ArrowLeft: keys.Left,
   ArrowUp: keys.Up,

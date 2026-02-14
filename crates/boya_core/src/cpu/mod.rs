@@ -17,7 +17,7 @@ use crate::{
         types::{Cycle, DataType, InterruptResult, MemoryAccess},
     },
     cpu::{
-        common::{Exception, NamedRegister, Shift},
+        common::{Exception, NamedRegister, OperatingMode, Shift},
         isa::Instruction,
         register::Register,
     },
@@ -27,7 +27,6 @@ use crate::{
 #[derive(Default)]
 pub struct Arm7tdmi {
     pub registers: Register,
-    pub cpsr: Psr,
     pub pipeline: Pipeline,
     pub bus: GbaBus,
 }
@@ -36,7 +35,6 @@ impl Arm7tdmi {
     pub fn new(bus: GbaBus) -> Self {
         Self {
             registers: Register::default(),
-            cpsr: Psr::default(),
             pipeline: Pipeline::default(),
             bus,
         }
@@ -62,7 +60,7 @@ impl Arm7tdmi {
 
     #[inline]
     pub fn decode(&self, word: u32) -> Instruction {
-        if self.cpsr.thumb() {
+        if self.thumb() {
             Instruction::Thumb(self.decode_thumb(word))
         } else {
             Instruction::Arm(self.decode_arm(word))
@@ -85,7 +83,7 @@ impl Arm7tdmi {
     }
 
     pub fn try_irq(&mut self) -> Option<InterruptResult> {
-        if !self.cpsr.has(Psr::I) && self.bus.io.has_pending_irq() {
+        if !self.registers.cpsr.has(Psr::I) && self.bus.io.has_pending_irq() {
             Some(InterruptResult {
                 cycles: self.handle_exception(Exception::NormalInterrupt),
             })
@@ -96,19 +94,29 @@ impl Arm7tdmi {
 
     #[inline(always)]
     pub fn instr_size(&self) -> u8 {
-        if self.cpsr.thumb() { 2 } else { 4 }
+        if self.thumb() { 2 } else { 4 }
     }
 
     pub fn lr(&self) -> u32 {
-        self.registers.get(Register::LR, self.cpsr.op_mode())
+        self.registers.get(Register::LR, self.operating_mode())
     }
 
     pub fn sp(&self) -> u32 {
-        self.registers.get(Register::SP, self.cpsr.op_mode())
+        self.registers.get(Register::SP, self.operating_mode())
     }
 
     pub fn exec_address(&self) -> u32 {
         self.pc().saturating_sub(self.instr_size() as u32 * 2)
+    }
+
+    #[inline(always)]
+    pub fn operating_mode(&self) -> OperatingMode {
+        self.registers.cpsr.operating_mode()
+    }
+
+    #[inline(always)]
+    pub fn thumb(&self) -> bool {
+        self.registers.cpsr.thumb()
     }
 
     #[inline(always)]
@@ -117,14 +125,14 @@ impl Arm7tdmi {
     }
 
     fn align_pc(&mut self) {
-        let mask = if self.cpsr.thumb() { !0b01 } else { !0b11 }; // half-word | word
+        let mask = if self.thumb() { !0b01 } else { !0b11 }; // half-word | word
         let value = self.pc() & mask;
 
         self.registers.set_pc(value);
     }
 
     fn pre_fetch_cycle(&self, access_kind: MemoryAccess) -> Cycle {
-        let dt = match self.cpsr.thumb() {
+        let dt = match self.thumb() {
             true => DataType::HWord,
             false => DataType::Word,
         };
@@ -137,7 +145,7 @@ impl Arm7tdmi {
     }
 
     fn get_lowest_address(&self, rb: usize, n: u8, amod: AddrMode) -> u32 {
-        let base = self.registers.get(rb, self.cpsr.op_mode());
+        let base = self.registers.get(rb, self.operating_mode());
 
         match amod {
             AddrMode::IA => base,
@@ -148,7 +156,7 @@ impl Arm7tdmi {
     }
 
     fn write_base_address(&mut self, rb: usize, n: u8, amod: AddrMode) {
-        let op_mode = self.cpsr.op_mode();
+        let op_mode = self.operating_mode();
         let base = self.registers.get(rb, op_mode);
 
         let value = match amod {
@@ -165,7 +173,7 @@ impl Arm7tdmi {
         let value = match rs == NamedRegister::PC as usize {
             true => self.pc() + 4, // arm 11
             false if usr => self.registers.main[rs],
-            _ => self.registers.get(rs, self.cpsr.op_mode()),
+            _ => self.registers.get(rs, self.operating_mode()),
         };
 
         self.bus.write_word(*addr, value);
@@ -178,7 +186,7 @@ impl Arm7tdmi {
         if usr {
             self.registers.main[rd] = value
         } else {
-            self.registers.set(rd, value, self.cpsr.op_mode());
+            self.registers.set(rd, value, self.operating_mode());
         }
 
         *offset += 4;
@@ -189,7 +197,7 @@ impl Arm7tdmi {
             OperandKind::Imm => operand.value,
             _ => self
                 .registers
-                .get(operand.value as usize, self.cpsr.op_mode()),
+                .get(operand.value as usize, self.operating_mode()),
         }
     }
 
@@ -213,7 +221,7 @@ impl Arm7tdmi {
         };
 
         let rhs = match shift.register {
-            true => self.registers.get(shift.value, self.cpsr.op_mode()),
+            true => self.registers.get(shift.value, self.operating_mode()),
             false => shift.value.into(),
         };
 
@@ -221,18 +229,15 @@ impl Arm7tdmi {
     }
 
     fn restore_cpsr(&mut self) {
-        let op_mode = self.cpsr.op_mode();
-
-        if let Some(spsr) = self.registers.get_spsr(op_mode) {
-            self.cpsr = spsr;
-        }
+        let op_mode = self.operating_mode();
+        self.registers.cpsr = self.registers.get_spsr(op_mode);
     }
 }
 
 impl Reset for Arm7tdmi {
     fn reset(&mut self) {
         self.registers = Register::default();
-        self.cpsr = Psr::default();
+        self.registers.cpsr = Psr::default();
         self.pipeline = Pipeline::default();
         self.bus.reset();
     }

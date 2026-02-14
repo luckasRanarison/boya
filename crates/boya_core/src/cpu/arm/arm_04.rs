@@ -49,7 +49,7 @@ impl Executable for Instruction {
         if matches!(self.op, Opcode::BL)
             && let Some(pc) = cpu.next_op_address()
         {
-            cpu.registers.set(Register::LR, pc, cpu.cpsr.op_mode());
+            cpu.registers.set(Register::LR, pc, cpu.operating_mode());
         }
 
         cpu.b(self.nn)

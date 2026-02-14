@@ -36,7 +36,7 @@ pub trait Executable: Sized {
     }
 
     fn dispatch_checked(self, cpu: &mut Arm7tdmi) -> Cycle {
-        if cpu.cpsr.matches(self.condition()) {
+        if cpu.registers.cpsr.matches(self.condition()) {
             self.dispatch(cpu)
         } else {
             cpu.pre_fetch_cycle(MemoryAccess::Seq)

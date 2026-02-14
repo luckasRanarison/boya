@@ -151,7 +151,7 @@ impl GbaTestBuilder {
             let count = step.cycles().count();
 
             if let Step::Instruction(instr) = step {
-                self.debug_instruction(addr, instr, gba.cpu.cpsr);
+                self.debug_instruction(addr, instr, gba.cpu.registers.cpsr);
             }
 
             self.cycles += count as usize;
@@ -275,7 +275,7 @@ impl GbaTestBuilder {
 
         for subroutine in &self.skip_subroutines {
             if pc == *subroutine {
-                let bx_lr = if cpu.cpsr.thumb() { 0x4770 } else { 0xE12FFF1E };
+                let bx_lr = if cpu.thumb() { 0x4770 } else { 0xE12FFF1E };
                 cpu.pipeline.flush();
                 cpu.exec(cpu.decode(bx_lr));
                 cpu.sync_pipeline();
@@ -303,7 +303,7 @@ impl GbaTestBuilder {
 
     fn assert_reg_impl(&self, cpu: &Arm7tdmi, assertions: &[(usize, u32)]) {
         for (index, expected) in assertions {
-            let value = cpu.registers.get(*index, cpu.cpsr.op_mode());
+            let value = cpu.registers.get(*index, cpu.operating_mode());
 
             assert_eq!(
                 value, *expected,
@@ -314,14 +314,14 @@ impl GbaTestBuilder {
 
     fn assert_flag_impl(&self, cpu: &Arm7tdmi, assertions: &[(u32, bool)]) {
         for (flag, expected) in assertions {
-            let value = cpu.cpsr.has(*flag);
+            let value = cpu.registers.cpsr.has(*flag);
             let name = Psr::format_flag(*flag);
             let status = if *expected { "set" } else { "cleared" };
 
             assert_eq!(
                 value, *expected,
                 "expected flag {name} to be {status}, flags: {}",
-                cpu.cpsr
+                cpu.registers.cpsr
             )
         }
     }

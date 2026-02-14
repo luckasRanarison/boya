@@ -100,7 +100,7 @@ mod tests {
             .bytes(TEST_FILE)
             .pc(TEST_START)
             .assert_fn(|cpu| {
-                let test = cpu.registers.get(TEST_REG, cpu.cpsr.op_mode());
+                let test = cpu.registers.get(TEST_REG, cpu.operating_mode());
                 assert_eq!(test, 0, "test t{test} failed");
             })
             .run_while(|cpu| cpu.exec_address() != TEST_END)
@@ -135,7 +135,7 @@ mod tests {
                 })
                 .skip_subroutines([DRAW_TXT_SUBROUTINE, DRAW_RES_SUBROUTINE])
                 .assert_fn(|cpu| {
-                    let bitmask = cpu.registers.get(TEST_REG, cpu.cpsr.op_mode());
+                    let bitmask = cpu.registers.get(TEST_REG, cpu.operating_mode());
                     assert_eq!(
                         bitmask,
                         0,

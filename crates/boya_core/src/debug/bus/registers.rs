@@ -459,6 +459,44 @@ impl RegisterEntry {
         }
     }
 
+    const fn waitcnt() -> Self {
+        const FIRST_ACCESS: &[(u8, &str)] = &[
+            (0, "4 cycles"),
+            (1, "3 cycles"),
+            (2, "2 cycles"),
+            (3, "8 cycles"),
+        ];
+
+        RegisterEntry {
+            name: "WAITCNT",
+            address: 0x204,
+            size: RegisterSize::HWord,
+            flags: const {
+                &[
+                    Flag::new("SRAM Wait Control", 0, 2).map(FIRST_ACCESS),
+                    Flag::new("Wait State 0 First Access", 2, 2).map(FIRST_ACCESS),
+                    Flag::new("Wait State 0 Second Access", 4, 1)
+                        .map(&[(0, "2 cycles"), (1, "1 cycle")]),
+                    Flag::new("Wait State 1 First Access", 5, 2).map(FIRST_ACCESS),
+                    Flag::new("Wait State 1 Second Access", 7, 1)
+                        .map(&[(0, "4 cycles"), (1, "1 cycle")]),
+                    Flag::new("Wait State 2 First Access", 8, 2).map(FIRST_ACCESS),
+                    Flag::new("Wait State 2 Second Access", 10, 1)
+                        .map(&[(0, "8 cycles"), (1, "1 cycle")]),
+                    Flag::new("PHI Terminal Output", 11, 2).map(&[
+                        (0, "Disable"),
+                        (1, "4.19MHz"),
+                        (2, "8.38MHz"),
+                        (3, "16.76MHz"),
+                    ]),
+                    Flag::unused(13, 1),
+                    Flag::new("Game Pak Prefetch Buffer (Pipe)", 14, 1),
+                    Flag::new("Game Pak Type Flag", 15, 1).map(&[(0, "GBA"), (1, "CGB")]),
+                ]
+            },
+        }
+    }
+
     const fn ime() -> Self {
         RegisterEntry {
             name: "IME",
@@ -552,6 +590,7 @@ pub const IO_REGISTERS: &[RegisterEntry] = &[
     RegisterEntry::keycnt(),
     RegisterEntry::interrupt("IE", 0x200),
     RegisterEntry::interrupt("IF", 0x202),
+    RegisterEntry::waitcnt(),
     RegisterEntry::ime(),
     RegisterEntry::haltcnt_l(),
     RegisterEntry::haltcnt_h(),

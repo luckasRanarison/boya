@@ -4,13 +4,14 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+insta = "1.46.3"
 
 [features]
-debug = []
+debug = ["serde"]
 
 [lints.clippy]
 missing_panics_doc = "deny"
 upper_case_acronyms = "allow"
-
-[dev-dependencies]
-insta = "1.46.3"

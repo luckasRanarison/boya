@@ -101,7 +101,7 @@ impl fmt::Display for Psr {
             self.get(Self::I),
             self.get(Self::F),
             self.get(Self::T),
-            self.op_mode()
+            self.operating_mode()
         )
     }
 }

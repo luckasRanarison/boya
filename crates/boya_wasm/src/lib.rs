@@ -77,7 +77,7 @@ impl Gba {
 
     #[wasm_bindgen]
     pub fn cpsr(&self) -> u32 {
-        self.core.cpu.cpsr.value()
+        self.core.cpu.registers.cpsr.value()
     }
 
     #[wasm_bindgen(js_name = "nextInstructions")]
@@ -169,12 +169,12 @@ impl Gba {
 
     #[wasm_bindgen(js_name = "getSpsrBank")]
     pub fn get_spsr_bank(&self) -> Vec<u32> {
-        self.core.cpu.registers.psr.map(|psr| psr.value()).to_vec()
+        self.core.cpu.registers.spsr.map(|psr| psr.value()).to_vec()
     }
 
     #[wasm_bindgen(js_name = "cpuOperatingMode")]
     pub fn cpu_operating_mode(&self) -> String {
-        format!("{:?}", self.core.cpu.cpsr.op_mode())
+        format!("{:?}", self.core.cpu.operating_mode())
     }
 
     #[wasm_bindgen(js_name = "scanline")]

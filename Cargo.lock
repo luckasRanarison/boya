@@ -19,6 +19,7 @@ name = "boya_core"
 version = "0.1.0"
 dependencies = [
  "insta",
+ "serde",
 ]
 
 [[package]]

@@ -30,15 +30,15 @@ impl Arm7tdmi {
         let reg_shift = rhs.shift.as_ref().filter(|s| s.register).is_some();
 
         let lhs = match lhs.is_pc() {
-            true if self.cpsr.thumb() && rhs.is_imm() => self.pc() & !2, // thumb 12
-            true if !self.cpsr.thumb() && reg_shift => self.pc() + 4,    // arm 5
+            true if self.thumb() && rhs.is_imm() => self.pc() & !2, // thumb 12
+            true if !self.thumb() && reg_shift => self.pc() + 4,    // arm 5
             _ => self.get_operand_with_shift(lhs, update),
         };
 
         let carry = match carry {
             Carry::One => 1,
             Carry::None => 0,
-            Carry::Flag => self.cpsr.get(Psr::C),
+            Carry::Flag => self.registers.cpsr.get(Psr::C),
         };
 
         let rhs = self.get_operand(rhs);
@@ -47,13 +47,13 @@ impl Arm7tdmi {
         let overflow = ((res2 ^ lhs) & (res2 ^ rhs)).has(31);
 
         if update {
-            self.cpsr.update_zn(res2);
-            self.cpsr.update(Psr::C, ovf1 || ovf2);
-            self.cpsr.update(Psr::V, overflow);
+            self.registers.cpsr.update_zn(res2);
+            self.registers.cpsr.update(Psr::C, ovf1 || ovf2);
+            self.registers.cpsr.update(Psr::V, overflow);
         }
 
         if let Some(rd) = dst {
-            self.registers.set(rd, res2, self.cpsr.op_mode());
+            self.registers.set(rd, res2, self.operating_mode());
         }
 
         let extra_fetch_cycle = self.extra_fetch_cycle(pc_dst);
@@ -63,14 +63,14 @@ impl Arm7tdmi {
 
     #[inline(always)]
     pub fn shift_op(&mut self, dst: u8, lhs: u8, rhs: Operand, shift: ShiftKind) -> Cycle {
-        let op_mode = self.cpsr.op_mode();
+        let op_mode = self.operating_mode();
         let (op_cycle, pc_dst) = self.data_op_cycle(dst.into(), &rhs);
         let imm = rhs.is_imm();
         let lhs = self.registers.get(lhs, op_mode);
         let rhs = self.get_operand(rhs) & 0xFF;
         let result = self.apply_shift(lhs, rhs, shift, imm, true);
 
-        self.cpsr.update_zn(result);
+        self.registers.cpsr.update_zn(result);
         self.registers.set(dst, result, op_mode);
 
         let extra_fetch_cycle = self.extra_fetch_cycle(pc_dst);
@@ -90,14 +90,14 @@ impl Arm7tdmi {
     where
         F: Fn(u32, u32) -> u32,
     {
-        let op_mode = self.cpsr.op_mode();
+        let op_mode = self.operating_mode();
         let (op_cycle, pc_dst) = self.data_op_cycle(dst, &rhs);
         let lhs = self.registers.get(lhs, op_mode);
         let rhs = self.get_operand_with_shift(rhs, update);
         let result = func(lhs, rhs);
 
         if update {
-            self.cpsr.update_zn(result);
+            self.registers.cpsr.update_zn(result);
         }
 
         if let Some(rd) = dst {
@@ -115,10 +115,10 @@ impl Arm7tdmi {
         let value = self.get_operand_with_shift(operand, update);
 
         if update {
-            self.cpsr.update_zn(value);
+            self.registers.cpsr.update_zn(value);
         }
 
-        self.registers.set(rd, value, self.cpsr.op_mode());
+        self.registers.set(rd, value, self.operating_mode());
 
         let extra_fetch_cycle = self.extra_fetch_cycle(pc_dst);
 
@@ -127,10 +127,10 @@ impl Arm7tdmi {
 
     #[inline(always)]
     pub fn bx_op(&mut self, rs: u8) -> Cycle {
-        let value = self.registers.get(rs, self.cpsr.op_mode());
+        let value = self.registers.get(rs, self.operating_mode());
         let first_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
 
-        self.cpsr.update(Psr::T, value.has(0));
+        self.registers.cpsr.update(Psr::T, value.has(0));
         self.registers.set_pc(value);
         self.pipeline.flush();
 
@@ -149,7 +149,7 @@ impl Arm7tdmi {
         update: bool,
         signed: bool,
     ) -> Cycle {
-        let op_mode = self.cpsr.op_mode();
+        let op_mode = self.operating_mode();
         let lhs = self.registers.get(lhs, op_mode);
         let rhs = self.registers.get(rhs, op_mode);
         let pre_fetch_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
@@ -184,14 +184,14 @@ impl Arm7tdmi {
 
         if update {
             if is_long_mul {
-                self.cpsr.update(Psr::N, res.has(63));
-                self.cpsr.update(Psr::V, false);
+                self.registers.cpsr.update(Psr::N, res.has(63));
+                self.registers.cpsr.update(Psr::V, false);
             } else {
-                self.cpsr.update(Psr::N, res.has(31));
+                self.registers.cpsr.update(Psr::N, res.has(31));
             }
 
-            self.cpsr.update(Psr::Z, res == 0);
-            self.cpsr.update(Psr::C, false);
+            self.registers.cpsr.update(Psr::Z, res == 0);
+            self.registers.cpsr.update(Psr::C, false);
         }
 
         if let Some(hi) = dst.hi {
@@ -214,10 +214,10 @@ impl Arm7tdmi {
         signed: bool,
         offset: RegisterOffset,
     ) -> Cycle {
-        let op_mode = self.cpsr.op_mode();
+        let op_mode = self.operating_mode();
 
         let base = match rn.reg().is_pc() {
-            true if self.cpsr.thumb() => self.pc() & !2, // thumb 6
+            true if self.thumb() => self.pc() & !2, // thumb 6
             true => self.pc(),
             false => self.registers.get(rn, op_mode),
         };
@@ -265,12 +265,12 @@ impl Arm7tdmi {
 
     #[inline(always)]
     pub fn str_op(&mut self, rs: u8, rn: u8, kind: DataType, offset: RegisterOffset) -> Cycle {
-        let op_mode = self.cpsr.op_mode();
+        let op_mode = self.operating_mode();
         let base = self.registers.get(rn, op_mode);
         let fetch_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
 
         let value = match rs.reg().is_pc() {
-            true if !self.cpsr.thumb() => self.pc() + 4, // arm 10
+            true if !self.thumb() => self.pc() + 4, // arm 10
             _ => self.registers.get(rs, op_mode),
         };
 
@@ -307,7 +307,7 @@ impl Arm7tdmi {
 
     #[inline(always)]
     pub fn stm_op(&mut self, rb: usize, rlist: u16, amod: AddrMode, wb: bool, usr: bool) -> Cycle {
-        let op_mode = self.cpsr.op_mode();
+        let op_mode = self.operating_mode();
         let n = self.count_rlist(rlist);
         let low_addr = self.get_lowest_address(rb, n, amod);
         let pre_fetch_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
@@ -361,7 +361,7 @@ impl Arm7tdmi {
 
     #[inline(always)]
     pub fn ldm_op(&mut self, rb: usize, rlist: u16, amod: AddrMode, wb: bool, usr: bool) -> Cycle {
-        let op_mode = self.cpsr.op_mode();
+        let op_mode = self.operating_mode();
         let n = self.count_rlist(rlist);
         let pre_fetch_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
 
@@ -412,7 +412,7 @@ impl Arm7tdmi {
     pub fn branch_op(&mut self, cond: Condition, offset: i32) -> Cycle {
         let first_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
 
-        if !self.cpsr.matches(cond) {
+        if !self.registers.cpsr.matches(cond) {
             return first_cycle;
         }
 
@@ -428,7 +428,7 @@ impl Arm7tdmi {
     }
 
     pub fn branch_long_first_op(&mut self, nn: u16) -> Cycle {
-        let op_mode = self.cpsr.op_mode();
+        let op_mode = self.operating_mode();
         let nn = ((nn as i32) << 21) >> 21; // sign-extend 11 bits
         let upper = (nn as u32) << 12;
         let result = self.pc().wrapping_add(upper);
@@ -438,7 +438,7 @@ impl Arm7tdmi {
     }
 
     pub fn branch_long_second_op(&mut self, nn: u16) -> Cycle {
-        let op_mode = self.cpsr.op_mode();
+        let op_mode = self.operating_mode();
         let lower = (nn as u32) << 1;
         let lr = self.registers.get(Register::LR, op_mode) as i32;
         let offset = lr.wrapping_add(lower as i32);
@@ -457,8 +457,8 @@ impl Arm7tdmi {
     pub fn handle_exception(&mut self, exception: Exception) -> Cycle {
         let vector = exception.vector();
         let op_mode = exception.operating_mode();
-        let irq = exception.disable_irq() || self.cpsr.has(Psr::I);
-        let fiq = exception.disable_fiq() || self.cpsr.has(Psr::F);
+        let irq = exception.disable_irq() || self.registers.cpsr.has(Psr::I);
+        let fiq = exception.disable_fiq() || self.registers.cpsr.has(Psr::F);
         let first_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
         let is_swi = matches!(exception, Exception::SoftwareInterrupt);
         let mut return_addr = self.exec_address();
@@ -467,13 +467,13 @@ impl Arm7tdmi {
             return_addr += self.instr_size() as u32;
         }
 
-        self.registers.set_spsr(op_mode, self.cpsr);
-        self.cpsr.set_operating_mode(op_mode);
+        self.registers.set_spsr(op_mode, self.registers.cpsr);
+        self.registers.cpsr.set_operating_mode(op_mode);
         self.registers.set(Register::LR, return_addr, op_mode);
 
-        self.cpsr.update(Psr::T, false);
-        self.cpsr.update(Psr::I, irq);
-        self.cpsr.update(Psr::F, fiq);
+        self.registers.cpsr.update(Psr::T, false);
+        self.registers.cpsr.update(Psr::I, irq);
+        self.registers.cpsr.update(Psr::F, fiq);
 
         self.registers.set_pc(vector);
         self.pipeline.flush();
@@ -489,24 +489,27 @@ impl Arm7tdmi {
 
     #[inline(always)]
     pub fn store_psr_op(&mut self, rd: u8, kind: PsrKind) -> Cycle {
-        let op_mode = self.cpsr.op_mode();
+        let op_mode = self.operating_mode();
 
         let psr = match kind {
-            PsrKind::CPSR => self.cpsr,
-            PsrKind::SPSR => self.registers.get_spsr_unchecked(op_mode),
+            PsrKind::CPSR => self.registers.cpsr,
+            PsrKind::SPSR => self.registers.get_spsr(op_mode),
         };
 
         self.registers.set(rd, psr.value(), op_mode);
+
         self.pre_fetch_cycle(MemoryAccess::Seq)
     }
 
     #[inline(always)]
     pub fn update_psr_op(&mut self, op: Operand, mask: u32, kind: PsrKind) -> Cycle {
-        let op_mode = self.cpsr.op_mode();
-        let value = self.get_operand(op) & mask;
+        let op_mode = self.operating_mode();
+        let value = (self.get_operand(op) & mask) | 0b10000;
 
         match kind {
-            PsrKind::CPSR => self.cpsr = Psr::from((self.cpsr.value() & !mask) | value),
+            PsrKind::CPSR => {
+                self.registers.cpsr = Psr::from((self.registers.cpsr.value() & !mask) | value)
+            }
             PsrKind::SPSR => self.registers.update_spsr(op_mode, value, mask),
         }
 
@@ -515,7 +518,7 @@ impl Arm7tdmi {
 
     #[inline(always)]
     pub fn swap_op(&mut self, rd: u8, rm: u8, rn: u8, byte: bool) -> Cycle {
-        let op_mode = self.cpsr.op_mode();
+        let op_mode = self.operating_mode();
         let addr = self.registers.get(rn, op_mode);
 
         if byte {
@@ -569,7 +572,7 @@ impl Arm7tdmi {
 
             (ShiftKind::ROR, 1..) => (lhs.rotate_right(rhs), CarryUpdate::Bit(rhs - 1)),
             (ShiftKind::ROR, 0) if imm => (
-                (self.cpsr.get(Psr::C) << 31) | (lhs >> 1),
+                (self.registers.cpsr.get(Psr::C) << 31) | (lhs >> 1),
                 CarryUpdate::Bit(0),
             ),
 
@@ -578,8 +581,8 @@ impl Arm7tdmi {
 
         if update {
             match carry {
-                CarryUpdate::Clear => self.cpsr.update(Psr::C, false),
-                CarryUpdate::Bit(bit) => self.cpsr.update(Psr::C, lhs.has(bit & 31)),
+                CarryUpdate::Clear => self.registers.cpsr.update(Psr::C, false),
+                CarryUpdate::Bit(bit) => self.registers.cpsr.update(Psr::C, lhs.has(bit & 31)),
                 _ => {}
             }
         }
