@@ -18,7 +18,6 @@ pub const PALETTE_RAM_SIZE: usize = 0x400; // 1kb
 pub const OAM_SIZE: usize = 0x400; // 1kb
 pub const VRAM_SIZE: usize = 0x18_000; // 96kb
 
-pub const PALETTE_SIZE: usize = 16 * 2;
 pub const OBJ_COUNT: u8 = 128;
 
 pub const LCD_WIDTH: usize = 240;
@@ -120,7 +119,7 @@ impl Ppu {
             }
         }
 
-        Color15::default()
+        self.read_bg_palette(0) // backdrop
     }
 
     fn vram_offset(&self, address: u32) -> usize {

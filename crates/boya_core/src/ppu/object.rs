@@ -119,16 +119,16 @@ impl Ppu {
     }
 
     pub fn get_obj_transform_params(&self, obj: &Obj) -> TransformParam {
+        // FIXME
         let id = obj.transform_parameter() as u32;
-        let (width, height) = obj.dimmensions();
 
         TransformParam {
             pa: self.oam.read_hword(id * 32 + 6),
             pb: self.oam.read_hword(id * 32 + 14),
             pc: self.oam.read_hword(id * 32 + 22),
             pd: self.oam.read_hword(id * 32 + 30),
-            x: (width as u32) << 7,
-            y: (height as u32) << 7,
+            x: 0,
+            y: 0,
         }
     }
 
@@ -147,10 +147,10 @@ impl Ppu {
             let obj = self.get_object(id);
             let (_width, height) = obj.dimmensions();
             let top = obj.y();
-            let bottom = top + height as u16;
+            let bottom = (top + height as u16) % 256;
             let scanline = self.scanline as u16;
 
-            if scanline >= top && scanline < bottom {
+            if (scanline >= top || top > 159) && scanline < bottom {
                 self.pipeline.obj_pool.push(obj);
             }
         }
@@ -165,8 +165,10 @@ impl Ppu {
 
         loop {
             let (id, obj) = self.pipeline.obj_pool.get(x, layer, offset)?;
-            let cx = x - obj.x();
-            let cy = y - obj.y();
+            let obj_x = obj.x();
+            let obj_y = obj.y();
+            let cx = (x + if x >= obj_x { 0 } else { 512 }) - obj_x;
+            let cy = (y + if y >= obj_y { 0 } else { 256 }) - obj_y;
 
             if let Some(pixel) = self.get_obj_pixel_inner(cx, cy, obj) {
                 return Some(pixel);
@@ -250,9 +252,9 @@ impl ObjPool {
             if prio == layer {
                 let (width, _height) = obj.dimmensions();
                 let left = obj.x();
-                let right = left + width as u16;
+                let right = (left + width as u16) % 512;
 
-                if x >= left && x < right {
+                if (x >= left || left > 239) && x < right {
                     return Some((offset + i, obj));
                 }
             }

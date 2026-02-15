@@ -460,11 +460,13 @@ impl Arm7tdmi {
         let fiq = exception.disable_fiq() || self.registers.cpsr.has(Psr::F);
         let first_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
         let is_swi = matches!(exception, Exception::SoftwareInterrupt);
-        let mut return_addr = self.exec_address();
 
-        if is_swi {
-            return_addr += self.instr_size() as u32;
-        }
+        // TODO: Why???
+        let return_addr = match is_swi {
+            true => self.exec_address() + self.instr_size() as u32,
+            false if self.thumb() => self.exec_address() + 4,
+            false => self.exec_address(),
+        };
 
         self.registers.set_spsr(op_mode, self.registers.cpsr);
         self.registers.cpsr.set_operating_mode(op_mode);
@@ -475,10 +477,9 @@ impl Arm7tdmi {
         self.registers.cpsr.update(Psr::F, fiq);
 
         self.registers.set_pc(vector);
-        self.pipeline.flush();
 
         if !is_swi {
-            self.load_pipeline();
+            self.sync_pipeline();
         }
 
         let extra_cycle = self.pre_fetch_cycle(MemoryAccess::Seq);
