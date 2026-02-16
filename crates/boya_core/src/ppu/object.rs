@@ -15,8 +15,8 @@ pub struct Obj {
 }
 
 impl Obj {
-    pub fn y(&self) -> u16 {
-        self.attr[0].get_bits(0, 7)
+    pub fn y(&self) -> u8 {
+        self.attr[0].get_bits_u8(0, 7)
     }
 
     pub fn transform(&self) -> bool {
@@ -146,11 +146,10 @@ impl Ppu {
         for id in 0..128 {
             let obj = self.get_object(id);
             let (_width, height) = obj.dimmensions();
-            let top = obj.y();
-            let bottom = (top + height as u16) % 256;
-            let scanline = self.scanline as u16;
+            let height = height * if obj.double_size() { 2 } else { 1 };
+            let diff = self.scanline.wrapping_sub(obj.y());
 
-            if (scanline >= top || top > 159) && scanline < bottom {
+            if diff < height {
                 self.pipeline.obj_pool.push(obj);
             }
         }
@@ -165,10 +164,8 @@ impl Ppu {
 
         loop {
             let (id, obj) = self.pipeline.obj_pool.get(x, layer, offset)?;
-            let obj_x = obj.x();
-            let obj_y = obj.y();
-            let cx = (x + if x >= obj_x { 0 } else { 512 }) - obj_x;
-            let cy = (y + if y >= obj_y { 0 } else { 256 }) - obj_y;
+            let cx = x.wrapping_sub(obj.x()) & 0x1FF;
+            let cy = y.wrapping_sub(obj.y().into()) & 0xFF;
 
             if let Some(pixel) = self.get_obj_pixel_inner(cx, cy, obj) {
                 return Some(pixel);
@@ -251,10 +248,10 @@ impl ObjPool {
 
             if prio == layer {
                 let (width, _height) = obj.dimmensions();
-                let left = obj.x();
-                let right = (left + width as u16) % 512;
+                let width = width * if obj.double_size() { 2 } else { 1 };
+                let diff = x.wrapping_sub(obj.x()) & 0x1FF;
 
-                if (x >= left || left > 239) && x < right {
+                if diff < width as u16 {
                     return Some((offset + i, obj));
                 }
             }

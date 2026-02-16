@@ -27,8 +27,6 @@ import Draggable from "react-draggable";
 import { useViewActions, useViewStore } from "@/stores/viewStore";
 import { GBA } from "@/lib/gba";
 import { useRef } from "react";
-import { useMediaQuery } from "@mantine/hooks";
-import { floatingPositions, type Position } from "@/utils/float";
 import { useRuntimeActions, useRuntimeStore } from "@/stores/runtimeStore";
 import { useGotoMemory } from "@/hooks/useGotoMemory";
 import {
@@ -36,14 +34,17 @@ import {
   useDebuggerActions,
   useDebuggerStore,
 } from "@/stores/debuggerStore";
+import {
+  useFloatingPositions,
+  type Position,
+} from "@/hooks/useFloatingPositions";
 
 function Wrapper(props: {
   children: React.ReactNode;
   floatConfig?: { position: Position };
 }) {
   const nodeRef = useRef<HTMLDivElement>(null);
-  const isMobile = useMediaQuery("(max-width: 768px)");
-  const cssPositions = floatingPositions(isMobile);
+  const cssPositions = useFloatingPositions(370);
 
   return props.floatConfig ? (
     <Portal>
@@ -72,14 +73,15 @@ function Wrapper(props: {
 
 function DebuggerControls(props: { position?: Position }) {
   const view = useViewStore((state) => state.view);
-  const debugPannel = useViewStore((state) => state.debugPannel);
+  const floatingWindows = useViewStore((state) => state.floatingWindows);
   const running = useRuntimeStore((state) => state.running);
   const romLoaded = useRuntimeStore((state) => state.romLoaded);
   const callstack = useDebuggerStore((state) => state.callstack);
   const breakpoints = useBreakpoints();
+  const floatingPanel = floatingWindows.includes("panel");
 
+  const { toggleWindow, renderFrame } = useViewActions();
   const gotoMemory = useGotoMemory();
-  const { toggleDebugPannel, renderFrame } = useViewActions();
   const dbg = useDebuggerActions();
   const rt = useRuntimeActions();
 
@@ -165,9 +167,9 @@ function DebuggerControls(props: { position?: Position }) {
       disabled: running || !callstack.length,
     },
     {
-      icon: debugPannel.floating ? IconFoldDown : IconFoldUp,
-      label: debugPannel.floating ? "Dock" : "Dettach",
-      onClick: toggleDebugPannel,
+      icon: floatingPanel ? IconFoldDown : IconFoldUp,
+      label: floatingPanel ? "Dock" : "Detach",
+      onClick: () => toggleWindow("panel"),
       disabled: false,
     },
   ];
@@ -177,7 +179,7 @@ function DebuggerControls(props: { position?: Position }) {
       floatConfig={props.position ? { position: props.position } : undefined}
     >
       <Group w="100%" align="center" justify="center">
-        {debugPannel.floating && (
+        {floatingPanel && (
           <ThemeIcon
             c="gray"
             variant="transparent"

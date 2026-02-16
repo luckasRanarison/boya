@@ -1,6 +1,8 @@
-export function floatingPositions(isMobile: boolean) {
-  const panelWidth = 370; // debug panel's approximate width
-  const halfWidth = panelWidth / 2;
+import { useMediaQuery } from "@mantine/hooks";
+
+export function useFloatingPositions(width: number) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const halfWidth = width / 2;
 
   return {
     "up-left": {
@@ -42,4 +44,4 @@ export function floatingPositions(isMobile: boolean) {
   };
 }
 
-export type Position = keyof ReturnType<typeof floatingPositions>;
+export type Position = keyof ReturnType<typeof useFloatingPositions>;

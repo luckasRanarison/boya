@@ -1,5 +1,5 @@
 import type { MemoryViewMode } from "@/components/views/memory/MemoryView";
-import type { Position } from "@/utils/float";
+import type { Position } from "@/hooks/useFloatingPositions";
 import {
   IconArrowsSort,
   IconBlocks,
@@ -73,11 +73,8 @@ export type NavbarTab = "about" | "debugger" | "settings";
 type ViewStore = {
   view: MenuView;
   tab: NavbarTab;
-
-  debugPannel: {
-    floating: boolean;
-    position: Position;
-  };
+  floatingWindows: string[];
+  debugPanelPosition: Position;
 
   canvas?: {
     context: CanvasRenderingContext2D;
@@ -89,8 +86,8 @@ type ViewStore = {
     setTab: (tab: NavbarTab) => void;
     setCanvas: (canvas: HTMLCanvasElement) => void;
     renderFrame: (gba: Gba) => void;
-    toggleDebugPannel: () => void;
-    moveDebugPannel: (position: Position) => void;
+    toggleWindow: (name: string) => void;
+    moveDebugPanel: (position: Position) => void;
   };
 };
 
@@ -100,11 +97,8 @@ export const useViewStore = create<ViewStore>((set, get) => ({
   },
 
   tab: "about",
-
-  debugPannel: {
-    floating: false,
-    position: "down",
-  },
+  debugPanelPosition: "down",
+  floatingWindows: [],
 
   actions: {
     setView: (view) => set((prev) => ({ ...prev, view })),
@@ -127,23 +121,19 @@ export const useViewStore = create<ViewStore>((set, get) => ({
       }
     },
 
-    moveDebugPannel: (position) => {
+    moveDebugPanel: (position) => {
       set((prev) => ({
         ...prev,
-        debugPannel: {
-          ...prev.debugPannel,
-          position,
-        },
+        debugPanelPosition: position,
       }));
     },
 
-    toggleDebugPannel: () => {
+    toggleWindow: (key: string) => {
       set((prev) => ({
         ...prev,
-        debugPannel: {
-          ...prev.debugPannel,
-          floating: !prev.debugPannel.floating,
-        },
+        floatingWindows: prev.floatingWindows.includes(key)
+          ? prev.floatingWindows.filter((k) => k !== key)
+          : [...prev.floatingWindows, key],
       }));
     },
   },

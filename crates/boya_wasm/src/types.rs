@@ -135,7 +135,7 @@ impl Default for IOMap {
 #[wasm_bindgen]
 pub struct Obj {
     pub x: u16,
-    pub y: u16,
+    pub y: u8,
     pub width: u8,
     pub height: u8,
     pub priority: u8,

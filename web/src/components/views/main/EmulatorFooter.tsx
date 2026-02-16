@@ -11,11 +11,11 @@ import {
   IconRestore,
   IconX,
 } from "@tabler/icons-react";
+import FpsCounter from "./FpsCounter";
 
 function EmulatorFooter(props: { canvas: () => HTMLCanvasElement | null }) {
   const rt = useRuntimeActions();
   const { renderFrame } = useViewActions();
-  const fps = useRuntimeStore((state) => state.fps);
   const keypad = useRuntimeStore((state) => state.keypad);
   const running = useRuntimeStore((state) => state.running);
   const breakpoints = useBreakpoints();
@@ -119,12 +119,7 @@ function EmulatorFooter(props: { canvas: () => HTMLCanvasElement | null }) {
             );
           })}
         </Group>
-        <Group>
-          <Text c="gray">
-            {fps}
-            /60 FPS
-          </Text>
-        </Group>
+        <FpsCounter />
       </Group>
     </AppShell.Footer>
   );

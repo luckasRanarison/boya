@@ -1,81 +1,23 @@
-import { GBA } from "@/lib/gba";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useGba } from "@/hooks/useGba";
 import { useRuntimeStore } from "@/stores/runtimeStore";
 import { useViewActions, useViewStore } from "@/stores/viewStore";
 import { Accordion, ActionIcon, Divider, Stack, Tooltip } from "@mantine/core";
-import { useDebuggerActions } from "@/stores/debuggerStore";
-import CPURegisterView from "../registers/CPURegisterView";
 import DebuggerControls from "./DebuggerControls";
-import DebuggerStatus from "./DebuggerStatus";
-import IORegisterView from "../registers/IORegisterView";
-import BreakpointControl from "./BreakpointControl";
 import FloatingControl from "./FloatingControl";
-import { IconFoldDown } from "@tabler/icons-react";
-import PipelineView from "./PipelineView";
-import CallStack from "./CallStack";
+import { IconFoldDown, IconFoldUp } from "@tabler/icons-react";
+import { useDebuggerMenu } from "@/hooks/useDebuggerMenu";
 
 function DebuggerView() {
-  const state = useGba();
-  const running = useRuntimeStore((state) => state.running);
-  const debugPannel = useViewStore((state) => state.debugPannel);
-  const view = useViewStore((state) => state.view);
   const [activeMenu, setActiveMenu] = useState(["status", "pipeline"]);
-  const { toggleDebugPannel, moveDebugPannel } = useViewActions();
-  const { decode, pushStack, popStack } = useDebuggerActions();
 
-  useEffect(() => {
-    const pc = GBA.execAddress();
+  const state = useGba();
+  const menus = useDebuggerMenu(state);
+  const running = useRuntimeStore((state) => state.running);
+  const panelPosition = useViewStore((state) => state.debugPanelPosition);
+  const floatingWindows = useViewStore((state) => state.floatingWindows);
 
-    if ((state.cpu.lr & ~1) === pc) {
-      popStack();
-    }
-
-    if (GBA.startingSubroutine()) {
-      pushStack({ caller: pc, return: pc + GBA.instructionSize() });
-    }
-
-    if (!(view.name === "memory" && view.sub?.metadata?.mode === "code")) {
-      decode(2);
-    }
-  }, [state.cpu.lr, view, decode, pushStack, popStack]);
-
-  const menus = [
-    {
-      key: "breakpoint",
-      label: "Breakpoints",
-      view: <BreakpointControl disabled={running} />,
-    },
-    {
-      key: "status",
-      label: "Status",
-      view: <DebuggerStatus state={state} running={running} />,
-    },
-    {
-      key: "pipeline",
-      label: "Pipeline",
-      view: (
-        <PipelineView base={state.cpu.pc} pipeline={state.cpu.pipeline()} />
-      ),
-    },
-    {
-      key: "callstack",
-      label: "Call Stack",
-      view: <CallStack disabled={running} />,
-    },
-    {
-      key: "cpu_reg",
-      label: "CPU Registers",
-      view: <CPURegisterView value={state.cpu.getRegisters()} style="simple" />,
-    },
-    {
-      key: "io_reg",
-      label: "I/O Registers",
-      view: (
-        <IORegisterView value={state.memory.getIoRegisters()} style="simple" />
-      ),
-    },
-  ];
+  const { toggleWindow, moveDebugPanel } = useViewActions();
 
   return (
     <Stack
@@ -86,14 +28,17 @@ function DebuggerView() {
       ff="monospace"
     >
       <Stack pt="xl" pb="md" align="center">
-        {debugPannel.floating ? (
+        {floatingWindows.includes("panel") ? (
           <>
             <FloatingControl
-              defaultValue={debugPannel.position}
-              onChange={moveDebugPannel}
+              defaultValue={panelPosition}
+              onChange={moveDebugPanel}
             />
             <Tooltip label="Dock">
-              <ActionIcon variant="subtle" onClick={toggleDebugPannel}>
+              <ActionIcon
+                variant="subtle"
+                onClick={() => toggleWindow("panel")}
+              >
                 <IconFoldDown />
               </ActionIcon>
             </Tooltip>
@@ -103,25 +48,46 @@ function DebuggerView() {
         )}
       </Stack>
 
-      <Accordion multiple value={activeMenu} onChange={setActiveMenu}>
+      <Accordion
+        value={activeMenu}
+        onChange={setActiveMenu}
+        chevronPosition="left"
+        multiple
+      >
         <Divider />
 
-        {menus.map(({ key, label, view }) => (
-          <Accordion.Item key={`${key}-${state.cycles}`} value={key}>
-            <Accordion.Control fz="sm" disabled={running}>
-              {label}
-            </Accordion.Control>
-            <Accordion.Panel
-              styles={{
-                content: {
-                  padding: 0,
-                },
-              }}
-            >
-              {activeMenu.includes(key) && view}
-            </Accordion.Panel>
-          </Accordion.Item>
-        ))}
+        {menus
+          .filter((m) => !floatingWindows.includes(m.key))
+          .map(({ key, label, view }) => (
+            <Accordion.Item key={`${key}-${state.cycles}`} value={key}>
+              <Accordion.Control
+                icon={
+                  <ActionIcon
+                    title="Detach"
+                    size="md"
+                    variant="subtle"
+                    onClick={() => toggleWindow(key)}
+                    component="div"
+                  >
+                    <IconFoldUp />
+                  </ActionIcon>
+                }
+                fz="sm"
+                disabled={running}
+              >
+                {label}
+              </Accordion.Control>
+              <Accordion.Panel
+                styles={{
+                  content: {
+                    padding: 0,
+                  },
+                }}
+              >
+                {activeMenu.includes(key) && view}
+              </Accordion.Panel>
+            </Accordion.Item>
+          ))}
       </Accordion>
     </Stack>
   );

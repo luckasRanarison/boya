@@ -461,11 +461,9 @@ impl Arm7tdmi {
         let first_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
         let is_swi = matches!(exception, Exception::SoftwareInterrupt);
 
-        // TODO: Why???
         let return_addr = match is_swi {
             true => self.exec_address() + self.instr_size() as u32,
-            false if self.thumb() => self.exec_address() + 4,
-            false => self.exec_address(),
+            false => self.exec_address() + 4,
         };
 
         self.registers.set_spsr(op_mode, self.registers.cpsr);

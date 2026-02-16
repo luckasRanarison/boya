@@ -2,22 +2,43 @@ import { Group, Stack, Text } from "@mantine/core";
 import { IconCaretRight, IconCaretRightFilled } from "@tabler/icons-react";
 import { useRuntimeStore } from "@/stores/runtimeStore";
 import MemoryLink from "@/components/common/MemoryLink";
-import type { InstructionPipeline } from "@/hooks/useGba";
+import type { CpuState } from "@/hooks/useGba";
+import { useDebuggerActions } from "@/stores/debuggerStore";
+import { useEffect } from "react";
+import { GBA } from "@/lib/gba";
+import { useViewStore } from "@/stores/viewStore";
 
-function PipelineView(props: { base: number; pipeline: InstructionPipeline }) {
-  const { running } = useRuntimeStore();
+function PipelineView({ cpu }: { cpu: CpuState }) {
+  const view = useViewStore((state) => state.view);
+  const running = useRuntimeStore((state) => state.running);
+  const { decode, pushStack, popStack } = useDebuggerActions();
+  const pipeline = cpu.pipeline();
+
+  useEffect(() => {
+    if ((cpu.lr & ~1) === cpu.pc) {
+      popStack();
+    }
+
+    if (GBA.startingSubroutine()) {
+      pushStack({ caller: cpu.pc, return: cpu.pc + GBA.instructionSize() });
+    }
+
+    if (!(view.name === "memory" && view.sub?.metadata?.mode === "code")) {
+      decode(2);
+    }
+  }, [cpu, view, decode, pushStack, popStack]);
 
   return (
     <Group p="md" ff="monospace">
-      {props.pipeline.length ? (
+      {pipeline.length ? (
         <Stack w="100%">
-          {props.pipeline.map((instr) => (
+          {pipeline.map((instr) => (
             <Group
               key={instr.address}
-              c={instr.address === props.base ? "indigo" : "gray"}
+              c={instr.address === cpu.pc ? "indigo" : "gray"}
               w="100%"
             >
-              {instr.address === props.base ? (
+              {instr.address === cpu.pc ? (
                 <IconCaretRightFilled size={18} />
               ) : (
                 <IconCaretRight size={18} />

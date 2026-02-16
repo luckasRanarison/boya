@@ -12,7 +12,7 @@ import {
 } from "@tabler/icons-react";
 import { FloatingIndicator, UnstyledButton } from "@mantine/core";
 import classes from "./FloatingControl.module.css";
-import type { Position } from "@/utils/float";
+import type { Position } from "@/hooks/useFloatingPositions";
 
 function FloatingControl(props: {
   defaultValue: Position;
