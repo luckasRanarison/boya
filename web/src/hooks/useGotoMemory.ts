@@ -2,11 +2,13 @@ import type { MemoryViewMode } from "@/components/views/memory/MemoryView";
 import notifications from "@/lib/notifications";
 import { useViewActions } from "@/stores/viewStore";
 import { formatHex } from "@/utils/format";
-import { useGba } from "./useGba";
-import type { MemoryRegionName } from "@/lib/gba";
+import {
+  getMemoryRegion,
+  memoryRegions,
+  type MemoryRegionName,
+} from "@/lib/gba";
 
 export function useGotoMemory() {
-  const { memory } = useGba();
   const { setView } = useViewActions();
 
   return (params: {
@@ -43,8 +45,8 @@ export function useGotoMemory() {
       }
     };
 
-    const region = Object.keys(memory.regions).find((name) => {
-      const region = memory.getRegion(name as MemoryRegionName);
+    const region = Object.keys(memoryRegions).find((name) => {
+      const region = getMemoryRegion(name as MemoryRegionName);
 
       return (
         params.address >= region.offset &&

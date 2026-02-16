@@ -23,7 +23,7 @@ type DebuggerStore = {
     removeBreak: (bp: number) => void;
     pushStack: (entry: CallStackEntry) => void;
     popStack: () => void;
-    reset: () => void;
+    clearState: () => void;
   };
 };
 
@@ -83,7 +83,7 @@ export const useDebuggerStore = create<DebuggerStore>((set) => ({
       }));
     },
 
-    reset: () => {
+    clearState: () => {
       set((prev) => ({ ...prev, callstack: [] }));
     },
   },

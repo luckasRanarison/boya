@@ -12,14 +12,15 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import FpsCounter from "./FpsCounter";
+import { usePersistantStore } from "@/stores/persistantStore";
 
 function EmulatorFooter(props: { canvas: () => HTMLCanvasElement | null }) {
   const rt = useRuntimeActions();
   const { renderFrame } = useViewActions();
   const keypad = useRuntimeStore((state) => state.keypad);
   const running = useRuntimeStore((state) => state.running);
+  const debugKeys = usePersistantStore((state) => state.debugKeys);
   const breakpoints = useBreakpoints();
-  const activeKeys = getActiveKeys(keypad);
 
   const handleReset = () => {
     rt.reset();
@@ -101,24 +102,26 @@ function EmulatorFooter(props: { canvas: () => HTMLCanvasElement | null }) {
           )}
         </Group>
 
-        <Group gap="xs">
-          {activeKeys.map((key) => {
-            const Icon = keyIconMap[key];
-            return (
-              <Card
-                key={key}
-                withBorder
-                py={1}
-                px={5}
-                h="20px"
-                fz="xs"
-                fw={550}
-              >
-                {Icon ? <Icon size={15} strokeWidth={2.5} /> : key}
-              </Card>
-            );
-          })}
-        </Group>
+        {debugKeys && (
+          <Group gap="xs">
+            {getActiveKeys(keypad).map((key) => {
+              const Icon = keyIconMap[key];
+              return (
+                <Card
+                  key={key}
+                  withBorder
+                  py={1}
+                  px={5}
+                  h="20px"
+                  fz="xs"
+                  fw={550}
+                >
+                  {Icon ? <Icon size={15} strokeWidth={2.5} /> : key}
+                </Card>
+              );
+            })}
+          </Group>
+        )}
         <FpsCounter />
       </Group>
     </AppShell.Footer>

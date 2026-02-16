@@ -5,9 +5,10 @@ import { Notifications } from "@mantine/notifications";
 import Header from "./components/layout/Header";
 import { useEffect } from "react";
 import { usePersistantStore } from "./stores/persistantStore";
-import { GBA } from "./lib/gba";
 import { useViewStore } from "./stores/viewStore";
 import FloatingPortal from "./components/layout/FloatingPortal";
+import { GBA } from "./lib/gba";
+import { useKeyHandler } from "./hooks/useKeyHandler";
 
 const mantineTheme = createTheme({
   primaryColor: "indigo",
@@ -16,12 +17,22 @@ const mantineTheme = createTheme({
 function App() {
   const { bios, theme: colorScheme } = usePersistantStore();
   const floatingWindows = useViewStore((state) => state.floatingWindows);
+  const handleKey = useKeyHandler();
 
   useEffect(() => {
     if (bios) {
       GBA.loadBios(bios);
     }
   }, [bios]);
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKey);
+    document.addEventListener("keyup", handleKey);
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.removeEventListener("keyup", handleKey);
+    };
+  }, [handleKey]);
 
   return (
     <MantineProvider theme={mantineTheme} forceColorScheme={colorScheme}>

@@ -2,7 +2,6 @@ import { useDebuggerMenu } from "@/hooks/useDebuggerMenu";
 import { useGba } from "@/hooks/useGba";
 import { useViewActions, useViewStore } from "@/stores/viewStore";
 import FloatingWindow from "../common/FloatingWindow";
-import { Portal } from "@mantine/core";
 import DebuggerControls from "../views/debugger/DebuggerControls";
 
 function FloatingPortal() {
@@ -21,11 +20,13 @@ function FloatingPortal() {
       {menus
         .filter(({ key }) => floatingWindows.includes(key))
         .map(({ key, label, view }) => (
-          <Portal key={key}>
-            <FloatingWindow title={label} onClose={() => toggleWindow(key)}>
-              {view}
-            </FloatingWindow>
-          </Portal>
+          <FloatingWindow
+            key={key}
+            title={label}
+            onClose={() => toggleWindow(key)}
+          >
+            {view}
+          </FloatingWindow>
         ))}
     </>
   );

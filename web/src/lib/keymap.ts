@@ -19,17 +19,44 @@ export const keys = {
   L: 1 << 9,
 };
 
-export const defaultKeymaps: Record<string, number | undefined> = {
-  KeyX: keys.A,
-  KeyZ: keys.B,
-  Space: keys.Select,
-  Enter: keys.Start,
-  ArrowRight: keys.Right,
-  ArrowLeft: keys.Left,
-  ArrowUp: keys.Up,
-  ArrowDown: keys.Down,
-  KeyS: keys.R,
-  KeyA: keys.L,
+export const controls = {
+  reset: 0,
+  toggleRun: 1,
+  stepInto: 2,
+  stepOut: 3,
+  stepScanline: 4,
+  stepFrame: 5,
+  stepIRQ: 4,
+  stop: 7,
+};
+
+export type Key = keyof typeof keys;
+
+export type Keymap = Record<
+  string,
+  { type: "gamepad"; value: number } | { type: "debugger"; action: number }
+>;
+
+export const defaultKeymaps: Keymap = {
+  KeyX: { type: "gamepad", value: keys.A },
+  KeyZ: { type: "gamepad", value: keys.B },
+  Space: { type: "gamepad", value: keys.Select },
+  Enter: { type: "gamepad", value: keys.Start },
+  ArrowRight: { type: "gamepad", value: keys.Right },
+  ArrowLeft: { type: "gamepad", value: keys.Left },
+  ArrowUp: { type: "gamepad", value: keys.Up },
+  ArrowDown: { type: "gamepad", value: keys.Down },
+  KeyS: { type: "gamepad", value: keys.R },
+  KeyA: { type: "gamepad", value: keys.L },
+
+  F5: { type: "debugger", action: controls.toggleRun },
+  F11: { type: "debugger", action: controls.stepInto },
+  ["Shift+F11"]: { type: "debugger", action: controls.stepOut },
+  F9: { type: "debugger", action: controls.reset },
+  KeyR: { type: "debugger", action: controls.stepFrame },
+  KeyI: { type: "debugger", action: controls.stepIRQ },
+  KeyL: { type: "debugger", action: controls.stepScanline },
+  Escape: { type: "debugger", action: controls.stop },
 };
 
 export const keyIconMap: Record<string, Icon | undefined> = {
@@ -38,9 +65,6 @@ export const keyIconMap: Record<string, Icon | undefined> = {
   Up: IconArrowUp,
   Down: IconArrowDown,
 };
-
-export type Key = keyof typeof keys;
-export type Keymap = typeof defaultKeymaps;
 
 export function getActiveKeys(keypad: number): string[] {
   const activeKeys: string[] = [];
@@ -54,8 +78,34 @@ export function getActiveKeys(keypad: number): string[] {
   return activeKeys;
 }
 
-export function getLabel(key: number): string {
+export function encodeKeyEvent(event: KeyboardEvent) {
+  const mappings: string[] = [];
+
+  if (event.ctrlKey) mappings.push("Ctrl");
+  if (event.altKey) mappings.push("Alt");
+  if (event.shiftKey) mappings.push("Shift");
+  mappings.push(event.code);
+
+  return mappings.join("+");
+}
+
+export function formatGamepadKey(key: number) {
   return Object.entries(keys)
     .find((pair) => key == pair[1])
     ?.at(0) as string;
+}
+
+export function formatKeyAction(action: number) {
+  const actionMap = [
+    "Reset",
+    "Pause/Continue",
+    "Step into",
+    "Step out",
+    "Step scanline",
+    "Step frame",
+    "Step IRQ",
+    "Stop",
+  ];
+
+  return actionMap[action];
 }

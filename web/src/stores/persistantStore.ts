@@ -5,10 +5,13 @@ import { persist } from "zustand/middleware";
 export type ColorTheme = "light" | "dark";
 
 type PersistantStore = {
+  version?: string;
   bios?: Uint8Array | null;
   keymap: Keymap;
   theme: ColorTheme;
   decodeDepth: number;
+  smoothFilter: boolean;
+  debugKeys: boolean;
 
   set<K extends keyof PersistantStore>(key: K, value: PersistantStore[K]): void;
 };
@@ -16,10 +19,13 @@ type PersistantStore = {
 export const usePersistantStore = create(
   persist<PersistantStore>(
     (_set) => ({
+      version: "1.0",
       bios: null,
       theme: "light",
       keymap: defaultKeymaps,
       decodeDepth: 10,
+      smoothFilter: false,
+      debugKeys: true,
 
       set(key, value) {
         _set((prev) => ({ ...prev, [key]: value }));
@@ -28,17 +34,24 @@ export const usePersistantStore = create(
     {
       name: "boya_data",
       merge: (unknownState, current) => {
-        const state = unknownState as { bios?: Record<string, number> };
+        const state = unknownState as Partial<PersistantStore>;
+
+        migrate(state, current);
 
         if (state.bios) {
           const values = Object.values<number>(state.bios);
           const bios = new Uint8Array(values);
-
-          return { ...current, ...state, bios } as PersistantStore;
+          state.bios = bios;
         }
 
-        return current;
+        return { ...current, ...state };
       },
     },
   ),
 );
+
+function migrate(state: Partial<PersistantStore>, current: PersistantStore) {
+  if (!state.version) {
+    state.keymap = current.keymap;
+  }
+}

@@ -27,6 +27,7 @@ type RuntimeStore = {
     step: (params: { type: StepKind }) => void;
     load: (rom: Uint8Array) => void;
     unload: () => void;
+    updateKeypad: (f: (value: number) => number) => void;
   };
 };
 
@@ -127,6 +128,14 @@ export const useRuntimeStore = create<RuntimeStore>((set, get) => {
         if (params.type === "into") GBA.debugSyncedStep();
 
         updateCycles();
+      },
+
+      updateKeypad: (f) => {
+        set((prev) => {
+          const value = f(prev.keypad);
+          GBA.setKeyinput(value);
+          return { ...prev, keypad: value };
+        });
       },
     },
   };

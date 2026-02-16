@@ -3,7 +3,6 @@ import {
   getCpuRegistersBank as getCpuRegisterBanks,
   getIoRegisters,
   getMemoryRegion,
-  memoryRegions,
 } from "@/lib/gba";
 import { useDebuggerStore } from "@/stores/debuggerStore";
 import { useRuntimeStore } from "@/stores/runtimeStore";
@@ -42,9 +41,8 @@ export function useGba() {
     },
 
     memory: {
-      regions: memoryRegions,
-      getRegion: getMemoryRegion,
       getIoRegisters: () => getIoRegisters(ioMap),
+      getRegion: getMemoryRegion,
       getPalette: GBA.colorPalette.bind(GBA),
       getObjects: GBA.objects.bind(GBA),
     },

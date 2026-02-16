@@ -25,19 +25,14 @@ import {
 } from "@tabler/icons-react";
 import Draggable from "react-draggable";
 import { useViewActions, useViewStore } from "@/stores/viewStore";
-import { GBA } from "@/lib/gba";
 import { useRef } from "react";
-import { useRuntimeActions, useRuntimeStore } from "@/stores/runtimeStore";
-import { useGotoMemory } from "@/hooks/useGotoMemory";
-import {
-  useBreakpoints,
-  useDebuggerActions,
-  useDebuggerStore,
-} from "@/stores/debuggerStore";
+import { useRuntimeStore } from "@/stores/runtimeStore";
+import { useDebuggerStore } from "@/stores/debuggerStore";
 import {
   useFloatingPositions,
   type Position,
 } from "@/hooks/useFloatingPositions";
+import { useDebuggerControls } from "@/hooks/useDebuggerControls";
 
 function Wrapper(props: {
   children: React.ReactNode;
@@ -72,50 +67,20 @@ function Wrapper(props: {
 }
 
 function DebuggerControls(props: { position?: Position }) {
-  const view = useViewStore((state) => state.view);
   const floatingWindows = useViewStore((state) => state.floatingWindows);
   const running = useRuntimeStore((state) => state.running);
   const romLoaded = useRuntimeStore((state) => state.romLoaded);
   const callstack = useDebuggerStore((state) => state.callstack);
-  const breakpoints = useBreakpoints();
   const floatingPanel = floatingWindows.includes("panel");
 
-  const { toggleWindow, renderFrame } = useViewActions();
-  const gotoMemory = useGotoMemory();
-  const dbg = useDebuggerActions();
-  const rt = useRuntimeActions();
-
-  const jumpToExec = () => {
-    if (view.name === "memory") {
-      gotoMemory({
-        address: GBA.execAddress(),
-        mode: "code",
-      });
-    }
-  };
-
-  const handleReset = () => {
-    rt.reset();
-    dbg.reset();
-    rt.run({ onFrame: renderFrame, breakpoints });
-  };
-
-  const handleStepInto = () => {
-    rt.step({ type: "into" });
-    jumpToExec();
-  };
-
-  const handleStepOut = () => {
-    const entry = callstack[callstack.length - 1];
-    rt.run({ onFrame: renderFrame, breakpoints: new Set([entry.return]) });
-    jumpToExec();
-  };
+  const { toggleWindow } = useViewActions();
+  const dbg = useDebuggerControls();
 
   const controlActions = [
     {
       icon: IconRestore,
       label: "Reset",
-      onClick: handleReset,
+      onClick: dbg.reset,
       disabled: running || !romLoaded,
     },
     {
@@ -125,18 +90,17 @@ function DebuggerControls(props: { position?: Position }) {
       options: [
         {
           label: "Step Scanline",
-          onClick: () => rt.step({ type: "scanline" }),
+          onClick: dbg.stepScanline,
           icon: IconSortDescending,
         },
         {
           label: "Step Frame",
-          onClick: () => rt.step({ type: "frame" }),
+          onClick: dbg.stepFrame,
           icon: IconFrame,
         },
         {
           label: "Step IRQ",
-          onClick: () =>
-            rt.run({ onFrame: renderFrame, breakpoints, irq: true }),
+          onClick: dbg.stepIrq,
           icon: IconTimelineEventExclamation,
         },
       ],
@@ -150,20 +114,19 @@ function DebuggerControls(props: { position?: Position }) {
     {
       icon: running ? IconPlayerPause : IconPlayerPlay,
       label: running ? "Pause" : "Continue",
-      onClick: () =>
-        running ? rt.pause() : rt.run({ onFrame: renderFrame, breakpoints }),
+      onClick: dbg.toggleRun,
       disabled: !romLoaded,
     },
     {
       icon: IconStepInto,
       label: "Step into",
-      onClick: handleStepInto,
+      onClick: dbg.stepInto,
       disabled: running || !romLoaded,
     },
     {
       icon: IconStepOut,
       label: "Step out",
-      onClick: handleStepOut,
+      onClick: dbg.stepOut,
       disabled: running || !callstack.length,
     },
     {

@@ -30,7 +30,7 @@ function BreakpointControl(props: { disabled: boolean }) {
   return (
     <Stack p="md">
       {breakpoints.size > 0 && (
-        <Group w="100%" gap="xs">
+        <Stack w="100%" gap="xs">
           {Array.from(breakpoints.values()).map((bp, i) => (
             <Group w="100%" key={i} align="center">
               <Input
@@ -56,7 +56,7 @@ function BreakpointControl(props: { disabled: boolean }) {
               </ActionIcon>
             </Group>
           ))}
-        </Group>
+        </Stack>
       )}
 
       <Button
