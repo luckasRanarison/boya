@@ -26,7 +26,7 @@ function PipelineView({ cpu }: { cpu: CpuState }) {
     if (!(view.name === "memory" && view.sub?.metadata?.mode === "code")) {
       decode(2);
     }
-  }, [cpu, view, decode, pushStack, popStack]);
+  }, [cpu.lr, cpu.pc, view, decode, pushStack, popStack]);
 
   return (
     <Group p="md" ff="monospace">
