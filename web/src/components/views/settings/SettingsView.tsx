@@ -99,7 +99,7 @@ function SettingsView() {
             w="100%"
             label="Display keystrokes"
             labelPosition="left"
-            description="Show preseed buttons in the footer"
+            description="Show pressed buttons in the footer"
             checked={settings.debugKeys}
             styles={{
               body: {

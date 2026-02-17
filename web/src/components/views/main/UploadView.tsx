@@ -9,7 +9,6 @@ import {
   ThemeIcon,
   Divider,
   Container,
-  Badge,
 } from "@mantine/core";
 import {
   IconDeviceGamepad2,
