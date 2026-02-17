@@ -10,6 +10,10 @@ function show(data: NotificationData) {
     position: "top-right",
     radius: "md",
     autoClose: 10000,
+    withBorder: true,
+    style: {
+      boxShadow: "none",
+    },
     ...data,
   });
 }

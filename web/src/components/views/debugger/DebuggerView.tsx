@@ -2,7 +2,14 @@ import { useState } from "react";
 import { useGba } from "@/hooks/useGba";
 import { useRuntimeStore } from "@/stores/runtimeStore";
 import { useViewActions, useViewStore } from "@/stores/viewStore";
-import { Accordion, ActionIcon, Divider, Stack, Tooltip } from "@mantine/core";
+import {
+  Accordion,
+  ActionIcon,
+  Divider,
+  Stack,
+  Tooltip,
+  Text,
+} from "@mantine/core";
 import DebuggerControls from "./DebuggerControls";
 import FloatingControl from "./FloatingControl";
 import { IconFoldDown, IconFoldUp } from "@tabler/icons-react";
@@ -65,17 +72,19 @@ function DebuggerView() {
                   <ActionIcon
                     title="Detach"
                     size="md"
-                    variant="subtle"
+                    variant="transparent"
                     onClick={() => toggleWindow(key)}
                     component="div"
+                    c="gray"
                   >
                     <IconFoldUp />
                   </ActionIcon>
                 }
-                fz="sm"
                 disabled={running}
               >
-                {label}
+                <Text size="sm" ff="heading">
+                  {label}
+                </Text>
               </Accordion.Control>
               <Accordion.Panel
                 styles={{

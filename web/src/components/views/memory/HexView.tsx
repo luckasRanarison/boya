@@ -148,48 +148,51 @@ function EditModal(props: {
   onConfirm: (value: string) => void;
 }) {
   const [value, setValue] = useState<string>("");
-
-  const handleSumbit: React.FormEventHandler = (event) => {
-    event.preventDefault();
-    props.onConfirm(value);
-    setValue("");
-  };
+  const error = Number.isNaN(parseHex(value));
 
   return (
     <Modal
-      title="Edit memory location"
-      size="sm"
+      title="Edit Memory"
+      size="xs"
       opened={props.opened}
       onClose={props.onClose}
-      withCloseButton
       centered
     >
-      <form onSubmit={handleSumbit}>
-        <Stack gap="xl">
-          <Group ff="monospace">
-            <Text c="indigo" fw="bold">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          props.onConfirm(value);
+          setValue("");
+        }}
+      >
+        <Stack gap="lg">
+          <Group justify="space-between" gap="xs" ff="monospace" fz="lg">
+            <Text fw={700} c="indigo">
               {formatHex(props.address)}:
             </Text>
+
+            <Text c="dimmed">{formatHex(props.prev, { width: 2 })}</Text>
+
+            <IconArrowRight size={16} style={{ opacity: 0.5 }} />
+
             <Input
-              w="60"
-              defaultValue={formatHex(props.prev, { width: 2 })}
-              bg="none"
-              readOnly
-            />
-            <IconArrowRight size={16} />
-            <Input
-              w="60"
-              placeholder="..."
+              variant="filled"
+              placeholder="XX"
+              w={60}
+              autoFocus
               value={value}
-              onChange={(e) => setValue(e.currentTarget.value)}
-              error={value && Number.isNaN(parseHex(value))}
+              onChange={(e) => setValue(e.currentTarget.value.toUpperCase())}
+              error={value && error}
+              styles={{
+                input: { textAlign: "center", fontFamily: "monospace" },
+              }}
             />
           </Group>
+
           <Group grow>
-            <Button color="red" onClick={props.onClose} type="button">
-              Cancel
+            <Button type="submit" disabled={!value || error}>
+              Confirm
             </Button>
-            <Button type="submit">Confirm</Button>
           </Group>
         </Stack>
       </form>

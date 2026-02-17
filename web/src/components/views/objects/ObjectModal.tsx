@@ -76,6 +76,7 @@ function ObjectModal(props: {
             height={obj.height * 8}
             innerWidth={obj.width}
             innerHeight={obj.height}
+            checkerboard
           />
           <Badge variant="light" color="gray" size="sm">
             {obj.width * 8} × {obj.height * 8} px

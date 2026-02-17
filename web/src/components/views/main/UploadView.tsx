@@ -9,6 +9,7 @@ import {
   ThemeIcon,
   Divider,
   Container,
+  Box,
 } from "@mantine/core";
 import { IconUpload, IconCheck, IconAlertCircle } from "@tabler/icons-react";
 import { usePersistantStore } from "@/stores/persistantStore";
@@ -17,7 +18,7 @@ import { useRuntimeActions } from "@/stores/runtimeStore";
 import IconGBA from "@/assets/gba.svg?react";
 
 function UploadView() {
-  const { bios, set } = usePersistantStore();
+  const { bios, theme, set } = usePersistantStore();
   const { load } = useRuntimeActions();
 
   const romInputRef = useRef<HTMLInputElement>(null);
@@ -70,16 +71,10 @@ function UploadView() {
   };
 
   return (
-    <Flex
-      p="md"
-      flex={1}
-      align="center"
-      justify="center"
-      bg="var(--mantine-color-body)"
-    >
+    <Flex p="md" flex={1} align="center" justify="center">
       <Container size="xs" w="100%">
         <Paper
-          p={{ base: "xl", sm: 50 }}
+          p="xl"
           radius="lg"
           withBorder
           style={{
@@ -104,13 +99,14 @@ function UploadView() {
         >
           <Stack align="center">
             <Stack w="100%" gap="xl" align="center">
-              <ThemeIcon size={120} radius="lg" variant="light" color="indigo">
-                <IconGBA />
-              </ThemeIcon>
+              <Box mt="md" c="indigo">
+                <IconGBA scale={2} />
+              </Box>
+
               <Text c="dimmed" ta="center" size="sm" maw={300}>
                 {bios
                   ? "Select a GameBoy Advance ROM (.gba) to get started."
-                  : "Welcome! You'll need to upload a BIOS file to begin."}
+                  : "Welcome! You'll need to upload a BIOS file (.bin) to begin."}
               </Text>
             </Stack>
 
@@ -119,7 +115,7 @@ function UploadView() {
                 disabled={!bios}
                 leftSection={<IconUpload size={20} />}
                 onClick={() => romInputRef.current?.click()}
-                variant="filled"
+                variant={theme === "dark" ? "light" : "filled"}
                 color="indigo"
               >
                 Load Game ROM
@@ -143,9 +139,7 @@ function UploadView() {
                       <IconAlertCircle size={12} />
                     </ThemeIcon>
                   )}
-                  <Text size="sm" fw={500}>
-                    BIOS File
-                  </Text>
+                  <Text size="sm">BIOS File</Text>
                   {!bios && (
                     <Text c="orange" size="sm">
                       (required)

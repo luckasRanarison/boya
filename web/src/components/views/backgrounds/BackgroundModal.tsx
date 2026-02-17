@@ -100,7 +100,7 @@ function BackgroundModal(props: {
                   Base Blocks
                 </Text>
                 <Text fw={500} size="sm">
-                  Char: {charBaseBlock} / Screen: {screenBaseBlock}
+                  Char: {charBaseBlock} / Scr: {screenBaseBlock}
                 </Text>
               </Box>
             </Group>

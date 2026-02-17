@@ -102,7 +102,7 @@ function BackgroundView() {
                 <ActionIcon
                   size="xs"
                   variant="subtle"
-                  color={hiddenBgs[bg] ? "gray" : "blue"}
+                  color={hiddenBgs[bg] ? "gray" : "indigo"}
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleBgVisibility(bg);

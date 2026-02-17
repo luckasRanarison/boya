@@ -39,7 +39,7 @@ function FloatingWindow(props: {
             ...cssPositions["up-right"],
             position: "fixed",
             zIndex,
-            minWidth: collapsed ? "fit-content" : 350,
+            minWidth: collapsed ? 225 : 350,
             borderRadius: collapsed ? 20 : undefined,
             maxHeight: "60vh",
             display: "flex",
@@ -70,18 +70,16 @@ function FloatingWindow(props: {
               >
                 {collapsed ? <IconChevronDown /> : <IconMinus />}
               </ActionIcon>
-              {!collapsed && (
-                <ActionIcon
-                  title="Close"
-                  className="drag-cancel"
-                  size="sm"
-                  variant="transparent"
-                  onClick={props.onClose}
-                  c="red"
-                >
-                  <IconX />
-                </ActionIcon>
-              )}
+              <ActionIcon
+                title="Close"
+                className="drag-cancel"
+                size="sm"
+                variant="transparent"
+                onClick={props.onClose}
+                c="red"
+              >
+                <IconX />
+              </ActionIcon>
             </Group>
           </Group>
           {!collapsed && <Divider />}
