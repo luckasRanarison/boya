@@ -6,6 +6,7 @@ function Tile(props: {
   innerHeight: number;
   width: number;
   height: number;
+  checkerboard?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -33,7 +34,10 @@ function Tile(props: {
         height: props.height,
         width: props.width,
         imageRendering: "pixelated",
-        border: "1px solid gray",
+        border: "1px solid var(--mantine-color-default-border)",
+        background: props.checkerboard
+          ? "repeating-conic-gradient(#f0f0f0 0% 25%, #fff 0% 50%) 50% / 16px 16px"
+          : undefined,
       }}
     />
   );

@@ -46,9 +46,9 @@ export const views = [
   },
   { name: "objects", icon: IconCube },
   { name: "backgrounds", icon: IconPhoto },
-  { name: "about", icon: IconInfoCircle, mobileOnly: true },
   { name: "debugger", icon: IconBug, mobileOnly: true },
   { name: "settings", icon: IconSettings, mobileOnly: true },
+  { name: "about", icon: IconInfoCircle, mobileOnly: true },
 ] as const;
 
 type ViewName = (typeof views)[number]["name"];

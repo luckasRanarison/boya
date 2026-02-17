@@ -6,9 +6,9 @@ import {
   Text,
   ActionIcon,
   SimpleGrid,
-  Modal,
   Flex,
   Card,
+  Badge,
 } from "@mantine/core";
 import {
   IconLayoutGrid,
@@ -17,7 +17,7 @@ import {
   IconEyeOff,
 } from "@tabler/icons-react";
 import { useMemo, useState, useRef } from "react";
-import { FlagList } from "../registers/FlagList";
+import BackgroundModal from "./BackgroundModal";
 
 function BackgroundView() {
   const { memory, renderBg } = useGba();
@@ -100,7 +100,7 @@ function BackgroundView() {
             {sorted.map(({ bg, prio }) => (
               <Flex key={bg} align="center" gap="sm">
                 <ActionIcon
-                  size="sm"
+                  size="xs"
                   variant="subtle"
                   color={hiddenBgs[bg] ? "gray" : "blue"}
                   onClick={(e) => {
@@ -108,11 +108,7 @@ function BackgroundView() {
                     toggleBgVisibility(bg);
                   }}
                 >
-                  {hiddenBgs[bg] ? (
-                    <IconEyeOff size={14} />
-                  ) : (
-                    <IconEye size={14} />
-                  )}
+                  {hiddenBgs[bg] ? <IconEyeOff /> : <IconEye />}
                 </ActionIcon>
                 <Text size="xs" fw={600} style={{ whiteSpace: "nowrap" }}>
                   BG {bg}{" "}
@@ -127,34 +123,17 @@ function BackgroundView() {
       )}
 
       {focused !== null && (
-        <Modal
-          title={`BG ${focused}`}
+        <BackgroundModal
+          id={focused}
+          bgcnt={bgcnt[focused].value}
           onClose={() => setFocused(null)}
-          opened
-          centered
-        >
-          <Stack gap="xl">
-            <Flex justify="center">
-              <Tile
-                render={() => renderBg(focused)}
-                width={240}
-                height={160}
-                innerWidth={240}
-                innerHeight={160}
-              />
-            </Flex>
-            <FlagList
-              value={bgcnt[focused].value}
-              flags={bgcnt[focused].flags}
-            />
-          </Stack>
-        </Modal>
+        />
       )}
 
       <ActionIcon
         title="Toggle view mode"
-        size="lg"
-        variant="filled"
+        size="xl"
+        radius="md"
         style={{
           position: "fixed",
           bottom: 25,
@@ -167,11 +146,7 @@ function BackgroundView() {
           setRotation({ x: 55, y: 0 });
         }}
       >
-        {mode === "stack" ? (
-          <IconLayoutGrid size={20} />
-        ) : (
-          <IconLayersIntersect size={20} />
-        )}
+        {mode === "stack" ? <IconLayoutGrid /> : <IconLayersIntersect />}
       </ActionIcon>
 
       <Box
@@ -200,7 +175,7 @@ function BackgroundView() {
         <SimpleGrid
           cols={{ base: 1, lg: 2 }}
           spacing="xl"
-          verticalSpacing="sm"
+          verticalSpacing="xl"
           style={{
             position: "relative",
             width: isGrid ? "fit-content" : 240 * 1.2,
@@ -251,13 +226,25 @@ function BackgroundView() {
                     height={isGrid ? 160 : 160 * 1.2}
                     innerWidth={240}
                     innerHeight={160}
+                    checkerboard={mode === "grid"}
                   />
                 </Box>
 
                 {isGrid && (
-                  <Text size="xs" fw={700}>
-                    BG {bg} (prio {prio})
-                  </Text>
+                  <>
+                    <Text c="gray" size="sm" fw="bold">
+                      BG {bg}
+                    </Text>
+                    <Badge
+                      variant="dot"
+                      color={
+                        ["indigo.8", "indigo.6", "indigo.4", "indigo.2"][prio]
+                      }
+                      style={{ position: "absolute", top: 10, right: 10 }}
+                    >
+                      prio {prio}
+                    </Badge>
+                  </>
                 )}
               </Flex>
             );

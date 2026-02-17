@@ -10,15 +10,11 @@ import {
   Divider,
   Container,
 } from "@mantine/core";
-import {
-  IconDeviceGamepad2,
-  IconUpload,
-  IconCheck,
-  IconAlertCircle,
-} from "@tabler/icons-react";
+import { IconUpload, IconCheck, IconAlertCircle } from "@tabler/icons-react";
 import { usePersistantStore } from "@/stores/persistantStore";
 import notifications from "@/lib/notifications";
 import { useRuntimeActions } from "@/stores/runtimeStore";
+import IconGBA from "@/assets/gba.svg?react";
 
 function UploadView() {
   const { bios, set } = usePersistantStore();
@@ -90,7 +86,7 @@ function UploadView() {
             borderStyle: "dashed",
             borderWidth: "2px",
             borderColor: "var(--mantine-color-indigo-light-hover)",
-            transition: "all 0.2s ease",
+            transition: "all 300ms ease",
           }}
           onDragOver={(event) => {
             event.preventDefault();
@@ -107,16 +103,18 @@ function UploadView() {
           onDrop={handleDropUpload}
         >
           <Stack align="center">
-            <ThemeIcon size={80} radius="xl" variant="light" color="indigo">
-              <IconDeviceGamepad2 size={45} stroke={1.5} />
-            </ThemeIcon>
-            <Text c="dimmed" ta="center" size="sm" maw={300}>
-              {bios
-                ? "Select a GameBoy Advance ROM (.gba) to get started."
-                : "Welcome! You'll need to upload a BIOS file to begin."}
-            </Text>
+            <Stack w="100%" gap="xl" align="center">
+              <ThemeIcon size={120} radius="lg" variant="light" color="indigo">
+                <IconGBA />
+              </ThemeIcon>
+              <Text c="dimmed" ta="center" size="sm" maw={300}>
+                {bios
+                  ? "Select a GameBoy Advance ROM (.gba) to get started."
+                  : "Welcome! You'll need to upload a BIOS file to begin."}
+              </Text>
+            </Stack>
 
-            <Stack w="100%" gap="md">
+            <Stack w="100%">
               <Button
                 disabled={!bios}
                 leftSection={<IconUpload size={20} />}
@@ -150,7 +148,7 @@ function UploadView() {
                   </Text>
                   {!bios && (
                     <Text c="orange" size="sm">
-                      (required to play)
+                      (required)
                     </Text>
                   )}
                 </Group>

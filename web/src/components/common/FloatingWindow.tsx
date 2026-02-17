@@ -2,13 +2,13 @@ import { useFloatingPositions } from "@/hooks/useFloatingPositions";
 import {
   ActionIcon,
   Box,
-  CloseButton,
+  Divider,
   Group,
   Paper,
   Portal,
   Text,
 } from "@mantine/core";
-import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
+import { IconChevronDown, IconMinus, IconX } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 import Draggable from "react-draggable";
 
@@ -39,7 +39,8 @@ function FloatingWindow(props: {
             ...cssPositions["up-right"],
             position: "fixed",
             zIndex,
-            minWidth: 350,
+            minWidth: collapsed ? "fit-content" : 350,
+            borderRadius: collapsed ? 20 : undefined,
             maxHeight: "60vh",
             display: "flex",
             flexDirection: "column",
@@ -48,37 +49,42 @@ function FloatingWindow(props: {
         >
           <Group
             className="drag-handle"
-            p="xs"
+            py="xs"
+            px="md"
+            gap="xs"
             justify="space-between"
             wrap="nowrap"
-            style={{
-              cursor: "grab",
-              borderBottom: "1px solid var(--mantine-color-default-border)",
-            }}
+            style={{ cursor: "grab" }}
           >
             <Text size="xs" fw="bold" ff="monospace" c="dimmed" tt="uppercase">
               {props.title}
             </Text>
-            <Group>
+            <Group gap="xs">
               <ActionIcon
                 title={collapsed ? "Expand" : "Minimize"}
                 className="drag-cancel"
                 size="sm"
-                variant="subtle"
+                variant="transparent"
+                c={collapsed ? "indigo" : "gray"}
                 onClick={() => setCollapsed((prev) => !prev)}
               >
-                {collapsed ? <IconChevronDown /> : <IconChevronUp />}
+                {collapsed ? <IconChevronDown /> : <IconMinus />}
               </ActionIcon>
-              <CloseButton
-                title="Close"
-                className="drag-cancel"
-                size="sm"
-                variant="subtle"
-                onClick={props.onClose}
-                c="red"
-              />
+              {!collapsed && (
+                <ActionIcon
+                  title="Close"
+                  className="drag-cancel"
+                  size="sm"
+                  variant="transparent"
+                  onClick={props.onClose}
+                  c="red"
+                >
+                  <IconX />
+                </ActionIcon>
+              )}
             </Group>
           </Group>
+          {!collapsed && <Divider />}
 
           {!collapsed && (
             <Box flex={1} ff="monospace" fz="sm" style={{ overflow: "scroll" }}>
