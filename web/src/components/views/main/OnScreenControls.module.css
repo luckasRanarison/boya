@@ -1,0 +1,9 @@
+.gamepad-button {
+  background-color: light-dark(#00000030, #ffffff10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  user-select: none;
+}

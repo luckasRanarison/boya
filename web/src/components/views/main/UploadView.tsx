@@ -1,12 +1,28 @@
 import { useRef } from "react";
-import { Button, Text, Stack, Mark, Paper, Group, Flex } from "@mantine/core";
-import { IconDragDrop, IconUpload } from "@tabler/icons-react";
+import {
+  Button,
+  Text,
+  Stack,
+  Paper,
+  Group,
+  Flex,
+  ThemeIcon,
+  Divider,
+  Container,
+  Badge,
+} from "@mantine/core";
+import {
+  IconDeviceGamepad2,
+  IconUpload,
+  IconCheck,
+  IconAlertCircle,
+} from "@tabler/icons-react";
 import { usePersistantStore } from "@/stores/persistantStore";
 import notifications from "@/lib/notifications";
 import { useRuntimeActions } from "@/stores/runtimeStore";
 
 function UploadView() {
-  const { bios, theme, set } = usePersistantStore();
+  const { bios, set } = usePersistantStore();
   const { load } = useRuntimeActions();
 
   const romInputRef = useRef<HTMLInputElement>(null);
@@ -21,7 +37,7 @@ function UploadView() {
       } else {
         set("bios", bytes);
         notifications.info(
-          "The BIOS file has successfully been uploaded and saved to local storage!",
+          "The BIOS file has successfully been uploaded and saved!",
         );
       }
     } else {
@@ -34,8 +50,7 @@ function UploadView() {
     file: "rom" | "bios";
   }) => {
     const { files } = params.event.target;
-
-    if (files) {
+    if (files && files.length > 0) {
       const [file] = files;
       const buffer = await file.arrayBuffer();
       const bytes = new Uint8Array(buffer);
@@ -50,6 +65,8 @@ function UploadView() {
     event.currentTarget.style.background = "none";
 
     const file = event.dataTransfer.files[0];
+    if (!file) return;
+
     const buffer = await file.arrayBuffer();
     const bytes = new Uint8Array(buffer);
     const type = bytes.length === 0x4000 ? "bios" : "rom";
@@ -58,70 +75,119 @@ function UploadView() {
   };
 
   return (
-    <Flex p="xl" flex={1} align="center" justify="center">
-      <Paper
-        p="xl"
-        w="100%"
-        h="80%"
-        maw={{ base: "100%", sm: "65%" }}
-        bd="2px dashed indigo"
-        radius="md"
-        onDragLeave={({ currentTarget }) => {
-          currentTarget.style.background = "none";
-        }}
-        onDragOver={(event) => {
-          event.preventDefault();
-          event.currentTarget.style.background =
-            theme === "light" ? "#00000008" : "#FFFFFF08";
-        }}
-        onDrop={handleDropUpload}
-      >
-        <Stack h="100%" justify="center" align="center">
-          <Text c="indigo">
-            <IconDragDrop size={70} />
-          </Text>
-          <Text ta="center">
-            Drag and drop your{" "}
-            <Mark bg="none" c="indigo" fw={600}>
-              GameBoy Advance
-            </Mark>{" "}
-            files here
-          </Text>
-          <Text>OR</Text>
+    <Flex
+      p="md"
+      flex={1}
+      align="center"
+      justify="center"
+      bg="var(--mantine-color-body)"
+    >
+      <Container size="xs" w="100%">
+        <Paper
+          p={{ base: "xl", sm: 50 }}
+          radius="lg"
+          withBorder
+          style={{
+            borderStyle: "dashed",
+            borderWidth: "2px",
+            borderColor: "var(--mantine-color-indigo-light-hover)",
+            transition: "all 0.2s ease",
+          }}
+          onDragOver={(event) => {
+            event.preventDefault();
+            event.currentTarget.style.backgroundColor =
+              "var(--mantine-color-indigo-light)";
+            event.currentTarget.style.borderColor =
+              "var(--mantine-color-indigo-filled)";
+          }}
+          onDragLeave={(event) => {
+            event.currentTarget.style.backgroundColor = "transparent";
+            event.currentTarget.style.borderColor =
+              "var(--mantine-color-indigo-light-hover)";
+          }}
+          onDrop={handleDropUpload}
+        >
+          <Stack align="center">
+            <ThemeIcon size={80} radius="xl" variant="light" color="indigo">
+              <IconDeviceGamepad2 size={45} stroke={1.5} />
+            </ThemeIcon>
+            <Text c="dimmed" ta="center" size="sm" maw={300}>
+              {bios
+                ? "Select a GameBoy Advance ROM (.gba) to get started."
+                : "Welcome! You'll need to upload a BIOS file to begin."}
+            </Text>
 
-          <Group>
-            <Button
-              w={{ base: "100%", md: "auto" }}
-              disabled={!bios}
-              leftSection={<IconUpload size={14} />}
-              onClick={() => romInputRef.current?.click()}
-            >
-              Upload ROM
-            </Button>
-            <Button
-              variant="light"
-              w={{ base: "100%", md: "auto" }}
-              leftSection={<IconUpload size={14} />}
-              onClick={() => biosInputRef.current?.click()}
-            >
-              Upload BIOS
-            </Button>
-          </Group>
-        </Stack>
+            <Stack w="100%" gap="md">
+              <Button
+                disabled={!bios}
+                leftSection={<IconUpload size={20} />}
+                onClick={() => romInputRef.current?.click()}
+                variant="filled"
+                color="indigo"
+              >
+                Load Game ROM
+              </Button>
 
-        <div hidden>
-          <input
-            type="file"
-            ref={romInputRef}
-            onChange={(event) => handleButtonUpload({ event, file: "rom" })}
-          />
-          <input
-            type="file"
-            ref={biosInputRef}
-            onChange={(event) => handleButtonUpload({ event, file: "bios" })}
-          />
-        </div>
-      </Paper>
+              <Divider
+                label="System Status"
+                labelPosition="center"
+                my="sm"
+                variant="dashed"
+              />
+
+              <Group justify="space-between" wrap="nowrap">
+                <Group gap="xs">
+                  {bios ? (
+                    <ThemeIcon color="teal" size="sm" radius="xl">
+                      <IconCheck size={12} />
+                    </ThemeIcon>
+                  ) : (
+                    <ThemeIcon color="orange" size="sm" radius="xl">
+                      <IconAlertCircle size={12} />
+                    </ThemeIcon>
+                  )}
+                  <Text size="sm" fw={500}>
+                    BIOS File
+                  </Text>
+                  {!bios && (
+                    <Text c="orange" size="sm">
+                      (required to play)
+                    </Text>
+                  )}
+                </Group>
+
+                <Button
+                  variant="light"
+                  size="compact-sm"
+                  color={bios ? "gray" : "indigo"}
+                  onClick={() => biosInputRef.current?.click()}
+                >
+                  {bios ? "Replace" : "Upload"}
+                </Button>
+              </Group>
+            </Stack>
+
+            <Text visibleFrom="sm" size="xs" c="dimmed" ta="center">
+              Pro tip: You can drag and drop files anywhere on this card.
+            </Text>
+          </Stack>
+        </Paper>
+      </Container>
+
+      <div style={{ display: "none" }}>
+        <input
+          type="file"
+          ref={romInputRef}
+          accept=".gba,.bin"
+          onChange={(event) => handleButtonUpload({ event, file: "rom" })}
+        />
+        <input
+          type="file"
+          ref={biosInputRef}
+          accept=".bin"
+          onChange={(event) => handleButtonUpload({ event, file: "bios" })}
+        />
+      </div>
     </Flex>
   );
 }

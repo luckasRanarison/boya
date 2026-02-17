@@ -1,5 +1,14 @@
 import { useFloatingPositions } from "@/hooks/useFloatingPositions";
-import { Box, CloseButton, Group, Paper, Portal, Text } from "@mantine/core";
+import {
+  ActionIcon,
+  Box,
+  CloseButton,
+  Group,
+  Paper,
+  Portal,
+  Text,
+} from "@mantine/core";
+import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 import Draggable from "react-draggable";
 
@@ -11,6 +20,7 @@ function FloatingWindow(props: {
   const parentRef = useRef<HTMLDivElement>(null);
   const cssPositions = useFloatingPositions(350);
   const [zIndex, setZIndex] = useState(200);
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <Portal>
@@ -49,19 +59,32 @@ function FloatingWindow(props: {
             <Text size="xs" fw="bold" ff="monospace" c="dimmed" tt="uppercase">
               {props.title}
             </Text>
-            <CloseButton
-              title="Close"
-              className="drag-cancel"
-              size="sm"
-              variant="subtle"
-              onClick={props.onClose}
-              c="red"
-            />
+            <Group>
+              <ActionIcon
+                title={collapsed ? "Expand" : "Minimize"}
+                className="drag-cancel"
+                size="sm"
+                variant="subtle"
+                onClick={() => setCollapsed((prev) => !prev)}
+              >
+                {collapsed ? <IconChevronDown /> : <IconChevronUp />}
+              </ActionIcon>
+              <CloseButton
+                title="Close"
+                className="drag-cancel"
+                size="sm"
+                variant="subtle"
+                onClick={props.onClose}
+                c="red"
+              />
+            </Group>
           </Group>
 
-          <Box flex={1} ff="monospace" fz="sm" style={{ overflow: "scroll" }}>
-            {props.children}
-          </Box>
+          {!collapsed && (
+            <Box flex={1} ff="monospace" fz="sm" style={{ overflow: "scroll" }}>
+              {props.children}
+            </Box>
+          )}
         </Paper>
       </Draggable>
     </Portal>

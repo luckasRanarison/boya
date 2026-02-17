@@ -1,3 +1,4 @@
+import styles from "./OnScreenControls.module.css";
 import { keys } from "@/lib/keymap";
 import { useRuntimeActions } from "@/stores/runtimeStore";
 import { Box, UnstyledButton, Group, Text } from "@mantine/core";
@@ -31,26 +32,14 @@ function ControlButton({
   const baseStyle =
     label && label.length > 1
       ? { padding: 5, borderRadius: 4 }
-      : {
-          width: 40,
-          height: 40,
-          borderRadius: "50%",
-        };
+      : { width: 40, height: 40, borderRadius: "50%" };
 
   return (
     <UnstyledButton
       onPointerDown={handleStart}
       onPointerUp={handleEnd}
-      style={{
-        ...baseStyle,
-        backgroundColor: "rgba(255, 255, 255, 0.1)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        border: "1px solid rgba(255, 255, 255, 0.2)",
-        color: "white",
-        userSelect: "none",
-      }}
+      style={{ ...baseStyle }}
+      className={styles["gamepad-button"]}
     >
       {Icon ? (
         <Icon size={32} />

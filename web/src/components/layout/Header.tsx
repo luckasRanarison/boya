@@ -1,4 +1,12 @@
-import { Box, Button, Group, Menu, Text, ActionIcon } from "@mantine/core";
+import {
+  Box,
+  Button,
+  Group,
+  Menu,
+  Text,
+  ActionIcon,
+  ThemeIcon,
+} from "@mantine/core";
 import {
   IconBrandGithub,
   IconChevronDown,
@@ -40,7 +48,13 @@ function Header() {
               "sub" in view ? (
                 <Menu key={name} width="175" position="right-start" offset={15}>
                   <Menu.Target>
-                    <Menu.Sub.Item leftSection={<Icon size={18} />}>
+                    <Menu.Sub.Item
+                      leftSection={
+                        <ThemeIcon c="indigo" size="sm" variant="transparent">
+                          <Icon />
+                        </ThemeIcon>
+                      }
+                    >
                       <Text ml="xs" size="md">
                         {name}
                       </Text>
@@ -50,7 +64,11 @@ function Header() {
                     {view.sub.map(({ icon: Icon, ...sub }) => (
                       <Menu.Item
                         key={sub.name}
-                        leftSection={<Icon size={18} />}
+                        leftSection={
+                          <ThemeIcon c="indigo" size="sm" variant="transparent">
+                            <Icon />
+                          </ThemeIcon>
+                        }
                         onClick={() => setView({ name, sub })}
                       >
                         <Text ml="xs" size="md">
@@ -63,7 +81,11 @@ function Header() {
               ) : (
                 <Menu.Item
                   key={name}
-                  leftSection={<Icon size={18} />}
+                  leftSection={
+                    <ThemeIcon c="indigo" size="sm" variant="transparent">
+                      <Icon />
+                    </ThemeIcon>
+                  }
                   onClick={() => setView({ name })}
                   hiddenFrom={"mobileOnly" in view ? "sm" : undefined}
                 >
