@@ -3,7 +3,7 @@ import { IconExternalLink } from "@tabler/icons-react";
 import type { MemoryViewMode } from "../views/memory/MemoryView";
 import { formatHex } from "@/utils/format";
 import { useGotoMemory } from "@/hooks/useGotoMemory";
-import { useViewStore } from "@/stores/viewStore";
+import { useSearchParams } from "react-router";
 
 function MemoryLink(props: {
   address: number;
@@ -11,16 +11,14 @@ function MemoryLink(props: {
   disabled?: boolean;
   tooltip?: boolean;
 }) {
-  const { view } = useViewStore();
   const gotoMemory = useGotoMemory();
+  const [searchParams] = useSearchParams();
+  const currentMode = searchParams.get("mode") as MemoryViewMode | undefined;
 
   const handleGoto = () => {
     gotoMemory({
       address: props.address,
-      mode:
-        props.mode ??
-        (view.name === "memory" ? view.sub?.metadata?.mode : undefined) ??
-        "code",
+      mode: currentMode ?? "code",
       hightlight: true,
     });
   };

@@ -13,11 +13,12 @@ import {
   IconMenu2,
 } from "@tabler/icons-react";
 import AppTitle from "./AppTitle";
-import { views, useViewStore, useViewActions } from "@/stores/viewStore";
+import { Link } from "react-router";
+import { useActiveRoute } from "@/hooks/useActiveRoute";
+import ROUTES from "@/routes";
 
 function Header() {
-  const view = useViewStore((state) => state.view);
-  const { setView } = useViewActions();
+  const { activeRoute } = useActiveRoute();
 
   return (
     <Group p="md" h="100%" justify="space-between" align="center">
@@ -38,15 +39,20 @@ function Header() {
                 rightSection={<IconChevronDown />}
                 fz="md"
               >
-                {view.name}
+                {activeRoute?.label}
               </Button>
             </Box>
           </Menu.Target>
 
           <Menu.Dropdown>
-            {views.map(({ name, icon: Icon, ...view }) =>
-              "sub" in view ? (
-                <Menu key={name} width="175" position="right-start" offset={15}>
+            {ROUTES.map(({ icon: Icon, ...route }) =>
+              route.sub ? (
+                <Menu
+                  key={route.path}
+                  width="175"
+                  position="right-start"
+                  offset={15}
+                >
                   <Menu.Target>
                     <Menu.Sub.Item
                       leftSection={
@@ -56,23 +62,24 @@ function Header() {
                       }
                     >
                       <Text ml="xs" size="md">
-                        {name}
+                        {route.label}
                       </Text>
                     </Menu.Sub.Item>
                   </Menu.Target>
                   <Menu.Dropdown>
-                    {view.sub.map(({ icon: Icon, ...sub }) => (
+                    {route.sub.map(({ icon: Icon, ...sub }) => (
                       <Menu.Item
-                        key={sub.name}
+                        key={sub.path}
+                        component={Link}
+                        to={`${route.path}/${sub.path}`}
                         leftSection={
                           <ThemeIcon c="indigo" size="sm" variant="transparent">
                             <Icon />
                           </ThemeIcon>
                         }
-                        onClick={() => setView({ name, sub })}
                       >
                         <Text ml="xs" size="md">
-                          {sub.name}
+                          {sub.label}
                         </Text>
                       </Menu.Item>
                     ))}
@@ -80,17 +87,18 @@ function Header() {
                 </Menu>
               ) : (
                 <Menu.Item
-                  key={name}
+                  key={route.path}
+                  component={Link}
+                  to={route.path}
                   leftSection={
                     <ThemeIcon c="indigo" size="sm" variant="transparent">
                       <Icon />
                     </ThemeIcon>
                   }
-                  onClick={() => setView({ name })}
-                  hiddenFrom={"mobileOnly" in view ? "sm" : undefined}
+                  hiddenFrom={route.mobileOnly ? "sm" : undefined}
                 >
                   <Text ml="xs" size="md">
-                    {name}
+                    {route.label}
                   </Text>
                 </Menu.Item>
               ),

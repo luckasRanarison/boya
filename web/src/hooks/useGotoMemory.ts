@@ -1,15 +1,15 @@
 import type { MemoryViewMode } from "@/components/views/memory/MemoryView";
 import notifications from "@/lib/notifications";
-import { useViewActions } from "@/stores/viewStore";
 import { formatHex } from "@/utils/format";
 import {
   getMemoryRegion,
   memoryRegions,
   type MemoryRegionName,
 } from "@/lib/gba";
+import { useNavigate } from "react-router";
 
 export function useGotoMemory() {
-  const { setView } = useViewActions();
+  const navigate = useNavigate();
 
   return (params: {
     address: number;
@@ -17,20 +17,16 @@ export function useGotoMemory() {
     hightlight?: boolean;
   }) => {
     const hex = formatHex(params.address);
+    const searchId = Math.random().toString(36).substring(7); // use rng to force re-render
 
     const findElement = (depth = 0) => {
-      if (depth > 3) {
+      if (depth > 20) {
         return notifications.error(`Invalid jump address: ${hex}`);
       }
 
       const elem = document.getElementById(hex);
 
       if (!elem) {
-        const link = document.createElement("a");
-        link.href = `#${hex}`;
-        link.click();
-        link.remove();
-
         return setTimeout(() => findElement(depth + 1), 100); // add timeout to avoid busy loop
       }
 
@@ -58,16 +54,13 @@ export function useGotoMemory() {
       return notifications.error(`Invalid jump address: ${hex}`);
     }
 
-    setView({
-      name: "memory",
-      sub: {
-        name: region,
-        metadata: {
-          mode: params.mode ?? "code",
-          jump: { address: params.address },
-        },
+    navigate(
+      {
+        pathname: `/memory/${region.toLowerCase()}`,
+        search: `?mode=${params.mode ?? "code"}&jump=${`${params.address}.${searchId}`}`,
       },
-    });
+      { replace: true },
+    );
 
     findElement();
   };

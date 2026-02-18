@@ -3,14 +3,15 @@ import {
   useDebuggerActions,
   useDebuggerStore,
 } from "@/stores/debuggerStore";
-import { useViewActions, useViewStore } from "@/stores/viewStore";
+import { useViewActions } from "@/stores/viewStore";
 import { useGotoMemory } from "./useGotoMemory";
 import { useRuntimeActions, useRuntimeStore } from "@/stores/runtimeStore";
 import { GBA } from "@/lib/gba";
+import { useActiveRoute } from "./useActiveRoute";
 
 export function useDebuggerControls() {
   const breakpoints = useBreakpoints();
-  const view = useViewStore((state) => state.view);
+  const { parent } = useActiveRoute();
   const callstack = useDebuggerStore((state) => state.callstack);
   const running = useRuntimeStore((state) => state.running);
   const romLoaded = useRuntimeStore((state) => state.romLoaded);
@@ -21,7 +22,7 @@ export function useDebuggerControls() {
   const { clearState } = useDebuggerActions();
 
   const jumpToExec = () => {
-    if (view.name === "memory") {
+    if (parent === "memory") {
       gotoMemory({
         address: GBA.execAddress(),
         mode: "code",

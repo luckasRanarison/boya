@@ -28,6 +28,7 @@ import TileView from "./TileView";
 import CodeView from "./CodeView";
 import type { MemoryRegionName } from "@/lib/gba";
 import { useGotoMemory } from "@/hooks/useGotoMemory";
+import { useParams, useSearchParams } from "react-router";
 
 const viewModes = {
   hex: {
@@ -49,20 +50,23 @@ export type MemoryViewMode = keyof typeof viewModes;
 export type MemoryViewProps = {
   region: MemoryRegionName;
   mode: MemoryViewMode;
-  columns?: number;
   jump?: { address: number };
 };
 
-function MemoryView(props: MemoryViewProps) {
-  const { memory, cpu } = useGba();
-  const [currentMode, setCurrentMode] = useState(props.mode ?? "hex");
+function MemoryView() {
+  const params = useParams<{ region: MemoryRegionName }>();
+  const [searchParams] = useSearchParams();
+  const mode = searchParams.get("mode") as MemoryViewMode | undefined;
+  const jump = searchParams.get("jump");
 
-  const { offset, ...region } = memory.getRegion(props.region);
+  const { memory, cpu } = useGba();
+  const [currentMode, setCurrentMode] = useState(mode ?? "hex");
+
+  const { offset, ...region } = memory.getRegion(params.region ?? "bios");
   const { pageSize, icon: ModeIcon } = viewModes[currentMode];
 
   const [{ pageId }, dispatch] = useMemoryPage({ offset, pageSize });
 
-  const columns = props.columns ?? 16;
   const pageStart = (pageId - 1) * pageSize;
   const total = Math.ceil(region.getLength() / pageSize);
   const currentPage = region.getData(pageStart, pageStart + pageSize);
@@ -78,10 +82,13 @@ function MemoryView(props: MemoryViewProps) {
   };
 
   useEffect(() => {
-    if (props.jump !== undefined) {
-      dispatch({ type: "jump", address: props.jump.address });
+    if (jump) {
+      const [address] = jump.split(".");
+      const parsed = parseInt(address);
+
+      dispatch({ type: "jump", address: parsed });
     }
-  }, [props.jump, dispatch]);
+  }, [jump, dispatch]);
 
   return (
     <Stack flex={1} mb="80px" align="center">
@@ -91,9 +98,9 @@ function MemoryView(props: MemoryViewProps) {
             <HexView
               pageData={currentPage}
               baseAddress={offset}
-              columns={columns}
+              columns={16}
               pageStart={pageStart}
-              rightSection={props.region === "palette" ? "color" : "ascii"}
+              rightSection={params.region === "palette" ? "color" : "ascii"}
             />
           )}
 

@@ -6,10 +6,10 @@ import type { CpuState } from "@/hooks/useGba";
 import { useDebuggerActions } from "@/stores/debuggerStore";
 import { useEffect } from "react";
 import { GBA } from "@/lib/gba";
-import { useViewStore } from "@/stores/viewStore";
+import { useSearchParams } from "react-router";
 
 function PipelineView({ cpu }: { cpu: CpuState }) {
-  const view = useViewStore((state) => state.view);
+  const [searchParams] = useSearchParams();
   const running = useRuntimeStore((state) => state.running);
   const { decode, pushStack, popStack } = useDebuggerActions();
   const pipeline = cpu.pipeline();
@@ -23,10 +23,10 @@ function PipelineView({ cpu }: { cpu: CpuState }) {
       pushStack({ caller: cpu.pc, return: cpu.pc + GBA.instructionSize() });
     }
 
-    if (!(view.name === "memory" && view.sub?.metadata?.mode === "code")) {
+    if (searchParams.get("mode") !== "code") {
       decode(2);
     }
-  }, [cpu.lr, cpu.pc, view, decode, pushStack, popStack]);
+  }, [cpu.lr, cpu.pc, searchParams, decode, pushStack, popStack]);
 
   return (
     <Group p="md" ff="monospace">
