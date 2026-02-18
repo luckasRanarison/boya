@@ -50,9 +50,5 @@ export function useGba() {
     cycles,
     scanline: GBA.scanline(),
     booted: romLoaded,
-
-    renderObj: GBA.renderObjBuffer.bind(GBA),
-    renderBg: GBA.renderBgBuffer.bind(GBA),
-    renderTile: GBA.renderTileBuffer.bind(GBA),
   };
 }

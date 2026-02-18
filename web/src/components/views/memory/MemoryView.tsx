@@ -28,7 +28,8 @@ import TileView from "./TileView";
 import CodeView from "./CodeView";
 import type { MemoryRegionName } from "@/lib/gba";
 import { useGotoMemory } from "@/hooks/useGotoMemory";
-import { useParams, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
+import { useActiveRoute } from "@/hooks/useActiveRoute";
 
 const viewModes = {
   hex: {
@@ -54,15 +55,16 @@ export type MemoryViewProps = {
 };
 
 function MemoryView() {
-  const params = useParams<{ region: MemoryRegionName }>();
+  const { activeRoute } = useActiveRoute();
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode") as MemoryViewMode | undefined;
   const jump = searchParams.get("jump");
+  const regionName = activeRoute?.path as MemoryRegionName | undefined;
 
   const { memory, cpu } = useGba();
   const [currentMode, setCurrentMode] = useState(mode ?? "hex");
 
-  const { offset, ...region } = memory.getRegion(params.region ?? "bios");
+  const { offset, ...region } = memory.getRegion(regionName ?? "bios");
   const { pageSize, icon: ModeIcon } = viewModes[currentMode];
 
   const [{ pageId }, dispatch] = useMemoryPage({ offset, pageSize });
@@ -70,6 +72,7 @@ function MemoryView() {
   const pageStart = (pageId - 1) * pageSize;
   const total = Math.ceil(region.getLength() / pageSize);
   const currentPage = region.getData(pageStart, pageStart + pageSize);
+  const renderkey = offset + pageStart;
 
   const gotoMemory = useGotoMemory();
 
@@ -96,16 +99,21 @@ function MemoryView() {
         <>
           {currentMode === "hex" && (
             <HexView
+              key={renderkey}
               pageData={currentPage}
               baseAddress={offset}
               columns={16}
               pageStart={pageStart}
-              rightSection={params.region === "palette" ? "color" : "ascii"}
+              rightSection={regionName === "palette" ? "color" : "ascii"}
             />
           )}
 
           {currentMode === "tile" && (
-            <TileView pageStart={pageStart} pageData={currentPage} />
+            <TileView
+              key={renderkey}
+              pageStart={pageStart}
+              pageData={currentPage}
+            />
           )}
 
           {currentMode === "code" && (

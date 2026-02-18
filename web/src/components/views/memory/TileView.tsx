@@ -1,10 +1,12 @@
 import { Box, Card, Flex, Select, SimpleGrid, Stack } from "@mantine/core";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ColorMode } from "boya_wasm";
 
 import ColorView from "./ColorView";
 import Tile from "@/components/common/Tile";
 import { useGba } from "@/hooks/useGba";
+import Loader from "@/components/common/Loader";
+import { GBA } from "@/lib/gba";
 
 const tileConfig = {
   "4bpp": { tileSize: 32, paletteSize: 16 },
@@ -14,9 +16,11 @@ const tileConfig = {
 type TileMode = "4bpp" | "8bpp";
 
 function TileView(props: { pageStart: number; pageData: Uint8Array }) {
-  const { memory, renderTile } = useGba();
   const [currentMode, setCurrentMode] = useState<TileMode>("4bpp");
   const [currentPaletteId, setCurrentPaletteId] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const { memory } = useGba();
+
   const { tileSize, paletteSize } = tileConfig[currentMode];
   const palette = memory.getPalette();
 
@@ -35,6 +39,14 @@ function TileView(props: { pageStart: number; pageData: Uint8Array }) {
 
     return prev;
   }, []);
+
+  useEffect(() => {
+    setTimeout(() => setLoading(false), 10);
+  }, []);
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <Flex
@@ -56,7 +68,7 @@ function TileView(props: { pageStart: number; pageData: Uint8Array }) {
             innerWidth={8}
             innerHeight={8}
             render={() =>
-              renderTile(
+              GBA.renderTile(
                 id,
                 props.pageStart,
                 currentMode === "4bpp"

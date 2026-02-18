@@ -209,24 +209,18 @@ impl Gba {
             .collect()
     }
 
-    #[wasm_bindgen(js_name = "renderTileBuffer")]
-    pub fn render_tile_buffer(
-        &self,
-        id: u16,
-        offset: u32,
-        color: ColorMode,
-        palette_id: u8,
-    ) -> Vec<u8> {
+    #[wasm_bindgen(js_name = "renderTile")]
+    pub fn render_tile(&self, id: u16, offset: u32, color: ColorMode, palette_id: u8) -> Vec<u8> {
         self.core.render_tile(id, offset, color.into(), palette_id)
     }
 
-    #[wasm_bindgen(js_name = "renderBgBuffer")]
-    pub fn render_bg_buffer(&self, bg: Background) -> Vec<u8> {
+    #[wasm_bindgen(js_name = "renderBg")]
+    pub fn render_bg(&self, bg: Background) -> Vec<u8> {
         self.core.render_bg(bg.into())
     }
 
-    #[wasm_bindgen(js_name = "renderObjBuffer")]
-    pub fn render_obj_buffer(&self, id: u8) -> Vec<u8> {
+    #[wasm_bindgen(js_name = "renderObj")]
+    pub fn render_obj(&self, id: u8) -> Vec<u8> {
         self.core.render_obj(id)
     }
 

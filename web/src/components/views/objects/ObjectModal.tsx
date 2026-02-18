@@ -71,7 +71,7 @@ function ObjectModal(props: {
       <Stack gap="lg">
         <Stack align="center" gap="xs">
           <Tile
-            render={() => GBA.renderObjBuffer(props.id)}
+            render={() => GBA.renderObj(props.id)}
             width={obj.width * 8}
             height={obj.height * 8}
             innerWidth={obj.width}

@@ -34,14 +34,12 @@ export function useDebuggerMenu(state: GbaState) {
     {
       key: "cpu_reg",
       label: "CPU Registers",
-      view: <CPURegisterView value={state.cpu.getRegisters()} style="simple" />,
+      view: <CPURegisterView style="simple" />,
     },
     {
       key: "io_reg",
       label: "I/O Registers",
-      view: (
-        <IORegisterView value={state.memory.getIoRegisters()} style="simple" />
-      ),
+      view: <IORegisterView style="simple" />,
     },
   ];
 }

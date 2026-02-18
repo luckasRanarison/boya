@@ -78,7 +78,7 @@ function Header() {
                           </ThemeIcon>
                         }
                       >
-                        <Text ml="xs" size="md">
+                        <Text ml="xs" size="sm">
                           {sub.label}
                         </Text>
                       </Menu.Item>

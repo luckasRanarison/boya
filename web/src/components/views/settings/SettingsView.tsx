@@ -13,7 +13,7 @@ import {
   formatGamepadKey,
   encodeKeyEvent,
 } from "@/lib/keymap";
-import { useState, Fragment } from "react";
+import { useState, Fragment, useEffect } from "react";
 import SettingsCard from "./SettingsCard";
 
 const modifiers = ["Shift", "Alt", "Control"];
@@ -22,8 +22,8 @@ function SettingsView() {
   const settings = usePersistantStore();
   const [keyEditId, setKeyEditId] = useState<number | null>(null);
 
-  const handleKeyEdit = (targetId: number) => {
-    if (keyEditId === targetId) return;
+  useEffect(() => {
+    if (!keyEditId) return;
 
     const handler = (event: KeyboardEvent) => {
       event.preventDefault();
@@ -32,7 +32,7 @@ function SettingsView() {
       if (!modifiers.includes(event.key) && !settings.keymap[encoded]) {
         const newKeymap = Object.entries(settings.keymap).map(
           ([key, value], id) =>
-            targetId === id ? [encoded, value] : [key, value],
+            keyEditId === id ? [encoded, value] : [key, value],
         );
         settings.set("keymap", Object.fromEntries(newKeymap));
 
@@ -41,9 +41,10 @@ function SettingsView() {
       }
     };
 
-    setKeyEditId(targetId);
     document.addEventListener("keydown", handler);
-  };
+
+    return () => document.removeEventListener("keydown", handler);
+  }, [keyEditId]);
 
   return (
     <Stack
@@ -121,7 +122,7 @@ function SettingsView() {
                 </Text>
                 <Group
                   gap="xs"
-                  onClick={() => handleKeyEdit(id)}
+                  onClick={() => setKeyEditId(keyEditId === id ? null : id)}
                   style={{ cursor: "pointer" }}
                 >
                   {keyEditId === id ? (

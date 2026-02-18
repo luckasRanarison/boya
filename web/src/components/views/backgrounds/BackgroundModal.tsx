@@ -61,7 +61,7 @@ function BackgroundModal(props: {
       <Stack gap="lg">
         <Stack align="center" gap="xs">
           <Tile
-            render={() => GBA.renderBgBuffer(id)}
+            render={() => GBA.renderBg(id)}
             width={240}
             height={160}
             innerWidth={240}

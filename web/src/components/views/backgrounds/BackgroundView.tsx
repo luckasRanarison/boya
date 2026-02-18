@@ -18,9 +18,10 @@ import {
 } from "@tabler/icons-react";
 import { useMemo, useState, useRef } from "react";
 import BackgroundModal from "./BackgroundModal";
+import { GBA } from "@/lib/gba";
 
 function BackgroundView() {
-  const { memory, renderBg } = useGba();
+  const { memory } = useGba();
   const [mode, setMode] = useState<"stack" | "grid">("grid");
   const [focused, setFocused] = useState<number | null>(null);
   const [flat, setFlat] = useState(true);
@@ -221,7 +222,7 @@ function BackgroundView() {
                   }}
                 >
                   <Tile
-                    render={() => renderBg(bg)}
+                    render={() => GBA.renderBg(bg)}
                     width={isGrid ? 240 : 240 * 1.2}
                     height={isGrid ? 160 : 160 * 1.2}
                     innerWidth={240}

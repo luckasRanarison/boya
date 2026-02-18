@@ -3,19 +3,31 @@ import { formatHex, getHexWidth } from "@/utils/format";
 import { Accordion, Group, Stack, Text } from "@mantine/core";
 import { FlagBits } from "./FlagBits";
 import { FlagList } from "./FlagList";
-import { memoryRegions, type IORegister } from "@/lib/gba";
+import { memoryRegions } from "@/lib/gba";
+import { useEffect, useState } from "react";
+import Loader from "@/components/common/Loader";
+import { useGba } from "@/hooks/useGba";
 
-function IORegisterView(props: {
-  value: IORegister;
-  style: "simple" | "full";
-}) {
+function IORegisterView(props: { style?: "simple" | "full" }) {
+  const [loading, setLoading] = useState(true);
   const { running } = useRuntimeStore();
+  const { memory } = useGba();
+
   const offset = memoryRegions.io.offset;
+  const registers = memory.getIoRegisters();
+
+  useEffect(() => {
+    setTimeout(() => setLoading(false), 10);
+  }, []);
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <Stack w="100%" p={0} ff="monospace">
       <Accordion>
-        {props.value.map((register) => {
+        {registers.map((register) => {
           return (
             <Accordion.Item key={register.address} value={register.name}>
               <Accordion.Control disabled={running}>

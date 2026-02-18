@@ -87,6 +87,6 @@ export function useDebuggerControls() {
     stepFrame,
     stepIrq,
     toggleRun,
-    stop: () => console.log("Stop"),
+    stop: rt.unload,
   };
 }

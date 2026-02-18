@@ -3,10 +3,11 @@ import { Text, Group, SimpleGrid, Stack } from "@mantine/core";
 import { useState } from "react";
 import { useGba } from "@/hooks/useGba";
 import ObjectModal from "./ObjectModal";
+import { GBA } from "@/lib/gba";
 
 function ObjectView() {
   const [objId, setObjId] = useState<number | null>(null);
-  const { memory, renderObj } = useGba();
+  const { memory } = useGba();
   const objects = memory.getObjects();
 
   return (
@@ -24,7 +25,7 @@ function ObjectView() {
         {objects.map((obj, id) => (
           <Stack gap="xs" align="center" onClick={() => setObjId(id)}>
             <Tile
-              render={() => renderObj(id)}
+              render={() => GBA.renderObj(id)}
               width={60}
               height={60}
               innerWidth={obj.width}

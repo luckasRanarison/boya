@@ -12,9 +12,10 @@ import { GBA } from "@/lib/gba";
 import { formatHex, parseHex } from "@/utils/format";
 import ColorView from "./ColorView";
 import { useDisclosure } from "@mantine/hooks";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { IconArrowRight } from "@tabler/icons-react";
 import notifications from "@/lib/notifications";
+import Loader from "@/components/common/Loader";
 
 type ByteLine = {
   address: number;
@@ -38,10 +39,11 @@ function HexView(props: {
 }) {
   const [edit, setEdit] = useState<Edit | null>(null);
   const [opened, { open, close }] = useDisclosure();
-  const colors = props.rightSection === "color" && GBA.colorPalette();
+  const [loading, setLoading] = useState(true);
 
-  const generateLines = () => {
+  const lines = useMemo(() => {
     const lines: ByteLine[] = [];
+    const colors = props.rightSection === "color" ? GBA.colorPalette() : null;
 
     for (let i = 0; i < props.pageData.length; i += props.columns) {
       const row = props.pageData.slice(i, i + props.columns);
@@ -60,7 +62,7 @@ function HexView(props: {
     }
 
     return lines;
-  };
+  }, [props]);
 
   const handleEdit = (address: number, prev: number) => {
     setEdit({ address, prev });
@@ -79,7 +81,13 @@ function HexView(props: {
     }
   };
 
-  const lines = generateLines();
+  useEffect(() => {
+    setTimeout(() => setLoading(false), 10);
+  }, []);
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <Stack p="xl" w="100%" ff={"monospace"} align="center">

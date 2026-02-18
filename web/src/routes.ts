@@ -15,13 +15,28 @@ import {
   IconStack2,
   IconStack3,
 } from "@tabler/icons-react";
+import HeroView from "./components/views/main/HeroView";
+import MemoryView from "./components/views/memory/MemoryView";
+import ObjectView from "./components/views/objects/ObjectView";
+import BackgroundView from "./components/views/backgrounds/BackgroundView";
+import DebuggerView from "./components/views/debugger/DebuggerView";
+import SettingsView from "./components/views/settings/SettingsView";
+import AboutView from "./components/views/about/AboutView";
+import CPURegisterView from "./components/views/registers/CPURegisterView";
+import IORegisterView from "./components/views/registers/IORegisterView";
 
 const ROUTES = [
-  { path: "", label: "Dashboard", icon: IconLayoutDashboard },
+  {
+    path: "",
+    label: "Dashboard",
+    icon: IconLayoutDashboard,
+    component: HeroView,
+  },
   {
     path: "memory",
     label: "Memory",
     icon: IconStack3,
+    component: MemoryView,
     sub: [
       { path: "bios", label: "BIOS", icon: IconFileDigit },
       { path: "ewram", label: "EWRAM", icon: IconStack3 },
@@ -38,15 +53,53 @@ const ROUTES = [
     label: "Registers",
     icon: IconArrowsSort,
     sub: [
-      { path: "cpu", label: "CPU", icon: IconCpu },
-      { path: "io", label: "I/O", icon: IconBlocks },
+      {
+        path: "cpu",
+        label: "CPU",
+        icon: IconCpu,
+        component: CPURegisterView,
+      },
+      {
+        path: "io",
+        label: "I/O",
+        icon: IconBlocks,
+        component: IORegisterView,
+      },
     ],
   },
-  { path: "objects", label: "Objects", icon: IconCube },
-  { path: "backgrounds", label: "Backgrounds", icon: IconPhoto },
-  { path: "debugger", label: "Debugger", icon: IconBug, mobileOnly: true },
-  { path: "settings", label: "Settings", icon: IconSettings, mobileOnly: true },
-  { path: "about", label: "About", icon: IconInfoCircle, mobileOnly: true },
+  {
+    path: "objects",
+    label: "Objects",
+    icon: IconCube,
+    component: ObjectView,
+  },
+  {
+    path: "backgrounds",
+    label: "Backgrounds",
+    icon: IconPhoto,
+    component: BackgroundView,
+  },
+  {
+    path: "debugger",
+    label: "Debugger",
+    icon: IconBug,
+    mobileOnly: true,
+    component: DebuggerView,
+  },
+  {
+    path: "settings",
+    label: "Settings",
+    icon: IconSettings,
+    mobileOnly: true,
+    component: SettingsView,
+  },
+  {
+    path: "about",
+    label: "About",
+    icon: IconInfoCircle,
+    mobileOnly: true,
+    component: AboutView,
+  },
 ];
 
 export default ROUTES;

@@ -6,9 +6,10 @@ import {
   Accordion,
   Tooltip,
 } from "@mantine/core";
-import { psrFlags, type CPURegisterBank } from "@/lib/gba";
+import { psrFlags } from "@/lib/gba";
 import { formatHex } from "@/utils/format";
 import { useRuntimeStore } from "@/stores/runtimeStore";
+import { useGba } from "@/hooks/useGba";
 
 function CpsrFlag(props: { label: string; value: number; flag: number }) {
   return (props.flag & props.value) !== 0 ? (
@@ -45,7 +46,7 @@ function RegisterView(props: {
   values: Uint32Array;
   label?: string;
   offset?: number;
-  style: "simple" | "full";
+  style?: "simple" | "full";
 }) {
   return (
     <Stack px="md">
@@ -72,19 +73,18 @@ function RegisterView(props: {
   );
 }
 
-function RegisterBankView(props: {
-  value: CPURegisterBank;
-  style: "simple" | "full";
-}) {
+function CPURegisterView(props: { style?: "simple" | "full" }) {
+  const { cpu } = useGba();
   const { running } = useRuntimeStore();
+  const registers = cpu.getRegisters();
 
   return (
     <Stack w="100%" ff="monospace">
       <Accordion multiple defaultValue={["main"]}>
-        {props.value.map((b, i) => (
-          <Accordion.Item value={b.label ?? "main"} key={i}>
+        {registers.map((bank, i) => (
+          <Accordion.Item value={bank.label ?? "main"} key={i}>
             <Accordion.Control disabled={running}>
-              {b.label ?? "main"}
+              {bank.label ?? "main"}
             </Accordion.Control>
             <Accordion.Panel
               styles={{
@@ -95,12 +95,12 @@ function RegisterBankView(props: {
             >
               <Stack py="md" gap="xl">
                 <RegisterView
-                  values={b.registers}
-                  label={b.label}
-                  offset={b.offset}
+                  values={bank.registers}
+                  label={bank.label}
+                  offset={bank.offset}
                   style={props.style}
                 />
-                <CpsrView value={b.psr} label={b.label} />
+                <CpsrView value={bank.psr} label={bank.label} />
               </Stack>
             </Accordion.Panel>
           </Accordion.Item>
@@ -110,4 +110,4 @@ function RegisterBankView(props: {
   );
 }
 
-export default RegisterBankView;
+export default CPURegisterView;
