@@ -4,8 +4,12 @@ use crate::{
         bgcnt::Bgcnt,
         bgofs::Bgofs,
         bgtrans::Bgtrans,
+        bldalpha::Bldalpha,
+        bldcnt::Bldcnt,
+        bldy::Bldy,
         dispcnt::Dispcnt,
         dispstat::Dispstat,
+        mosaic::Mosaic,
         window::{WinH, WinV, Winin, Winout},
     },
 };
@@ -13,8 +17,12 @@ use crate::{
 pub mod bgcnt;
 pub mod bgofs;
 pub mod bgtrans;
+pub mod bldalpha;
+pub mod bldcnt;
+pub mod bldy;
 pub mod dispcnt;
 pub mod dispstat;
+pub mod mosaic;
 pub mod window;
 
 #[derive(Debug, Default)]
@@ -43,6 +51,14 @@ pub struct PpuRegister {
     pub winin: Winin,
     /// 0x04A: Control of Outiside of Window (R/W)
     pub winout: Winout,
+    /// 0x04C: Mosaic Function (W)
+    pub mosaic: Mosaic,
+    /// 0x050: Color Special Effects Selection (R/W)
+    pub bldcnt: Bldcnt,
+    /// 0x052: Alpha Blending Coefficients (W)
+    pub bldalpha: Bldalpha,
+    /// 0x054: Brightness (Fade-In/Out) Coefficients (W)
+    pub bldy: Bldy,
 }
 
 impl Bus for PpuRegister {
@@ -59,6 +75,7 @@ impl Bus for PpuRegister {
             0x00E..=0x00F => self.bgcnt[3].value.read_byte(address),
             0x048..=0x049 => self.winin.value.read_byte(address),
             0x04A..=0x04B => self.winout.value.read_byte(address),
+            0x050..=0x051 => self.bldcnt.value.read_byte(address),
             _ => 0, // TODO: open bus
         }
     }
@@ -89,6 +106,10 @@ impl Bus for PpuRegister {
             0x047 => self.winv[1].y2 = value,
             0x048..=0x049 => self.winin.value.write_byte(address, value),
             0x04A..=0x04B => self.winout.value.write_byte(address, value),
+            0x04C..=0x04D => self.mosaic.value.write_byte(address, value),
+            0x050..=0x051 => self.bldcnt.value.write_byte(address, value),
+            0x052..=0x053 => self.bldalpha.value.write_byte(address, value),
+            0x054..=0x055 => self.bldy.value.write_byte(address, value),
             _ => {}
         }
     }

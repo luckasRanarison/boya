@@ -45,7 +45,7 @@ function DebuggerStatus(props: { state: GbaState; running: boolean }) {
   ];
 
   return (
-    <Stack p="md">
+    <Stack p="md" gap="sm">
       {rows.map((row) => (
         <Group key={row.label} justify="space-between">
           <Group>

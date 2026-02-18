@@ -44,7 +44,7 @@ function SettingsView() {
     document.addEventListener("keydown", handler);
 
     return () => document.removeEventListener("keydown", handler);
-  }, [keyEditId]);
+  }, [keyEditId, settings]);
 
   return (
     <Stack

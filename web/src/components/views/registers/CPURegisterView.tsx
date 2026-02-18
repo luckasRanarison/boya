@@ -49,7 +49,7 @@ function RegisterView(props: {
   style?: "simple" | "full";
 }) {
   return (
-    <Stack px="md">
+    <Stack px="md" gap="xs">
       <SimpleGrid
         cols={
           props.style === "simple"
@@ -93,7 +93,7 @@ function CPURegisterView(props: { style?: "simple" | "full" }) {
                 },
               }}
             >
-              <Stack py="md" gap="xl">
+              <Stack py="md">
                 <RegisterView
                   values={bank.registers}
                   label={bank.label}

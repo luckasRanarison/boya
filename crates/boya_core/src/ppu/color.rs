@@ -7,6 +7,12 @@ pub struct Color15 {
     pub b: u8,
 }
 
+impl Color15 {
+    pub fn new(r: u16, g: u16, b: u16) -> Self {
+        Self::from(r | (g << 5) | (b << 10))
+    }
+}
+
 impl From<u16> for Color15 {
     fn from(color: u16) -> Self {
         let r = color.get_bits_u8(0, 4);

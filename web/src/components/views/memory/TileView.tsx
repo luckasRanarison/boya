@@ -57,6 +57,7 @@ function TileView(props: { pageStart: number; pageData: Uint8Array }) {
       align="center"
       direction={{ base: "column", md: "row" }}
       gap="xl"
+      pos="relative"
       style={{ overflow: "scroll" }}
     >
       <SimpleGrid cols={8} spacing={0} mx="auto">
@@ -81,7 +82,13 @@ function TileView(props: { pageStart: number; pageData: Uint8Array }) {
         ))}
       </SimpleGrid>
 
-      <Card mb="auto" withBorder>
+      <Card
+        mb="auto"
+        pos={{ base: "initial", xl: "absolute" }}
+        top={20}
+        right={20}
+        withBorder
+      >
         <Stack>
           <Select
             label="Color mode"

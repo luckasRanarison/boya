@@ -169,9 +169,7 @@ impl Arm7tdmi {
         });
 
         let (lhs, rhs) = if signed {
-            let lhs = lhs as i32 as i64 as u64;
-            let rhs = rhs as i32 as i64 as u64;
-            (lhs, rhs)
+            (lhs as i32 as i64 as u64, rhs as i32 as i64 as u64)
         } else {
             (lhs as u64, rhs as u64)
         };
@@ -180,12 +178,12 @@ impl Arm7tdmi {
         let res_hi = res.get_bits(32, 63) as u32;
         let res_lo = res as u32;
         let i = i_base + i_extra;
-        let is_long_mul = dst.hi.is_some();
 
         if update {
-            if is_long_mul {
+            if dst.hi.is_some() {
                 self.registers.cpsr.update(Psr::N, res.has(63));
-                self.registers.cpsr.update(Psr::V, false);
+                // V = destroyed???
+                // self.registers.cpsr.update(Psr::V, false);
             } else {
                 self.registers.cpsr.update(Psr::N, res.has(31));
             }

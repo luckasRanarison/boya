@@ -29,6 +29,9 @@ impl Bus for IOPeeker<'_> {
             0x0400_0045 => ppu.winv[0].y2,
             0x0400_0046 => ppu.winv[1].y1,
             0x0400_0047 => ppu.winv[1].y2,
+            0x0400_004C..=0x0400_004D => ppu.mosaic.value.read_byte(address),
+            0x0400_0052..=0x0400_0053 => ppu.bldalpha.value.read_byte(address),
+            0x0400_0054..=0x0400_0055 => ppu.bldy.value.read_byte(address),
             _ => self.0.read_byte(address),
         }
     }

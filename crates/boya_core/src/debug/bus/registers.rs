@@ -225,6 +225,72 @@ impl RegisterEntry {
         }
     }
 
+    const fn mosaic() -> Self {
+        RegisterEntry {
+            name: "MOSAIC",
+            address: 0x04C,
+            size: RegisterSize::HWord,
+            flags: const {
+                &[
+                    Flag::new("BG Mosaic H-Size", 0, 4),
+                    Flag::new("BG Mosaic V-Size", 4, 4),
+                    Flag::new("OBJ Mosaic H-Size", 8, 4),
+                    Flag::new("OBJ Mosaic V-Size", 12, 4),
+                ]
+            },
+        }
+    }
+
+    const fn bldcnt() -> Self {
+        RegisterEntry {
+            name: "BLDCNT",
+            address: 0x050,
+            size: RegisterSize::HWord,
+            flags: const {
+                &[
+                    Flag::new("BG0-BG3 1st Target", 0, 4),
+                    Flag::new("OBJ 1st Target", 4, 1),
+                    Flag::new("BD 1st Target", 5, 1),
+                    Flag::new("Color Special Effect", 6, 2).map(&[
+                        (0, "None"),
+                        (1, "Alpha Blending"),
+                        (2, "Brightness Increase"),
+                        (3, "Brightness Decrease"),
+                    ]),
+                    Flag::new("BG0-BG3 2nd Target", 8, 4),
+                    Flag::new("OBJ 2nd Target", 12, 1),
+                    Flag::new("BD 2nd Target", 13, 1),
+                    Flag::unused(14, 2),
+                ]
+            },
+        }
+    }
+
+    const fn bldalpha() -> Self {
+        RegisterEntry {
+            name: "BLDALPHA",
+            address: 0x052,
+            size: RegisterSize::HWord,
+            flags: const {
+                &[
+                    Flag::new("EVA Coefficient", 0, 4),
+                    Flag::unused(5, 3),
+                    Flag::new("EVB Coefficient", 8, 4),
+                    Flag::unused(13, 3),
+                ]
+            },
+        }
+    }
+
+    const fn bldy() -> Self {
+        RegisterEntry {
+            name: "BLDY",
+            address: 0x054,
+            size: RegisterSize::HWord,
+            flags: const { &[Flag::new("EV+ Coefficient", 0, 4), Flag::unused(5, 11)] },
+        }
+    }
+
     const fn soundcnt_l() -> Self {
         RegisterEntry {
             name: "SOUNDCNT_L",
@@ -559,6 +625,10 @@ pub const IO_REGISTERS: &[RegisterEntry] = &[
     RegisterEntry::winv("WIN1V", 0x046),
     RegisterEntry::winin(),
     RegisterEntry::winout(),
+    RegisterEntry::mosaic(),
+    RegisterEntry::bldcnt(),
+    RegisterEntry::bldalpha(),
+    RegisterEntry::bldy(),
     RegisterEntry::soundcnt_l(),
     RegisterEntry::soundcnt_h(),
     RegisterEntry::sg_bias(),
