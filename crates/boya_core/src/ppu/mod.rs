@@ -9,7 +9,7 @@ use crate::{
     ppu::{
         color::{Color15, Color24},
         object::ObjPool,
-        registers::{PpuRegister, dispcnt::Background, dispstat::Dispstat},
+        registers::{PpuRegister, bldcnt::ColorFx, dispcnt::Background, dispstat::Dispstat},
     },
     utils::Reset,
 };
@@ -108,18 +108,91 @@ impl Ppu {
         self.frame_buffer[idx + 2] = color24.b;
     }
 
-    pub fn get_pixel(&mut self, x: u16, y: u16) -> Color15 {
-        for bg in self.pipeline.bg_prio {
-            if let Some(pixel) = self.get_obj_pixel(x, y, bg as u8) {
+    pub fn get_pixel(&self, x: u16, y: u16) -> Color15 {
+        let mut render_obj = true;
+        let mut render_bg = true;
+
+        for bg in self.pipeline.sorted_bg {
+            if let Some(win_id) = self.get_active_win(x, y) {
+                render_obj = self.registers.winin.obj_enable(win_id);
+                render_bg = self.registers.winin.bg_enable(win_id, bg);
+            }
+
+            if render_obj && let Some(pixel) = self.get_obj_pixel(x, y, bg) {
                 return pixel;
             }
 
-            if let Some(pixel) = self.get_bg_pixel(x, y, bg) {
+            if render_bg && let Some(pixel) = self.get_bg_pixel(x, y, bg) {
                 return pixel;
             }
         }
 
         self.read_bg_palette(0) // backdrop
+    }
+
+    // TODO: Blending
+    // pub fn get_pixel(&mut self, x: u16, y: u16) -> Color15 {
+    //     let mut first_pixel: Option<Color15> = None;
+    //     let mut second_pixel: Option<Color15> = None;
+    //
+    //     for bg in self.pipeline.sorted_bg {
+    //         if let Some(pixel) = self.get_obj_pixel(x, y, bg as u8) {
+    //             if self.registers.bldcnt.is_obj_second_target() && first_pixel.is_some() {
+    //                 second_pixel = Some(pixel);
+    //                 break;
+    //             } else if self.registers.bldcnt.is_obj_first_target() {
+    //                 first_pixel = Some(pixel);
+    //                 continue;
+    //             } else if first_pixel.is_none() {
+    //                 return pixel;
+    //             } else {
+    //                 break;
+    //             }
+    //         }
+    //
+    //         if let Some(pixel) = self.get_bg_pixel(x, y, bg) {
+    //             if self.registers.bldcnt.is_bg_second_target(bg) && first_pixel.is_some() {
+    //                 second_pixel = Some(pixel);
+    //                 break;
+    //             } else if self.registers.bldcnt.is_bg_first_target(bg) {
+    //                 first_pixel = Some(pixel);
+    //             } else if first_pixel.is_none() {
+    //                 return pixel;
+    //             } else {
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //
+    //     let color_fx = self.registers.bldcnt.color_effect();
+    //     let backdrop = self.read_bg_palette(0);
+    //
+    //     let fp = first_pixel.unwrap_or(backdrop);
+    //     let sp = second_pixel.unwrap_or(backdrop);
+    //
+    //     match color_fx {
+    //         ColorFx::AlphaBld => self.registers.bldalpha.blend(fp, sp),
+    //         ColorFx::BrightnessInc => self.registers.bldy.brighten(fp),
+    //         ColorFx::BrightnessDec => self.registers.bldy.darken(fp),
+    //         ColorFx::None => fp,
+    //     }
+    // }
+    //
+    fn get_active_win(&self, x: u16, y: u16) -> Option<usize> {
+        for id in 0..2 {
+            if self.is_inside_win(id, x, y) {
+                return Some(id);
+            }
+        }
+
+        None
+    }
+
+    fn is_inside_win(&self, id: usize, x: u16, y: u16) -> bool {
+        let winh = &self.registers.winh[id];
+        let winv = &self.registers.winv[id];
+
+        x >= winh.x1 as u16 && x < winh.x2 as u16 && y >= winv.y1 as u16 && y < winv.y2 as u16
     }
 
     fn vram_offset(&self, address: u32) -> usize {
@@ -210,14 +283,14 @@ impl Reset for Ppu {
 
 #[derive(Debug)]
 pub struct RenderPipeline {
-    bg_prio: [Background; 4],
+    sorted_bg: [Background; 4],
     obj_pool: ObjPool,
 }
 
 impl Default for RenderPipeline {
     fn default() -> Self {
         Self {
-            bg_prio: [
+            sorted_bg: [
                 Background::Bg0,
                 Background::Bg1,
                 Background::Bg2,

@@ -47,7 +47,7 @@ impl Ppu {
     }
 
     pub fn sort_bg(&mut self) {
-        self.pipeline.bg_prio.sort_by(|a, b| {
+        self.pipeline.sorted_bg.sort_by(|a, b| {
             let a_prio = self.registers.bgcnt[a.to_index()].bg_priority();
             let b_prio = self.registers.bgcnt[b.to_index()].bg_priority();
             b_prio.cmp(&a_prio)

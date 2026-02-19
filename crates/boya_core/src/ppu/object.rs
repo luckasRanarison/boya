@@ -4,7 +4,10 @@ use crate::{
         Ppu, TransformParam,
         character::{CharacterData, CharacterKind},
         color::Color15,
-        registers::{bgcnt::ColorMode, dispcnt::BgMode},
+        registers::{
+            bgcnt::ColorMode,
+            dispcnt::{Background, BgMode},
+        },
     },
     utils::bitflags::Bitflag,
 };
@@ -155,7 +158,7 @@ impl Ppu {
         }
     }
 
-    pub fn get_obj_pixel(&self, x: u16, y: u16, layer: u8) -> Option<Color15> {
+    pub fn get_obj_pixel(&self, x: u16, y: u16, layer: Background) -> Option<Color15> {
         if !self.registers.dispcnt.is_obj_enabled() {
             return None;
         }
@@ -163,7 +166,7 @@ impl Ppu {
         let mut offset = 0;
 
         loop {
-            let (id, obj) = self.pipeline.obj_pool.get(x, layer, offset)?;
+            let (id, obj) = self.pipeline.obj_pool.get(x, layer as u8, offset)?;
             let cx = x.wrapping_sub(obj.x()) & 0x1FF;
             let cy = y.wrapping_sub(obj.y().into()) & 0xFF;
 

@@ -18,28 +18,16 @@ pub struct Winin {
 }
 
 impl Winin {
-    pub fn win0_bg_enable(&self, bg: Background) -> bool {
-        self.value.has(bg as u16)
+    pub fn bg_enable(&self, win: usize, bg: Background) -> bool {
+        self.value.has((win * 8) as u16 + (bg as u16))
     }
 
-    pub fn win0_obj_enable(&self) -> bool {
-        self.value.has(4)
+    pub fn obj_enable(&self, win: usize) -> bool {
+        self.value.has((win * 8) as u16 + 4)
     }
 
-    pub fn win0_color_fx(&self) -> bool {
-        self.value.has(5)
-    }
-
-    pub fn win1_bg_enable(&self, bg: Background) -> bool {
-        self.value.has(8 + bg as u16)
-    }
-
-    pub fn win1_obj_enable(&self) -> bool {
-        self.value.has(12)
-    }
-
-    pub fn win1_color_fx(&self) -> bool {
-        self.value.has(13)
+    pub fn color_fx_enable(&self, win: usize) -> bool {
+        self.value.has((win * 8) as u16 + 5)
     }
 }
 

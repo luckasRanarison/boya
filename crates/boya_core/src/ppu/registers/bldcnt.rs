@@ -10,11 +10,11 @@ impl Bldcnt {
         self.value.has(bg as u16)
     }
 
-    pub fn is_obj_first_traget(&self) -> bool {
+    pub fn is_obj_first_target(&self) -> bool {
         self.value.has(4)
     }
 
-    pub fn is_bd_first_traget(&self) -> bool {
+    pub fn is_bd_first_target(&self) -> bool {
         self.value.has(5)
     }
 
