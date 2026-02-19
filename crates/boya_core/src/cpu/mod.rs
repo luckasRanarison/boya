@@ -60,7 +60,7 @@ impl Arm7tdmi {
 
     #[inline]
     pub fn decode(&self, word: u32) -> Instruction {
-        if self.thumb() {
+        if self.is_thumb() {
             Instruction::Thumb(self.decode_thumb(word))
         } else {
             Instruction::Arm(self.decode_arm(word))
@@ -94,7 +94,7 @@ impl Arm7tdmi {
 
     #[inline(always)]
     pub fn instr_size(&self) -> u8 {
-        if self.thumb() { 2 } else { 4 }
+        if self.is_thumb() { 2 } else { 4 }
     }
 
     pub fn lr(&self) -> u32 {
@@ -115,7 +115,7 @@ impl Arm7tdmi {
     }
 
     #[inline(always)]
-    pub fn thumb(&self) -> bool {
+    pub fn is_thumb(&self) -> bool {
         self.registers.cpsr.thumb()
     }
 
@@ -125,14 +125,14 @@ impl Arm7tdmi {
     }
 
     fn align_pc(&mut self) {
-        let mask = if self.thumb() { !0b01 } else { !0b11 }; // half-word | word
+        let mask = if self.is_thumb() { !0b01 } else { !0b11 }; // half-word | word
         let value = self.pc() & mask;
 
         self.registers.set_pc(value);
     }
 
     fn pre_fetch_cycle(&self, access_kind: MemoryAccess) -> Cycle {
-        let dt = match self.thumb() {
+        let dt = match self.is_thumb() {
             true => DataType::HWord,
             false => DataType::Word,
         };

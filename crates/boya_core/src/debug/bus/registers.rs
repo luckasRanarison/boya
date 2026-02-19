@@ -291,9 +291,9 @@ impl RegisterEntry {
             size: RegisterSize::HWord,
             flags: const {
                 &[
-                    Flag::new("EVA Coefficient", 0, 4),
+                    Flag::new("EVA Coefficient", 0, 5),
                     Flag::unused(5, 3),
-                    Flag::new("EVB Coefficient", 8, 4),
+                    Flag::new("EVB Coefficient", 8, 5),
                     Flag::unused(13, 3),
                 ]
             },

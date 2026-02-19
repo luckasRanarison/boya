@@ -53,20 +53,20 @@ impl Gba {
     }
 
     pub fn step_visible_frame(&mut self) {
-        while self.is_rendering() {
+        while self.rendering() {
             self.step();
         }
     }
 
     pub fn step_vblank(&mut self) {
-        while !self.is_rendering() {
+        while !self.rendering() {
             self.step();
         }
     }
 
     #[inline(always)]
-    pub fn is_rendering(&self) -> bool {
-        self.cpu.bus.ppu.is_rendering()
+    pub fn rendering(&self) -> bool {
+        self.cpu.bus.ppu.rendering()
     }
 
     pub fn frame_buffer(&self) -> &[u8] {

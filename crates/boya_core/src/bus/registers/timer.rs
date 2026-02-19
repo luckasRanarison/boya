@@ -27,7 +27,7 @@ impl Timer {
         self.cnt_h.has(6)
     }
 
-    pub fn is_operating(&self) -> bool {
+    pub fn operating(&self) -> bool {
         self.cnt_h.has(7)
     }
 
@@ -36,7 +36,7 @@ impl Timer {
     }
 
     pub fn tick(&mut self, cycles: u32, prev_overflow: bool) -> bool {
-        if !self.is_operating() {
+        if !self.operating() {
             return false;
         }
 
@@ -105,7 +105,7 @@ impl Bus for Timer {
             _ => {
                 self.cnt_h.write_byte(address, value);
 
-                if self.is_operating() {
+                if self.operating() {
                     self.counter = self.cnt_l;
                 }
             }

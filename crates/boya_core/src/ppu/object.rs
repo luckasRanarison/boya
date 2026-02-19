@@ -140,7 +140,7 @@ impl Ppu {
     }
 
     pub fn load_obj_pool(&mut self) {
-        if !self.registers.dispcnt.is_obj_enabled() {
+        if !self.registers.dispcnt.obj_enable() {
             return;
         }
 
@@ -159,10 +159,6 @@ impl Ppu {
     }
 
     pub fn get_obj_pixel(&self, x: u16, y: u16, layer: Background) -> Option<Color15> {
-        if !self.registers.dispcnt.is_obj_enabled() {
-            return None;
-        }
-
         let mut offset = 0;
 
         loop {

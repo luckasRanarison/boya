@@ -75,7 +75,7 @@ impl IORegister {
         self.ime.has(0)
     }
 
-    pub fn is_irq_enabled(&self, irq: Interrupt) -> bool {
+    pub fn irq_enable(&self, irq: Interrupt) -> bool {
         self.ie.has(irq as u16)
     }
 
@@ -176,8 +176,8 @@ mod tests {
             .asm(asm)
             .assert_fn(|cpu| {
                 assert!(cpu.bus.io.irq_master_enable(), "IME");
-                assert!(cpu.bus.io.is_irq_enabled(Interrupt::HBlank), "HBlank IE");
-                assert!(cpu.bus.io.is_irq_enabled(Interrupt::Dma0), "DMA0 IE");
+                assert!(cpu.bus.io.irq_enable(Interrupt::HBlank), "HBlank IE");
+                assert!(cpu.bus.io.irq_enable(Interrupt::Dma0), "DMA0 IE");
             })
             .run(10);
     }

@@ -221,14 +221,14 @@ impl GbaBus {
     }
 
     fn rendering_wait_state(&self) -> WaitState {
-        let n = if self.ppu.is_rendering() { 1 } else { 0 };
-        let s = if self.ppu.is_rendering() { 1 } else { 0 };
+        let n = if self.ppu.rendering() { 1 } else { 0 };
+        let s = if self.ppu.rendering() { 1 } else { 0 };
 
         WaitState::new(n, s)
     }
 
     fn send_interrupt(&mut self, interrupt: Interrupt) {
-        if self.io.irq_master_enable() && self.io.is_irq_enabled(interrupt) {
+        if self.io.irq_master_enable() && self.io.irq_enable(interrupt) {
             match interrupt {
                 Interrupt::VBlank => self.ppu.mask_vblank = true,
                 Interrupt::HBlank => self.ppu.mask_hblank = true,

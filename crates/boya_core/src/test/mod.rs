@@ -275,7 +275,7 @@ impl GbaTestBuilder {
 
         for subroutine in &self.skip_subroutines {
             if pc == *subroutine {
-                let bx_lr = if cpu.thumb() { 0x4770 } else { 0xE12FFF1E };
+                let bx_lr = if cpu.is_thumb() { 0x4770 } else { 0xE12FFF1E };
                 cpu.pipeline.flush();
                 cpu.exec(cpu.decode(bx_lr));
                 cpu.sync_pipeline();

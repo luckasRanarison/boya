@@ -37,11 +37,11 @@ impl Gba {
     }
 
     pub fn step_frame_with_hook(&mut self, breakpoints: &[u32], irq: bool) -> bool {
-        let inital_state = self.is_rendering();
+        let inital_state = self.rendering();
         let mut state_switch = false;
 
         loop {
-            if inital_state != self.is_rendering() {
+            if inital_state != self.rendering() {
                 state_switch = true;
             }
 
@@ -53,7 +53,7 @@ impl Gba {
                 }
             }
 
-            if state_switch && inital_state == self.is_rendering() {
+            if state_switch && inital_state == self.rendering() {
                 break false; // frame completed
             }
 

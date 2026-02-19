@@ -30,8 +30,8 @@ impl Arm7tdmi {
         let reg_shift = rhs.shift.as_ref().filter(|s| s.register).is_some();
 
         let lhs = match lhs.is_pc() {
-            true if self.thumb() && rhs.is_imm() => self.pc() & !2, // thumb 12
-            true if !self.thumb() && reg_shift => self.pc() + 4,    // arm 5
+            true if self.is_thumb() && rhs.is_imm() => self.pc() & !2, // thumb 12
+            true if !self.is_thumb() && reg_shift => self.pc() + 4,    // arm 5
             _ => self.get_operand_with_shift(lhs, update),
         };
 
@@ -215,7 +215,7 @@ impl Arm7tdmi {
         let op_mode = self.operating_mode();
 
         let base = match rn.reg().is_pc() {
-            true if self.thumb() => self.pc() & !2, // thumb 6
+            true if self.is_thumb() => self.pc() & !2, // thumb 6
             true => self.pc(),
             false => self.registers.get(rn, op_mode),
         };
@@ -268,7 +268,7 @@ impl Arm7tdmi {
         let fetch_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
 
         let value = match rs.reg().is_pc() {
-            true if !self.thumb() => self.pc() + 4, // arm 10
+            true if !self.is_thumb() => self.pc() + 4, // arm 10
             _ => self.registers.get(rs, op_mode),
         };
 

@@ -9,7 +9,12 @@ use crate::{
     ppu::{
         color::{Color15, Color24},
         object::ObjPool,
-        registers::{PpuRegister, bldcnt::ColorFx, dispcnt::Background, dispstat::Dispstat},
+        registers::{
+            PpuRegister,
+            dispcnt::Background,
+            dispstat::Dispstat,
+            window::{WINDOWS, Window},
+        },
     },
     utils::Reset,
 };
@@ -78,7 +83,7 @@ impl Ppu {
         &self.frame_buffer
     }
 
-    pub fn is_rendering(&self) -> bool {
+    pub fn rendering(&self) -> bool {
         !self.registers.dispstat.has(Dispstat::VBLANK)
     }
 
@@ -109,14 +114,23 @@ impl Ppu {
     }
 
     pub fn get_pixel(&self, x: u16, y: u16) -> Color15 {
-        let mut render_obj = true;
-        let mut render_bg = true;
+        let window = self.get_current_win(x, y);
 
         for bg in self.pipeline.sorted_bg {
-            if let Some(win_id) = self.get_active_win(x, y) {
-                render_obj = self.registers.winin.obj_enable(win_id);
-                render_bg = self.registers.winin.bg_enable(win_id, bg);
-            }
+            let (render_obj, render_bg) = match window {
+                Some(win) => (
+                    self.registers.winin.obj_enable(win),
+                    self.registers.winin.bg_enable(win, bg),
+                ),
+                _ if self.has_active_win() => (
+                    self.registers.winout.obj_enable(),
+                    self.registers.winout.bg_enable(bg),
+                ),
+                _ => (
+                    self.registers.dispcnt.obj_enable(),
+                    self.registers.dispcnt.bg_enable(bg),
+                ),
+            };
 
             if render_obj && let Some(pixel) = self.get_obj_pixel(x, y, bg) {
                 return pixel;
@@ -130,67 +144,25 @@ impl Ppu {
         self.read_bg_palette(0) // backdrop
     }
 
-    // TODO: Blending
-    // pub fn get_pixel(&mut self, x: u16, y: u16) -> Color15 {
-    //     let mut first_pixel: Option<Color15> = None;
-    //     let mut second_pixel: Option<Color15> = None;
-    //
-    //     for bg in self.pipeline.sorted_bg {
-    //         if let Some(pixel) = self.get_obj_pixel(x, y, bg as u8) {
-    //             if self.registers.bldcnt.is_obj_second_target() && first_pixel.is_some() {
-    //                 second_pixel = Some(pixel);
-    //                 break;
-    //             } else if self.registers.bldcnt.is_obj_first_target() {
-    //                 first_pixel = Some(pixel);
-    //                 continue;
-    //             } else if first_pixel.is_none() {
-    //                 return pixel;
-    //             } else {
-    //                 break;
-    //             }
-    //         }
-    //
-    //         if let Some(pixel) = self.get_bg_pixel(x, y, bg) {
-    //             if self.registers.bldcnt.is_bg_second_target(bg) && first_pixel.is_some() {
-    //                 second_pixel = Some(pixel);
-    //                 break;
-    //             } else if self.registers.bldcnt.is_bg_first_target(bg) {
-    //                 first_pixel = Some(pixel);
-    //             } else if first_pixel.is_none() {
-    //                 return pixel;
-    //             } else {
-    //                 break;
-    //             }
-    //         }
-    //     }
-    //
-    //     let color_fx = self.registers.bldcnt.color_effect();
-    //     let backdrop = self.read_bg_palette(0);
-    //
-    //     let fp = first_pixel.unwrap_or(backdrop);
-    //     let sp = second_pixel.unwrap_or(backdrop);
-    //
-    //     match color_fx {
-    //         ColorFx::AlphaBld => self.registers.bldalpha.blend(fp, sp),
-    //         ColorFx::BrightnessInc => self.registers.bldy.brighten(fp),
-    //         ColorFx::BrightnessDec => self.registers.bldy.darken(fp),
-    //         ColorFx::None => fp,
-    //     }
-    // }
-    //
-    fn get_active_win(&self, x: u16, y: u16) -> Option<usize> {
-        for id in 0..2 {
-            if self.is_inside_win(id, x, y) {
-                return Some(id);
-            }
-        }
-
-        None
+    fn has_active_win(&self) -> bool {
+        WINDOWS
+            .into_iter()
+            .any(|win| self.registers.dispcnt.win_enable(win))
     }
 
-    fn is_inside_win(&self, id: usize, x: u16, y: u16) -> bool {
-        let winh = &self.registers.winh[id];
-        let winv = &self.registers.winv[id];
+    fn get_current_win(&self, x: u16, y: u16) -> Option<Window> {
+        WINDOWS
+            .into_iter()
+            .find(|win| self.is_inside_win(*win, x, y))
+    }
+
+    fn is_inside_win(&self, win: Window, x: u16, y: u16) -> bool {
+        if !self.registers.dispcnt.win_enable(win) {
+            return false;
+        }
+
+        let winh = &self.registers.winh[win as usize];
+        let winv = &self.registers.winv[win as usize];
 
         x >= winh.x1 as u16 && x < winh.x2 as u16 && y >= winv.y1 as u16 && y < winv.y2 as u16
     }
@@ -285,6 +257,7 @@ impl Reset for Ppu {
 pub struct RenderPipeline {
     sorted_bg: [Background; 4],
     obj_pool: ObjPool,
+    // window_enabled: bool,
 }
 
 impl Default for RenderPipeline {

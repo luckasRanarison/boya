@@ -1,5 +1,14 @@
 use crate::{ppu::registers::dispcnt::Background, utils::bitflags::Bitflag};
 
+pub const WINDOWS: [Window; 2] = [Window::Win0, Window::Win1];
+
+#[derive(Debug, Clone, Copy)]
+pub enum Window {
+    Win0,
+    Win1,
+    // Obj,
+}
+
 #[derive(Debug, Default)]
 pub struct WinH {
     pub x1: u8,
@@ -18,16 +27,25 @@ pub struct Winin {
 }
 
 impl Winin {
-    pub fn bg_enable(&self, win: usize, bg: Background) -> bool {
-        self.value.has((win * 8) as u16 + (bg as u16))
+    pub fn bg_enable(&self, win: Window, bg: Background) -> bool {
+        match win {
+            Window::Win0 => self.value.has(bg as u16),
+            Window::Win1 => self.value.has(bg as u16 + 8),
+        }
     }
 
-    pub fn obj_enable(&self, win: usize) -> bool {
-        self.value.has((win * 8) as u16 + 4)
+    pub fn obj_enable(&self, win: Window) -> bool {
+        match win {
+            Window::Win0 => self.value.has(4),
+            Window::Win1 => self.value.has(12),
+        }
     }
 
-    pub fn color_fx_enable(&self, win: usize) -> bool {
-        self.value.has((win * 8) as u16 + 5)
+    pub fn color_fx_enable(&self, win: Window) -> bool {
+        match win {
+            Window::Win0 => self.value.has(5),
+            Window::Win1 => self.value.has(13),
+        }
     }
 }
 
@@ -37,15 +55,15 @@ pub struct Winout {
 }
 
 impl Winout {
-    pub fn outside_bg_enable(&self, bg: Background) -> bool {
+    pub fn bg_enable(&self, bg: Background) -> bool {
         self.value.has(bg as u16)
     }
 
-    pub fn outside_obj_enable(&self) -> bool {
+    pub fn obj_enable(&self) -> bool {
         self.value.has(4)
     }
 
-    pub fn outside_color_fx(&self) -> bool {
+    pub fn color_fx_enable(&self) -> bool {
         self.value.has(5)
     }
 
@@ -57,7 +75,7 @@ impl Winout {
         self.value.has(12)
     }
 
-    pub fn obj_win_color_fx(&self) -> bool {
+    pub fn obj_win_color_fx_enable(&self) -> bool {
         self.value.has(13)
     }
 }

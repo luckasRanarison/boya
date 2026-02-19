@@ -12,7 +12,7 @@ impl Bldy {
 
     #[inline(always)]
     fn get_bright_intensity(&self, ia: u8) -> u16 {
-        u16::min(31, ia as u16 + ((31 - ia as u16) * self.evy()) >> 4)
+        u16::min(31, ia as u16 + (((31 - ia as u16) * self.evy()) >> 4))
     }
 
     #[inline(always)]

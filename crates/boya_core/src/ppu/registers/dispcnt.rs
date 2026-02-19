@@ -1,4 +1,4 @@
-use crate::utils::bitflags::Bitflag;
+use crate::{ppu::registers::window::Window, utils::bitflags::Bitflag};
 
 #[derive(Debug, Default)]
 pub struct Dispcnt {
@@ -40,7 +40,7 @@ impl Dispcnt {
         self.value.has(7)
     }
 
-    pub fn is_bg_enabled(&self, bg: Background) -> bool {
+    pub fn bg_enable(&self, bg: Background) -> bool {
         match bg {
             Background::Bg0 => self.value.has(8),
             Background::Bg1 => self.value.has(9),
@@ -49,15 +49,14 @@ impl Dispcnt {
         }
     }
 
-    pub fn is_obj_enabled(&self) -> bool {
+    pub fn obj_enable(&self) -> bool {
         self.value.has(12)
     }
 
-    pub fn is_win_enabled(&self, win: Window) -> bool {
+    pub fn win_enable(&self, win: Window) -> bool {
         match win {
             Window::Win0 => self.value.has(13),
             Window::Win1 => self.value.has(14),
-            Window::Obj => self.value.has(15),
         }
     }
 }
@@ -122,11 +121,4 @@ impl Background {
     pub fn to_index(self) -> usize {
         self as usize
     }
-}
-
-#[derive(Debug)]
-pub enum Window {
-    Win0,
-    Win1,
-    Obj,
 }

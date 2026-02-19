@@ -48,17 +48,21 @@ impl Ppu {
 
     pub fn sort_bg(&mut self) {
         self.pipeline.sorted_bg.sort_by(|a, b| {
-            let a_prio = self.registers.bgcnt[a.to_index()].bg_priority();
-            let b_prio = self.registers.bgcnt[b.to_index()].bg_priority();
-            b_prio.cmp(&a_prio)
+            let a_idx = a.to_index();
+            let b_idx = b.to_index();
+
+            let a_prio = self.registers.bgcnt[a_idx].bg_priority();
+            let b_prio = self.registers.bgcnt[b_idx].bg_priority();
+
+            if a_prio == b_prio {
+                a_idx.cmp(&b_idx)
+            } else {
+                b_prio.cmp(&a_prio)
+            }
         });
     }
 
     pub fn get_bg_pixel(&self, x: u16, y: u16, bg: Background) -> Option<Color15> {
-        if !self.registers.dispcnt.is_bg_enabled(bg) {
-            return None;
-        }
-
         let bg_mode = self.registers.dispcnt.bg_mode();
 
         match (bg_mode, bg) {
