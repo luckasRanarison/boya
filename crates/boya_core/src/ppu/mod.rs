@@ -3,6 +3,7 @@ pub mod character;
 pub mod color;
 pub mod object;
 pub mod registers;
+pub mod window;
 
 use crate::{
     bus::types::Interrupt,
@@ -10,11 +11,9 @@ use crate::{
         color::{Color15, Color24},
         object::ObjPool,
         registers::{
-            PpuRegister,
-            dispcnt::Background,
-            dispstat::Dispstat,
-            window::{WINDOWS, Window},
+            PpuRegister, bldcnt::ColorFx, dispcnt::Background, dispstat::Dispstat, window::Window,
         },
+        window::RenderFlags,
     },
     utils::Reset,
 };
@@ -114,57 +113,46 @@ impl Ppu {
     }
 
     pub fn get_pixel(&self, x: u16, y: u16) -> Color15 {
-        let window = self.get_current_win(x, y);
+        let mut state = RenderingState::new(self.get_current_win(x, y));
 
         for bg in self.pipeline.sorted_bg {
-            let (render_obj, render_bg) = match window {
-                Some(win) => (
-                    self.registers.winin.obj_enable(win),
-                    self.registers.winin.bg_enable(win, bg),
-                ),
-                _ if self.has_active_win() => (
-                    self.registers.winout.obj_enable(),
-                    self.registers.winout.bg_enable(bg),
-                ),
-                _ => (
-                    self.registers.dispcnt.obj_enable(),
-                    self.registers.dispcnt.bg_enable(bg),
-                ),
-            };
+            state.flags = self.get_render_flags(state.window, bg);
 
-            if render_obj && let Some(pixel) = self.get_obj_pixel(x, y, bg) {
-                return pixel;
+            if state.flags.obj
+                && let Some(pixel) = self.get_obj_pixel(x, y, bg)
+            {
+                match self.process_obj_pixel(pixel, &mut state) {
+                    PixelResult::Output(pixel) => return pixel,
+                    PixelResult::Skip => continue,
+                    PixelResult::Stop => break,
+                    PixelResult::Continue => {
+                        state.flags = self.get_render_flags(state.window, bg);
+                    }
+                }
             }
 
-            if render_bg && let Some(pixel) = self.get_bg_pixel(x, y, bg) {
-                return pixel;
+            if state.flags.bg
+                && let Some(pixel) = self.get_bg_pixel(x, y, bg)
+            {
+                match self.process_bg_pixel(pixel, bg, &mut state) {
+                    PixelResult::Output(pixel) => return pixel,
+                    PixelResult::Stop => break,
+                    _ => {}
+                }
             }
         }
 
-        self.read_bg_palette(0) // backdrop
-    }
+        let color_fx = self.registers.bldcnt.color_effect();
+        let backdrop = self.read_bg_palette(0);
+        let pixel1 = state.target1.unwrap_or(backdrop);
+        let pixel2 = state.target2.unwrap_or(backdrop);
 
-    fn has_active_win(&self) -> bool {
-        WINDOWS
-            .into_iter()
-            .any(|win| self.registers.dispcnt.win_enable(win))
-    }
-
-    fn get_current_win(&self, x: u16, y: u16) -> Option<Window> {
-        WINDOWS
-            .into_iter()
-            .find(|win| self.is_inside_win(*win, x, y))
-    }
-
-    fn is_inside_win(&self, win: Window, x: u16, y: u16) -> bool {
-        if !self.registers.dispcnt.win_enable(win) {
-            return false;
+        match color_fx {
+            ColorFx::AlphaBld => self.registers.bldalpha.blend(pixel1, pixel2),
+            ColorFx::BrightnessInc => self.registers.bldy.brighten(pixel1),
+            ColorFx::BrightnessDec => self.registers.bldy.darken(pixel1),
+            ColorFx::None => pixel1,
         }
-
-        let winh = &self.registers.winh[win as usize];
-        let winv = &self.registers.winv[win as usize];
-
-        x >= winh.x1 as u16 && x < winh.x2 as u16 && y >= winv.y1 as u16 && y < winv.y2 as u16
     }
 
     fn vram_offset(&self, address: u32) -> usize {
@@ -253,8 +241,33 @@ impl Reset for Ppu {
     }
 }
 
+#[derive(Debug, Default)]
+pub struct RenderingState {
+    window: Option<Window>,
+    flags: RenderFlags,
+    target1: Option<Color15>,
+    target2: Option<Color15>,
+}
+
+impl RenderingState {
+    pub fn new(window: Option<Window>) -> Self {
+        Self {
+            window,
+            ..Default::default()
+        }
+    }
+}
+
 #[derive(Debug)]
-pub struct RenderPipeline {
+pub enum PixelResult {
+    Output(Color15),
+    Skip,
+    Continue,
+    Stop,
+}
+
+#[derive(Debug)]
+struct RenderPipeline {
     sorted_bg: [Background; 4],
     obj_pool: ObjPool,
     // window_enabled: bool,

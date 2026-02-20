@@ -67,7 +67,7 @@ impl RegisterEntry {
                     Flag::new("OBJ enabled", 12, 1),
                     Flag::new("Window 0 Display Flag", 13, 1),
                     Flag::new("Window 1 Display Flag", 14, 1),
-                    Flag::new("OBJ Display Flag", 15, 1),
+                    Flag::new("OBJ Window Display Flag", 15, 1),
                 ]
             },
         }

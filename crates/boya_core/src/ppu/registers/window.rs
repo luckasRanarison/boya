@@ -1,12 +1,10 @@
 use crate::{ppu::registers::dispcnt::Background, utils::bitflags::Bitflag};
 
-pub const WINDOWS: [Window; 2] = [Window::Win0, Window::Win1];
-
 #[derive(Debug, Clone, Copy)]
 pub enum Window {
     Win0,
     Win1,
-    // Obj,
+    Obj,
 }
 
 #[derive(Debug, Default)]
@@ -31,6 +29,7 @@ impl Winin {
         match win {
             Window::Win0 => self.value.has(bg as u16),
             Window::Win1 => self.value.has(bg as u16 + 8),
+            _ => unreachable!(),
         }
     }
 
@@ -38,6 +37,7 @@ impl Winin {
         match win {
             Window::Win0 => self.value.has(4),
             Window::Win1 => self.value.has(12),
+            _ => unreachable!(),
         }
     }
 
@@ -45,6 +45,7 @@ impl Winin {
         match win {
             Window::Win0 => self.value.has(5),
             Window::Win1 => self.value.has(13),
+            _ => unreachable!(),
         }
     }
 }

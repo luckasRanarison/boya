@@ -1,7 +1,7 @@
 use crate::{
     bus::Bus,
     ppu::{
-        Ppu,
+        PixelResult, Ppu, RenderingState,
         character::{CharacterData, CharacterKind},
         color::Color15,
         registers::dispcnt::{Background, BgMode},
@@ -60,6 +60,26 @@ impl Ppu {
                 b_prio.cmp(&a_prio)
             }
         });
+    }
+
+    pub fn process_bg_pixel(
+        &self,
+        pixel: Color15,
+        bg: Background,
+        state: &mut RenderingState,
+    ) -> PixelResult {
+        if state.flags.effects
+            && self.registers.bldcnt.is_bg_second_target(bg)
+            && state.target1.is_some()
+        {
+            state.target2 = Some(pixel);
+            PixelResult::Stop
+        } else if state.flags.effects && self.registers.bldcnt.is_bg_first_target(bg) {
+            state.target1 = Some(pixel);
+            PixelResult::Skip
+        } else {
+            PixelResult::Output(pixel)
+        }
     }
 
     pub fn get_bg_pixel(&self, x: u16, y: u16, bg: Background) -> Option<Color15> {

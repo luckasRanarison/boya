@@ -1,12 +1,13 @@
 use crate::{
     bus::Bus,
     ppu::{
-        Ppu, TransformParam,
+        PixelResult, Ppu, RenderingState, TransformParam,
         character::{CharacterData, CharacterKind},
         color::Color15,
         registers::{
             bgcnt::ColorMode,
             dispcnt::{Background, BgMode},
+            window::Window,
         },
     },
     utils::bitflags::Bitflag,
@@ -158,7 +159,7 @@ impl Ppu {
         }
     }
 
-    pub fn get_obj_pixel(&self, x: u16, y: u16, layer: Background) -> Option<Color15> {
+    pub fn get_obj_pixel(&self, x: u16, y: u16, layer: Background) -> Option<ObjPixel> {
         let mut offset = 0;
 
         loop {
@@ -167,7 +168,13 @@ impl Ppu {
             let cy = y.wrapping_sub(obj.y().into()) & 0xFF;
 
             if let Some(pixel) = self.get_obj_pixel_inner(cx, cy, obj) {
-                return Some(pixel);
+                let result = match obj.mode() {
+                    ObjMode::Window => ObjPixel::Window,
+                    ObjMode::Normal => ObjPixel::Normal(pixel),
+                    ObjMode::SemiTransparent => ObjPixel::SemiTransparent(pixel),
+                };
+
+                return Some(result);
             } else {
                 offset = id + 1
             }
@@ -203,9 +210,44 @@ impl Ppu {
 
         self.get_char_pixel(x, y, &char_data)
     }
+
+    pub fn process_obj_pixel(&self, pixel: ObjPixel, state: &mut RenderingState) -> PixelResult {
+        match pixel {
+            ObjPixel::Normal(pixel)
+                if state.flags.effects
+                    && self.registers.bldcnt.is_obj_second_target()
+                    && state.target1.is_some() =>
+            {
+                state.target2 = Some(pixel);
+                PixelResult::Stop
+            }
+            ObjPixel::Normal(pixel)
+                if state.flags.effects && self.registers.bldcnt.is_obj_first_target() =>
+            {
+                state.target1 = Some(pixel);
+                PixelResult::Skip
+            }
+            ObjPixel::SemiTransparent(pixel) => {
+                state.target1 = Some(pixel);
+                PixelResult::Skip
+            }
+            ObjPixel::Window => {
+                state.window = Some(Window::Obj);
+                PixelResult::Continue
+            }
+            ObjPixel::Normal(pixel) => PixelResult::Output(pixel),
+        }
+    }
 }
 
 #[derive(Debug)]
+pub enum ObjPixel {
+    Normal(Color15),
+    SemiTransparent(Color15),
+    Window,
+}
+
+#[derive(Debug, Clone, Copy)]
 pub enum ObjMode {
     Normal,
     SemiTransparent,

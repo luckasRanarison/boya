@@ -57,6 +57,7 @@ impl Dispcnt {
         match win {
             Window::Win0 => self.value.has(13),
             Window::Win1 => self.value.has(14),
+            Window::Obj => self.value.has(15),
         }
     }
 }
