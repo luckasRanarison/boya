@@ -18,7 +18,7 @@ import { useActiveRoute } from "@/hooks/useActiveRoute";
 import ROUTES from "@/routes";
 
 function Header() {
-  const { activeRoute } = useActiveRoute();
+  const { route } = useActiveRoute();
 
   return (
     <Group p="md" h="100%" justify="space-between" align="center">
@@ -39,7 +39,7 @@ function Header() {
                 rightSection={<IconChevronDown />}
                 fz="md"
               >
-                {activeRoute?.label}
+                {route?.label}
               </Button>
             </Box>
           </Menu.Target>

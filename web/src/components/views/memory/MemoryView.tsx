@@ -55,11 +55,11 @@ export type MemoryViewProps = {
 };
 
 function MemoryView() {
-  const { activeRoute } = useActiveRoute();
+  const { route } = useActiveRoute();
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode") as MemoryViewMode | undefined;
   const jump = searchParams.get("jump");
-  const regionName = activeRoute?.path as MemoryRegionName | undefined;
+  const regionName = route?.path as MemoryRegionName | undefined;
 
   const { memory, cpu } = useGba();
   const [currentMode, setCurrentMode] = useState(mode ?? "hex");

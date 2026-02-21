@@ -108,7 +108,7 @@ function DebuggerControls(props: { position?: Position }) {
     {
       icon: IconArrowBack,
       label: "Step Back",
-      onClick: () => {},
+      onClick: () => alert("Not yet implemented!"),
       disabled: true,
     },
     {

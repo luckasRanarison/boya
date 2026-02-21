@@ -10,7 +10,7 @@ export function useActiveRoute() {
     const lastSegment = segments[segments.length - 1];
 
     if (!lastSegment) {
-      return { activeRoute: ROUTES[0], parent: undefined };
+      return { route: ROUTES[0], parent: undefined };
     }
 
     const activeRoute =
@@ -19,7 +19,7 @@ export function useActiveRoute() {
         (s) => s?.path === lastSegment,
       );
 
-    return { activeRoute, parent: segments[segments.length - 2] };
+    return { route: activeRoute, parent: segments[segments.length - 2] };
   }, [pathname]);
 
   return result;

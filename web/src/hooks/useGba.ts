@@ -7,7 +7,7 @@ import {
 import { useDebuggerStore } from "@/stores/debuggerStore";
 import { useRuntimeStore } from "@/stores/runtimeStore";
 import type { IOMap } from "boya_wasm";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 
 export type GbaState = ReturnType<typeof useGba>;
 export type CpuState = GbaState["cpu"];
@@ -21,8 +21,6 @@ export function useGba() {
   const ioMap: IOMap = useMemo(() => GBA.generateIOMap(), []);
   const pc = romLoaded ? GBA.execAddress() : 0;
   const nextPc = pc + GBA.instructionSize();
-
-  useEffect(() => {}, [cycles]);
 
   // Accessing SP, LR, or operating mode before boot causes a panic
   return {
