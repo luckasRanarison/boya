@@ -6,6 +6,7 @@ use crate::{
         color::Color15,
         registers::{
             bgcnt::ColorMode,
+            bldcnt::ColorFx,
             dispcnt::{Background, BgMode},
             window::Window,
         },
@@ -211,7 +212,19 @@ impl Ppu {
         self.get_char_pixel(x, y, &char_data)
     }
 
-    pub fn process_obj_pixel(&self, pixel: ObjPixel, state: &mut RenderingState) -> PixelResult {
+    pub fn process_obj_pixel(
+        &self,
+        x: u16,
+        y: u16,
+        bg: Background,
+        state: &mut RenderingState,
+    ) -> Option<PixelResult> {
+        if !state.flags.obj {
+            return None;
+        }
+
+        let pixel = self.get_obj_pixel(x, y, bg)?;
+
         match pixel {
             ObjPixel::Normal(pixel)
                 if state.flags.effects
@@ -219,23 +232,30 @@ impl Ppu {
                     && state.target1.is_some() =>
             {
                 state.target2 = Some(pixel);
-                PixelResult::Stop
+                Some(PixelResult::Complete)
             }
             ObjPixel::Normal(pixel)
                 if state.flags.effects && self.registers.bldcnt.is_obj_first_target() =>
             {
                 state.target1 = Some(pixel);
-                PixelResult::Skip
+
+                match self.registers.bldcnt.color_effect() {
+                    ColorFx::AlphaBld => Some(PixelResult::Blend),
+                    _ => Some(PixelResult::Complete),
+                }
             }
             ObjPixel::SemiTransparent(pixel) => {
                 state.target1 = Some(pixel);
-                PixelResult::Skip
+                Some(PixelResult::Blend)
             }
             ObjPixel::Window => {
                 state.window = Some(Window::Obj);
-                PixelResult::Continue
+                Some(PixelResult::Window)
             }
-            ObjPixel::Normal(pixel) => PixelResult::Output(pixel),
+            ObjPixel::Normal(pixel) => {
+                state.target1 = Some(pixel);
+                Some(PixelResult::Complete)
+            }
         }
     }
 }

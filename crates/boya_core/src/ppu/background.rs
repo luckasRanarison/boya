@@ -4,7 +4,10 @@ use crate::{
         PixelResult, Ppu, RenderingState,
         character::{CharacterData, CharacterKind},
         color::Color15,
-        registers::dispcnt::{Background, BgMode},
+        registers::{
+            bldcnt::ColorFx,
+            dispcnt::{Background, BgMode},
+        },
     },
     utils::bitflags::Bitflag,
 };
@@ -64,21 +67,33 @@ impl Ppu {
 
     pub fn process_bg_pixel(
         &self,
-        pixel: Color15,
+        x: u16,
+        y: u16,
         bg: Background,
         state: &mut RenderingState,
-    ) -> PixelResult {
+    ) -> Option<PixelResult> {
+        if !state.flags.bg {
+            return None;
+        }
+
+        let pixel = self.get_bg_pixel(x, y, bg)?;
+
         if state.flags.effects
             && self.registers.bldcnt.is_bg_second_target(bg)
             && state.target1.is_some()
         {
             state.target2 = Some(pixel);
-            PixelResult::Stop
+            Some(PixelResult::Complete)
         } else if state.flags.effects && self.registers.bldcnt.is_bg_first_target(bg) {
             state.target1 = Some(pixel);
-            PixelResult::Skip
+
+            match self.registers.bldcnt.color_effect() {
+                ColorFx::AlphaBld => Some(PixelResult::Blend),
+                _ => Some(PixelResult::Complete),
+            }
         } else {
-            PixelResult::Output(pixel)
+            state.target1 = Some(pixel);
+            Some(PixelResult::Complete)
         }
     }
 

@@ -113,39 +113,36 @@ impl Ppu {
     }
 
     pub fn get_pixel(&self, x: u16, y: u16) -> Color15 {
-        let mut state = RenderingState::new(self.get_current_win(x, y));
+        let window = self.get_current_win(x, y);
+        let mut state = RenderingState::new(window);
 
         for bg in self.pipeline.sorted_bg {
             state.flags = self.get_render_flags(state.window, bg);
 
-            if state.flags.obj
-                && let Some(pixel) = self.get_obj_pixel(x, y, bg)
-            {
-                match self.process_obj_pixel(pixel, &mut state) {
-                    PixelResult::Output(pixel) => return pixel,
-                    PixelResult::Skip => continue,
-                    PixelResult::Stop => break,
-                    PixelResult::Continue => {
-                        state.flags = self.get_render_flags(state.window, bg);
-                    }
+            match self.process_obj_pixel(x, y, bg, &mut state) {
+                None => {}
+                Some(PixelResult::Complete) => break,
+                Some(PixelResult::Blend) => continue,
+                Some(PixelResult::Window) => {
+                    state.flags = self.get_render_flags(state.window, bg);
                 }
             }
 
-            if state.flags.bg
-                && let Some(pixel) = self.get_bg_pixel(x, y, bg)
-            {
-                match self.process_bg_pixel(pixel, bg, &mut state) {
-                    PixelResult::Output(pixel) => return pixel,
-                    PixelResult::Stop => break,
-                    _ => {}
-                }
+            match self.process_bg_pixel(x, y, bg, &mut state) {
+                Some(PixelResult::Complete) => break,
+                _ => {}
             }
         }
 
-        let color_fx = self.registers.bldcnt.color_effect();
         let backdrop = self.read_bg_palette(0);
         let pixel1 = state.target1.unwrap_or(backdrop);
+
+        if !state.flags.effects {
+            return pixel1;
+        }
+
         let pixel2 = state.target2.unwrap_or(backdrop);
+        let color_fx = self.registers.bldcnt.color_effect();
 
         match color_fx {
             ColorFx::AlphaBld => self.registers.bldalpha.blend(pixel1, pixel2),
@@ -260,10 +257,9 @@ impl RenderingState {
 
 #[derive(Debug)]
 pub enum PixelResult {
-    Output(Color15),
-    Skip,
-    Continue,
-    Stop,
+    Blend,
+    Window,
+    Complete,
 }
 
 #[derive(Debug)]
