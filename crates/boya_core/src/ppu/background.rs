@@ -60,7 +60,7 @@ impl Ppu {
             if a_prio == b_prio {
                 a_idx.cmp(&b_idx)
             } else {
-                b_prio.cmp(&a_prio)
+                a_prio.cmp(&b_prio)
             }
         });
     }
@@ -72,19 +72,19 @@ impl Ppu {
         bg: Background,
         state: &mut RenderingState,
     ) -> Option<PixelResult> {
-        if !state.flags.bg {
+        if !state.bg_enabled {
             return None;
         }
 
         let pixel = self.get_bg_pixel(x, y, bg)?;
 
-        if state.flags.effects
+        if state.fx_enabled
             && self.registers.bldcnt.is_bg_second_target(bg)
             && state.target1.is_some()
         {
             state.target2 = Some(pixel);
             Some(PixelResult::Complete)
-        } else if state.flags.effects && self.registers.bldcnt.is_bg_first_target(bg) {
+        } else if state.fx_enabled && self.registers.bldcnt.is_bg_first_target(bg) {
             state.target1 = Some(pixel);
 
             match self.registers.bldcnt.color_effect() {

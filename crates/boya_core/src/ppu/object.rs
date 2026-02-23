@@ -4,12 +4,7 @@ use crate::{
         PixelResult, Ppu, RenderingState, TransformParam,
         character::{CharacterData, CharacterKind},
         color::Color15,
-        registers::{
-            bgcnt::ColorMode,
-            bldcnt::ColorFx,
-            dispcnt::{Background, BgMode},
-            window::Window,
-        },
+        registers::{bgcnt::ColorMode, bldcnt::ColorFx, dispcnt::BgMode, window::Window},
     },
     utils::bitflags::Bitflag,
 };
@@ -160,11 +155,11 @@ impl Ppu {
         }
     }
 
-    pub fn get_obj_pixel(&self, x: u16, y: u16, layer: Background) -> Option<ObjPixel> {
+    pub fn get_obj_pixel(&self, x: u16, y: u16, layer: u8) -> Option<ObjPixel> {
         let mut offset = 0;
 
         loop {
-            let (id, obj) = self.pipeline.obj_pool.get(x, layer as u8, offset)?;
+            let (id, obj) = self.pipeline.obj_pool.get(x, layer, offset)?;
             let cx = x.wrapping_sub(obj.x()) & 0x1FF;
             let cy = y.wrapping_sub(obj.y().into()) & 0xFF;
 
@@ -216,18 +211,18 @@ impl Ppu {
         &self,
         x: u16,
         y: u16,
-        bg: Background,
+        layer: u8,
         state: &mut RenderingState,
     ) -> Option<PixelResult> {
-        if !state.flags.obj {
+        if !state.obj_enabled {
             return None;
         }
 
-        let pixel = self.get_obj_pixel(x, y, bg)?;
+        let pixel = self.get_obj_pixel(x, y, layer)?;
 
         match pixel {
             ObjPixel::Normal(pixel)
-                if state.flags.effects
+                if state.fx_enabled
                     && self.registers.bldcnt.is_obj_second_target()
                     && state.target1.is_some() =>
             {
@@ -235,7 +230,7 @@ impl Ppu {
                 Some(PixelResult::Complete)
             }
             ObjPixel::Normal(pixel)
-                if state.flags.effects && self.registers.bldcnt.is_obj_first_target() =>
+                if state.fx_enabled && self.registers.bldcnt.is_obj_first_target() =>
             {
                 state.target1 = Some(pixel);
 
@@ -307,7 +302,11 @@ impl ObjPool {
         for (i, obj) in self.pool[offset..self.len].iter().enumerate() {
             let prio = obj.bg_priority();
 
-            if prio == layer {
+            if prio > layer {
+                break;
+            }
+
+            if prio <= layer {
                 let (width, _height) = obj.dimmensions();
                 let width = width * if obj.double_size() { 2 } else { 1 };
                 let diff = x.wrapping_sub(obj.x()) & 0x1FF;
@@ -315,10 +314,6 @@ impl ObjPool {
                 if diff < width as u16 {
                     return Some((offset + i, obj));
                 }
-            }
-
-            if prio > layer {
-                break;
             }
         }
 

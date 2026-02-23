@@ -13,7 +13,6 @@ use crate::{
         registers::{
             PpuRegister, bldcnt::ColorFx, dispcnt::Background, dispstat::Dispstat, window::Window,
         },
-        window::RenderFlags,
     },
     utils::Reset,
 };
@@ -114,17 +113,24 @@ impl Ppu {
 
     pub fn get_pixel(&self, x: u16, y: u16) -> Color15 {
         let window = self.get_current_win(x, y);
-        let mut state = RenderingState::new(window);
+        let fx_enabled = self.window_fx_enable(window);
+        let obj_enabled = self.window_obj_enable(window);
+
+        let mut state = RenderingState::new(window, obj_enabled, fx_enabled);
 
         for bg in self.pipeline.sorted_bg {
-            state.flags = self.get_render_flags(state.window, bg);
+            let layer = self.registers.bgcnt[bg.to_index()].bg_priority();
 
-            match self.process_obj_pixel(x, y, bg, &mut state) {
+            state.bg_enabled = self.window_bg_enable(state.window, bg);
+
+            match self.process_obj_pixel(x, y, layer, &mut state) {
                 None => {}
                 Some(PixelResult::Complete) => break,
                 Some(PixelResult::Blend) => continue,
                 Some(PixelResult::Window) => {
-                    state.flags = self.get_render_flags(state.window, bg);
+                    state.fx_enabled = self.window_fx_enable(window);
+                    state.obj_enabled = self.window_obj_enable(window);
+                    state.bg_enabled = self.window_bg_enable(window, bg);
                 }
             }
 
@@ -137,18 +143,23 @@ impl Ppu {
         let backdrop = self.read_bg_palette(0);
         let pixel1 = state.target1.unwrap_or(backdrop);
 
-        if !state.flags.effects {
+        if !state.fx_enabled {
             return pixel1;
         }
 
-        let pixel2 = state.target2.unwrap_or(backdrop);
         let color_fx = self.registers.bldcnt.color_effect();
 
         match color_fx {
-            ColorFx::AlphaBld => self.registers.bldalpha.blend(pixel1, pixel2),
             ColorFx::BrightnessInc => self.registers.bldy.brighten(pixel1),
             ColorFx::BrightnessDec => self.registers.bldy.darken(pixel1),
-            ColorFx::None => pixel1,
+            ColorFx::AlphaBld => match state.target2 {
+                Some(pixel2) => self.registers.bldalpha.blend(pixel1, pixel2),
+                None if self.registers.bldcnt.is_bd_second_traget() => {
+                    self.registers.bldalpha.blend(pixel1, backdrop) // FIXME
+                }
+                _ => pixel1,
+            },
+            _ => pixel1,
         }
     }
 
@@ -193,9 +204,6 @@ impl Ppu {
 
     fn handle_scanline(&mut self) {
         match self.scanline {
-            0 if self.dot == 0 => {
-                self.sort_bg();
-            }
             160..=227 => {
                 self.registers.dispstat.set(Dispstat::VBLANK);
 
@@ -207,6 +215,7 @@ impl Ppu {
                 self.scanline = 0;
                 self.mask_vblank = false;
                 self.registers.dispstat.clear(Dispstat::VBLANK);
+                self.sort_bg();
             }
             _ => {}
         }
@@ -241,15 +250,19 @@ impl Reset for Ppu {
 #[derive(Debug, Default)]
 pub struct RenderingState {
     window: Option<Window>,
-    flags: RenderFlags,
     target1: Option<Color15>,
     target2: Option<Color15>,
+    obj_enabled: bool,
+    bg_enabled: bool,
+    fx_enabled: bool,
 }
 
 impl RenderingState {
-    pub fn new(window: Option<Window>) -> Self {
+    pub fn new(window: Option<Window>, obj_enabled: bool, fx_enabled: bool) -> Self {
         Self {
             window,
+            obj_enabled,
+            fx_enabled,
             ..Default::default()
         }
     }
