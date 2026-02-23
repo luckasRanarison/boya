@@ -1,9 +1,9 @@
 use crate::{
     bus::Bus,
     ppu::{
-        Ppu, RenderingState,
+        Ppu,
         character::{CharacterData, CharacterKind},
-        pixel::{Color15, PixelResult},
+        pixel::{Color15, PixelContext, PixelResult},
         registers::dispcnt::{Background, BgMode},
     },
     utils::bitflags::Bitflag,
@@ -46,6 +46,10 @@ impl Ppu {
         self.palette.read_hword(id as u32 * 2).into()
     }
 
+    pub fn get_bg_priority(&self, bg: Background) -> u8 {
+        self.registers.bgcnt[bg.to_index()].bg_priority()
+    }
+
     pub fn sort_bg(&mut self) {
         self.pipeline.sorted_bg.sort_by(|a, b| {
             let a_idx = a.to_index();
@@ -62,28 +66,24 @@ impl Ppu {
         });
     }
 
-    pub fn process_bg_pixel(
+    pub fn get_bg_pixel_result(
         &self,
         x: u16,
         y: u16,
         bg: Background,
-        state: &RenderingState,
+        ctx: &PixelContext,
     ) -> Option<PixelResult> {
-        if !state.bg_enabled {
+        if !self.window_bg_enable(ctx.window, bg) {
             return None;
         }
 
         let pixel = self.get_bg_pixel(x, y, bg)?;
 
-        if state.fx_enabled
-            && self.registers.bldcnt.is_bg_second_target(bg)
-            && state.pixel.top.is_some()
-        {
+        if !self.window_fx_enable(ctx.window) {
+            Some(PixelResult::Top(pixel))
+        } else if self.registers.bldcnt.is_bg_second_target(bg) && ctx.acc.top.is_some() {
             Some(PixelResult::Bottom(pixel))
-        } else if state.fx_enabled
-            && self.registers.bldcnt.is_bg_first_target(bg)
-            && state.pixel.top.is_none()
-        {
+        } else if self.registers.bldcnt.is_bg_first_target(bg) && ctx.acc.top.is_none() {
             Some(PixelResult::BlendTop(pixel))
         } else {
             Some(PixelResult::Top(pixel))

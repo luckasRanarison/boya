@@ -190,3 +190,26 @@ impl From<ppu::object::Obj> for Obj {
         }
     }
 }
+
+#[derive(Serialize, Tsify)]
+pub struct CartridgeHeader {
+    pub entry_point: u32,
+    pub title: String,
+    pub game_code: String,
+    pub maker_code: String,
+    pub software_version: u8,
+    pub checksum: u8,
+}
+
+impl From<boya_core::rom::CartridgeHeader> for CartridgeHeader {
+    fn from(value: boya_core::rom::CartridgeHeader) -> Self {
+        Self {
+            entry_point: value.entry_point,
+            title: String::from_utf8_lossy(&value.title).to_string(),
+            game_code: String::from_utf8_lossy(&value.game_code).to_string(),
+            maker_code: String::from_utf8_lossy(&value.maker_code).to_string(),
+            software_version: value.software_version,
+            checksum: value.checksum,
+        }
+    }
+}

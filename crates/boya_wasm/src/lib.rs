@@ -1,10 +1,10 @@
 pub mod types;
 
-use boya_core::{Gba as GbaCore, bus::Bus, ppu::pixel::Color24, utils::Reset};
+use boya_core::{Gba as GbaCore, bus::Bus, ppu::pixel::Color24, rom::HEADER_SIZE, utils::Reset};
 use wasm_bindgen::prelude::*;
 use web_sys::js_sys::{Uint8Array, Uint32Array};
 
-use crate::types::{Background, ColorMode, IOMap, MemoryRegion, Obj};
+use crate::types::{Background, CartridgeHeader, ColorMode, IOMap, MemoryRegion, Obj};
 
 #[wasm_bindgen]
 #[derive(Default)]
@@ -247,6 +247,19 @@ impl Gba {
     #[wasm_bindgen(js_name = "peekWord")]
     pub fn peek_word(&self, address: u32) -> u32 {
         self.core.cpu.bus.peek_word(address)
+    }
+
+    #[wasm_bindgen(js_name = "parseHeader")]
+    pub fn parse_header(&mut self, rom: &[u8]) -> Result<JsValue, JsError> {
+        let bytes: [u8; HEADER_SIZE] = rom
+            .get(..HEADER_SIZE)
+            .ok_or(JsError::new("No header found"))?
+            .try_into()?;
+        let raw_header = boya_core::rom::CartridgeHeader::try_from(bytes)
+            .map_err(|err| JsError::new(&err.to_string()))?;
+        let header = CartridgeHeader::from(raw_header);
+
+        Ok(serde_wasm_bindgen::to_value(&header)?)
     }
 
     fn get_region(&self, region: MemoryRegion) -> &[u8] {

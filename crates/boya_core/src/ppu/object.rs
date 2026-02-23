@@ -1,9 +1,9 @@
 use crate::{
     bus::Bus,
     ppu::{
-        Ppu, RenderingState, TransformParam,
+        Ppu, TransformParam,
         character::{CharacterData, CharacterKind},
-        pixel::{Color15, PixelResult},
+        pixel::{Color15, PixelContext, PixelResult},
         registers::{bgcnt::ColorMode, dispcnt::BgMode},
     },
     utils::bitflags::Bitflag,
@@ -207,31 +207,30 @@ impl Ppu {
         self.get_char_pixel(x, y, &char_data)
     }
 
-    pub fn process_obj_pixel(
+    pub fn get_obj_pixel_result(
         &self,
         x: u16,
         y: u16,
-        layer: u8,
-        state: &RenderingState,
+        level: u8,
+        ctx: &PixelContext,
     ) -> Option<PixelResult> {
-        if !state.obj_enabled {
+        if !self.window_obj_enable(ctx.window) {
             return None;
         }
 
-        let pixel = self.get_obj_pixel(x, y, layer)?;
+        let pixel = self.get_obj_pixel(x, y, level)?;
 
         match pixel {
+            ObjPixel::Normal(pixel) if !self.window_fx_enable(ctx.window) => {
+                Some(PixelResult::Top(pixel))
+            }
             ObjPixel::Normal(pixel)
-                if state.fx_enabled
-                    && self.registers.bldcnt.is_obj_second_target()
-                    && state.pixel.top.is_some() =>
+                if self.registers.bldcnt.is_obj_second_target() && ctx.acc.top.is_some() =>
             {
                 Some(PixelResult::Bottom(pixel))
             }
             ObjPixel::Normal(pixel)
-                if state.fx_enabled
-                    && self.registers.bldcnt.is_obj_first_target()
-                    && state.pixel.top.is_none() =>
+                if self.registers.bldcnt.is_obj_first_target() && ctx.acc.top.is_none() =>
             {
                 Some(PixelResult::BlendTop(pixel))
             }

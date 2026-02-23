@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { GBA } from "@/lib/gba";
 import { FrameCounter } from "@/utils/frame";
-import type { Gba } from "boya_wasm";
+import type { CartridgeHeader, Gba } from "boya_wasm";
 
 type StepKind = "into" | "scanline" | "frame";
 
@@ -14,7 +14,7 @@ type RunParams = {
 type RuntimeStore = {
   cycles: bigint;
   lastCycle?: number;
-  romLoaded: boolean;
+  romHeader?: CartridgeHeader;
   running: boolean;
   keypad: number;
   fps: number;
@@ -44,7 +44,6 @@ export const useRuntimeStore = create<RuntimeStore>((set, get) => {
     cycles: BigInt(0),
     running: false,
     paused: false,
-    romLoaded: false,
     keypad: 0x3ff,
     fps: 0,
     instructionCache: {},
@@ -52,10 +51,17 @@ export const useRuntimeStore = create<RuntimeStore>((set, get) => {
 
     actions: {
       load: (rom) => {
+        const romHeader = GBA.parseHeader(rom);
+
         GBA.reset();
         GBA.loadRom(rom);
         GBA.boot();
-        set((prev) => ({ ...prev, cycles: GBA.cycles(), romLoaded: true }));
+
+        set((prev) => ({
+          ...prev,
+          cycles: GBA.cycles(),
+          romHeader,
+        }));
       },
 
       unload: () => {

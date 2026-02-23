@@ -9,7 +9,7 @@ use crate::{
     bus::types::Interrupt,
     ppu::{
         object::ObjPool,
-        pixel::{Color15, Color24, PixelAccumulator, PixelResult},
+        pixel::{Color15, Color24, PixelAccumulator, PixelContext, PixelResult},
         registers::{
             PpuRegister, bldcnt::ColorFx, dispcnt::Background, dispstat::Dispstat, window::Window,
         },
@@ -112,52 +112,27 @@ impl Ppu {
     }
 
     pub fn get_pixel(&self, x: u16, y: u16) -> Color15 {
-        let window = self.get_current_win(x, y);
+        let mut ctx = PixelContext {
+            window: self.get_current_win(x, y),
+            ..Default::default()
+        };
 
-        let mut state = RenderingState::new(
-            window,
-            self.window_obj_enable(window),
-            self.window_fx_enable(window),
-        );
+        for layer in self.iter_layers() {
+            let result = match layer {
+                Layer::Object { level } => self.get_obj_pixel_result(x, y, level, &ctx),
+                Layer::Background { bg } => self.get_bg_pixel_result(x, y, bg, &ctx),
+            };
 
-        for bg in self.pipeline.sorted_bg {
-            let layer = self.registers.bgcnt[bg.to_index()].bg_priority();
+            if let Some(result) = result {
+                self.apply_pixel_result(result, &mut ctx);
 
-            if let Some(result) = self.process_obj_pixel(x, y, layer, &state) {
-                self.handle_pixel_result(&mut state, result);
-
-                if state.pixel.is_done() {
-                    break;
-                }
-            }
-
-            state.bg_enabled = self.window_bg_enable(state.window, bg);
-
-            if let Some(result) = self.process_bg_pixel(x, y, bg, &state) {
-                self.handle_pixel_result(&mut state, result);
-
-                if state.pixel.is_done() {
+                if ctx.acc.is_done() {
                     break;
                 }
             }
         }
 
-        let backdrop = self.read_bg_palette(0);
-        let pixel1 = state.pixel.top.unwrap_or(backdrop);
-
-        if !state.pixel.blend {
-            return pixel1;
-        }
-
-        let pixel2 = state.pixel.bottom.unwrap_or(backdrop);
-        let color_fx = self.registers.bldcnt.color_effect();
-
-        match color_fx {
-            ColorFx::BrightnessInc => self.registers.bldy.brighten(pixel1),
-            ColorFx::BrightnessDec => self.registers.bldy.darken(pixel1),
-            ColorFx::AlphaBld => self.registers.bldalpha.blend(pixel1, pixel2),
-            _ => pixel1,
-        }
+        self.resolve_pixel(ctx.acc)
     }
 
     fn vram_offset(&self, address: u32) -> usize {
@@ -229,27 +204,59 @@ impl Ppu {
         }
     }
 
-    fn handle_pixel_result(&self, state: &mut RenderingState, event: PixelResult) {
+    fn iter_layers(&self) -> impl Iterator<Item = Layer> {
+        self.pipeline
+            .sorted_bg
+            .iter()
+            .flat_map(|&bg| {
+                [
+                    Layer::Object {
+                        level: self.get_bg_priority(bg),
+                    },
+                    Layer::Background { bg },
+                ]
+            })
+            .chain([Layer::Object { level: 3 }]) // objects on top of backdrop
+    }
+
+    fn apply_pixel_result(&self, event: PixelResult, ctx: &mut PixelContext) {
         match event {
             PixelResult::Top(pixel) => {
-                if state.pixel.blend {
-                    state.pixel.blend = false;
+                if ctx.acc.blend {
+                    ctx.acc.blend = false;
                 } else {
-                    state.pixel.top = Some(pixel);
+                    ctx.acc.top = Some(pixel);
                 }
             }
             PixelResult::BlendTop(pixel) => {
-                state.pixel.top = Some(pixel);
-                state.pixel.blend = true;
+                ctx.acc.top = Some(pixel);
+                ctx.acc.blend = true;
             }
             PixelResult::Bottom(pixel) => {
-                state.pixel.bottom = Some(pixel);
+                ctx.acc.bottom = Some(pixel);
             }
             PixelResult::Window => {
-                state.window = Some(Window::Obj);
-                state.obj_enabled = self.window_obj_enable(state.window);
-                state.fx_enabled = self.window_fx_enable(state.window);
+                ctx.window = Some(Window::Obj);
             }
+        }
+    }
+
+    fn resolve_pixel(&self, acc: PixelAccumulator) -> Color15 {
+        let backdrop = self.read_bg_palette(0);
+        let pixel1 = acc.top.unwrap_or(backdrop);
+
+        if !acc.blend {
+            return pixel1;
+        }
+
+        let pixel2 = acc.bottom.unwrap_or(backdrop);
+        let color_fx = self.registers.bldcnt.color_effect();
+
+        match color_fx {
+            ColorFx::BrightnessInc => self.registers.bldy.brighten(pixel1),
+            ColorFx::BrightnessDec => self.registers.bldy.darken(pixel1),
+            ColorFx::AlphaBld => self.registers.bldalpha.blend(pixel1, pixel2),
+            _ => pixel1,
         }
     }
 }
@@ -269,24 +276,10 @@ impl Reset for Ppu {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct RenderingState {
-    window: Option<Window>,
-    pixel: PixelAccumulator,
-    obj_enabled: bool,
-    bg_enabled: bool,
-    fx_enabled: bool,
-}
-
-impl RenderingState {
-    pub fn new(window: Option<Window>, obj_enabled: bool, fx_enabled: bool) -> Self {
-        Self {
-            window,
-            obj_enabled,
-            fx_enabled,
-            ..Default::default()
-        }
-    }
+#[derive(Debug)]
+enum Layer {
+    Object { level: u8 },
+    Background { bg: Background },
 }
 
 #[derive(Debug)]

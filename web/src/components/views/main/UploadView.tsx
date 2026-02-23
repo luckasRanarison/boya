@@ -37,7 +37,11 @@ function UploadView() {
         );
       }
     } else {
-      load(bytes);
+      try {
+        load(bytes);
+      } catch (error) {
+        notifications.error(`Invalid ROM file (${error})`);
+      }
     }
   };
 

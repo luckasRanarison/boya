@@ -85,6 +85,7 @@ function EmulatorView() {
       <canvas
         ref={canvasRef}
         style={{
+          marginBottom: fullscreen ? 0 : 60,
           imageRendering: smoothFilter ? "smooth" : "pixelated",
           border: "1px solid var(--mantine-color-red-5)",
           transform: `scale(${scale})`,
