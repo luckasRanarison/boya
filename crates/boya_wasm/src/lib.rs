@@ -1,6 +1,6 @@
 pub mod types;
 
-use boya_core::{Gba as GbaCore, bus::Bus, ppu::color::Color24, utils::Reset};
+use boya_core::{Gba as GbaCore, bus::Bus, ppu::pixel::Color24, utils::Reset};
 use wasm_bindgen::prelude::*;
 use web_sys::js_sys::{Uint8Array, Uint32Array};
 

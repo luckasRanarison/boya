@@ -10,7 +10,7 @@ impl Ppu {
         match window {
             Some(Window::Obj) => self.registers.winout.obj_win_bg_enable(bg),
             Some(window) => self.registers.winin.bg_enable(window, bg),
-            _ if self.has_active_win() => self.registers.winout.bg_enable(bg),
+            _ if self.pipeline.window_enabled => self.registers.winout.bg_enable(bg),
             _ => self.registers.dispcnt.bg_enable(bg),
         }
     }
@@ -19,7 +19,7 @@ impl Ppu {
         match window {
             Some(Window::Obj) => self.registers.winout.obj_win_obj_enable(),
             Some(window) => self.registers.winin.obj_enable(window),
-            _ if self.has_active_win() => self.registers.winout.obj_enable(),
+            _ if self.pipeline.window_enabled => self.registers.winout.obj_enable(),
             _ => self.registers.dispcnt.obj_enable(),
         }
     }
@@ -28,7 +28,7 @@ impl Ppu {
         match window {
             Some(Window::Obj) => self.registers.winout.obj_win_color_fx_enable(),
             Some(window) => self.registers.winin.color_fx_enable(window),
-            _ if self.has_active_win() => self.registers.winout.color_fx_enable(),
+            _ if self.pipeline.window_enabled => self.registers.winout.color_fx_enable(),
             _ => true,
         }
     }

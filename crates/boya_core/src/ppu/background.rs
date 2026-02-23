@@ -1,13 +1,10 @@
 use crate::{
     bus::Bus,
     ppu::{
-        PixelResult, Ppu, RenderingState,
+        Ppu, RenderingState,
         character::{CharacterData, CharacterKind},
-        color::Color15,
-        registers::{
-            bldcnt::ColorFx,
-            dispcnt::{Background, BgMode},
-        },
+        pixel::{Color15, PixelResult},
+        registers::dispcnt::{Background, BgMode},
     },
     utils::bitflags::Bitflag,
 };
@@ -70,7 +67,7 @@ impl Ppu {
         x: u16,
         y: u16,
         bg: Background,
-        state: &mut RenderingState,
+        state: &RenderingState,
     ) -> Option<PixelResult> {
         if !state.bg_enabled {
             return None;
@@ -80,20 +77,16 @@ impl Ppu {
 
         if state.fx_enabled
             && self.registers.bldcnt.is_bg_second_target(bg)
-            && state.target1.is_some()
+            && state.pixel.top.is_some()
         {
-            state.target2 = Some(pixel);
-            Some(PixelResult::Complete)
-        } else if state.fx_enabled && self.registers.bldcnt.is_bg_first_target(bg) {
-            state.target1 = Some(pixel);
-
-            match self.registers.bldcnt.color_effect() {
-                ColorFx::AlphaBld => Some(PixelResult::Blend),
-                _ => Some(PixelResult::Complete),
-            }
+            Some(PixelResult::Bottom(pixel))
+        } else if state.fx_enabled
+            && self.registers.bldcnt.is_bg_first_target(bg)
+            && state.pixel.top.is_none()
+        {
+            Some(PixelResult::BlendTop(pixel))
         } else {
-            state.target1 = Some(pixel);
-            Some(PixelResult::Complete)
+            Some(PixelResult::Top(pixel))
         }
     }
 

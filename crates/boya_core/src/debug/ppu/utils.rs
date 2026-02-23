@@ -1,4 +1,4 @@
-use crate::ppu::color::{Color15, Color24};
+use crate::ppu::pixel::{Color15, Color24};
 
 #[derive(Debug, Default)]
 pub struct FrameBuffer {

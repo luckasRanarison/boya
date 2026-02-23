@@ -1,10 +1,10 @@
 use crate::{
     bus::Bus,
     ppu::{
-        PixelResult, Ppu, RenderingState, TransformParam,
+        Ppu, RenderingState, TransformParam,
         character::{CharacterData, CharacterKind},
-        color::Color15,
-        registers::{bgcnt::ColorMode, bldcnt::ColorFx, dispcnt::BgMode, window::Window},
+        pixel::{Color15, PixelResult},
+        registers::{bgcnt::ColorMode, dispcnt::BgMode},
     },
     utils::bitflags::Bitflag,
 };
@@ -212,7 +212,7 @@ impl Ppu {
         x: u16,
         y: u16,
         layer: u8,
-        state: &mut RenderingState,
+        state: &RenderingState,
     ) -> Option<PixelResult> {
         if !state.obj_enabled {
             return None;
@@ -224,33 +224,20 @@ impl Ppu {
             ObjPixel::Normal(pixel)
                 if state.fx_enabled
                     && self.registers.bldcnt.is_obj_second_target()
-                    && state.target1.is_some() =>
+                    && state.pixel.top.is_some() =>
             {
-                state.target2 = Some(pixel);
-                Some(PixelResult::Complete)
+                Some(PixelResult::Bottom(pixel))
             }
             ObjPixel::Normal(pixel)
-                if state.fx_enabled && self.registers.bldcnt.is_obj_first_target() =>
+                if state.fx_enabled
+                    && self.registers.bldcnt.is_obj_first_target()
+                    && state.pixel.top.is_none() =>
             {
-                state.target1 = Some(pixel);
-
-                match self.registers.bldcnt.color_effect() {
-                    ColorFx::AlphaBld => Some(PixelResult::Blend),
-                    _ => Some(PixelResult::Complete),
-                }
+                Some(PixelResult::BlendTop(pixel))
             }
-            ObjPixel::SemiTransparent(pixel) => {
-                state.target1 = Some(pixel);
-                Some(PixelResult::Blend)
-            }
-            ObjPixel::Window => {
-                state.window = Some(Window::Obj);
-                Some(PixelResult::Window)
-            }
-            ObjPixel::Normal(pixel) => {
-                state.target1 = Some(pixel);
-                Some(PixelResult::Complete)
-            }
+            ObjPixel::Normal(pixel) => Some(PixelResult::Top(pixel)),
+            ObjPixel::SemiTransparent(pixel) => Some(PixelResult::BlendTop(pixel)),
+            ObjPixel::Window => Some(PixelResult::Window),
         }
     }
 }

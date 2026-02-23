@@ -1,4 +1,4 @@
-use crate::{ppu::color::Color15, utils::bitflags::Bitflag};
+use crate::{ppu::pixel::Color15, utils::bitflags::Bitflag};
 
 #[derive(Debug, Default)]
 pub struct Bldy {
