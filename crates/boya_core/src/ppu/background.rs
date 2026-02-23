@@ -1,9 +1,9 @@
 use crate::{
     bus::Bus,
     ppu::{
-        PixelResult, Ppu, RenderingState,
+        Ppu, RenderingState,
         character::{CharacterData, CharacterKind},
-        color::Color15,
+        pixel::{Color15, PixelResult},
         registers::dispcnt::{Background, BgMode},
     },
     utils::bitflags::Bitflag,
@@ -57,28 +57,36 @@ impl Ppu {
             if a_prio == b_prio {
                 a_idx.cmp(&b_idx)
             } else {
-                b_prio.cmp(&a_prio)
+                a_prio.cmp(&b_prio)
             }
         });
     }
 
     pub fn process_bg_pixel(
         &self,
-        pixel: Color15,
+        x: u16,
+        y: u16,
         bg: Background,
-        state: &mut RenderingState,
-    ) -> PixelResult {
-        if state.flags.effects
+        state: &RenderingState,
+    ) -> Option<PixelResult> {
+        if !state.bg_enabled {
+            return None;
+        }
+
+        let pixel = self.get_bg_pixel(x, y, bg)?;
+
+        if state.fx_enabled
             && self.registers.bldcnt.is_bg_second_target(bg)
-            && state.target1.is_some()
+            && state.pixel.top.is_some()
         {
-            state.target2 = Some(pixel);
-            PixelResult::Stop
-        } else if state.flags.effects && self.registers.bldcnt.is_bg_first_target(bg) {
-            state.target1 = Some(pixel);
-            PixelResult::Skip
+            Some(PixelResult::Bottom(pixel))
+        } else if state.fx_enabled
+            && self.registers.bldcnt.is_bg_first_target(bg)
+            && state.pixel.top.is_none()
+        {
+            Some(PixelResult::BlendTop(pixel))
         } else {
-            PixelResult::Output(pixel)
+            Some(PixelResult::Top(pixel))
         }
     }
 

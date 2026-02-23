@@ -13,6 +13,8 @@ import {
 } from "@mantine/core";
 import {
   IconArrowsMaximize,
+  IconBlocks,
+  IconCube,
   IconFlipHorizontal,
   IconFlipVertical,
   IconFocus2,
@@ -20,8 +22,14 @@ import {
   IconLayersIntersect,
   IconPalette,
 } from "@tabler/icons-react";
-import type { Obj } from "boya_wasm";
+import { ObjMode, type Obj } from "boya_wasm";
 import ColorView from "../memory/ColorView";
+
+const objModeMap = {
+  [ObjMode.Normal]: "normal",
+  [ObjMode.Window]: "window",
+  [ObjMode.SemiTransparent]: "semi-transparent",
+};
 
 function ObjectModal(props: {
   id: number;
@@ -68,7 +76,7 @@ function ObjectModal(props: {
       size="md"
       radius="md"
     >
-      <Stack gap="lg">
+      <Stack gap="md">
         <Stack align="center" gap="xs">
           <Tile
             render={() => GBA.renderObj(props.id)}
@@ -111,6 +119,40 @@ function ObjectModal(props: {
                 </Text>
                 <Text fw={500} size="sm">
                   Level {obj.priority}
+                </Text>
+              </Box>
+            </Group>
+          </Paper>
+        </SimpleGrid>
+
+        <SimpleGrid cols={2} spacing="sm">
+          <Paper withBorder p="xs" radius="sm">
+            <Group gap="xs">
+              <ThemeIcon variant="light" color="green">
+                <IconBlocks size={18} />
+              </ThemeIcon>
+              <Box>
+                <Text size="xs" c="dimmed">
+                  Character
+                </Text>
+                <Text fw={500} size="sm">
+                  {obj.character.toString()}
+                </Text>
+              </Box>
+            </Group>
+          </Paper>
+
+          <Paper withBorder p="xs" radius="sm">
+            <Group gap="xs">
+              <ThemeIcon variant="light" color="lime">
+                <IconCube size={18} />
+              </ThemeIcon>
+              <Box>
+                <Text size="xs" c="dimmed">
+                  Mode
+                </Text>
+                <Text fw={500} size="sm">
+                  {objModeMap[obj.mode]}
                 </Text>
               </Box>
             </Group>

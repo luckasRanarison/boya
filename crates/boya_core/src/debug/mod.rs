@@ -2,8 +2,8 @@ use crate::{
     Gba,
     debug::cpu::types::Step,
     ppu::{
-        color::Color15,
         object::Obj,
+        pixel::Color15,
         registers::{bgcnt::ColorMode, dispcnt::Background},
     },
 };

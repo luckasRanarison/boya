@@ -5,8 +5,8 @@ use crate::{
     ppu::{
         OBJ_COUNT, Ppu,
         character::{CharacterData, CharacterKind},
-        color::Color15,
         object::Obj,
+        pixel::Color15,
         registers::{bgcnt::ColorMode, dispcnt::Background},
     },
 };

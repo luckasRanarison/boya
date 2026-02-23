@@ -2,7 +2,7 @@ use crate::{
     bus::Bus,
     ppu::{
         Ppu, TransformParam,
-        color::Color15,
+        pixel::Color15,
         registers::{bgcnt::ColorMode, dispcnt::VramMapping},
     },
     utils::bitflags::Bitflag,

@@ -51,3 +51,24 @@ impl From<Color24> for u32 {
         ((value.r as u32) << 16) | ((value.g as u32) << 8) | value.b as u32
     }
 }
+
+#[derive(Debug, Default)]
+pub struct PixelAccumulator {
+    pub top: Option<Color15>,
+    pub bottom: Option<Color15>,
+    pub blend: bool,
+}
+
+impl PixelAccumulator {
+    pub fn is_done(&self) -> bool {
+        self.top.is_some() && (self.bottom.is_some() || !self.blend)
+    }
+}
+
+#[derive(Debug)]
+pub enum PixelResult {
+    Top(Color15),
+    BlendTop(Color15),
+    Bottom(Color15),
+    Window,
+}

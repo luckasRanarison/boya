@@ -1,14 +1,10 @@
 use crate::{
     bus::Bus,
     ppu::{
-        PixelResult, Ppu, RenderingState, TransformParam,
+        Ppu, RenderingState, TransformParam,
         character::{CharacterData, CharacterKind},
-        color::Color15,
-        registers::{
-            bgcnt::ColorMode,
-            dispcnt::{Background, BgMode},
-            window::Window,
-        },
+        pixel::{Color15, PixelResult},
+        registers::{bgcnt::ColorMode, dispcnt::BgMode},
     },
     utils::bitflags::Bitflag,
 };
@@ -159,11 +155,11 @@ impl Ppu {
         }
     }
 
-    pub fn get_obj_pixel(&self, x: u16, y: u16, layer: Background) -> Option<ObjPixel> {
+    pub fn get_obj_pixel(&self, x: u16, y: u16, layer: u8) -> Option<ObjPixel> {
         let mut offset = 0;
 
         loop {
-            let (id, obj) = self.pipeline.obj_pool.get(x, layer as u8, offset)?;
+            let (id, obj) = self.pipeline.obj_pool.get(x, layer, offset)?;
             let cx = x.wrapping_sub(obj.x()) & 0x1FF;
             let cy = y.wrapping_sub(obj.y().into()) & 0xFF;
 
@@ -211,31 +207,37 @@ impl Ppu {
         self.get_char_pixel(x, y, &char_data)
     }
 
-    pub fn process_obj_pixel(&self, pixel: ObjPixel, state: &mut RenderingState) -> PixelResult {
+    pub fn process_obj_pixel(
+        &self,
+        x: u16,
+        y: u16,
+        layer: u8,
+        state: &RenderingState,
+    ) -> Option<PixelResult> {
+        if !state.obj_enabled {
+            return None;
+        }
+
+        let pixel = self.get_obj_pixel(x, y, layer)?;
+
         match pixel {
             ObjPixel::Normal(pixel)
-                if state.flags.effects
+                if state.fx_enabled
                     && self.registers.bldcnt.is_obj_second_target()
-                    && state.target1.is_some() =>
+                    && state.pixel.top.is_some() =>
             {
-                state.target2 = Some(pixel);
-                PixelResult::Stop
+                Some(PixelResult::Bottom(pixel))
             }
             ObjPixel::Normal(pixel)
-                if state.flags.effects && self.registers.bldcnt.is_obj_first_target() =>
+                if state.fx_enabled
+                    && self.registers.bldcnt.is_obj_first_target()
+                    && state.pixel.top.is_none() =>
             {
-                state.target1 = Some(pixel);
-                PixelResult::Skip
+                Some(PixelResult::BlendTop(pixel))
             }
-            ObjPixel::SemiTransparent(pixel) => {
-                state.target1 = Some(pixel);
-                PixelResult::Skip
-            }
-            ObjPixel::Window => {
-                state.window = Some(Window::Obj);
-                PixelResult::Continue
-            }
-            ObjPixel::Normal(pixel) => PixelResult::Output(pixel),
+            ObjPixel::Normal(pixel) => Some(PixelResult::Top(pixel)),
+            ObjPixel::SemiTransparent(pixel) => Some(PixelResult::BlendTop(pixel)),
+            ObjPixel::Window => Some(PixelResult::Window),
         }
     }
 }
@@ -287,7 +289,11 @@ impl ObjPool {
         for (i, obj) in self.pool[offset..self.len].iter().enumerate() {
             let prio = obj.bg_priority();
 
-            if prio == layer {
+            if prio > layer {
+                break;
+            }
+
+            if prio <= layer {
                 let (width, _height) = obj.dimmensions();
                 let width = width * if obj.double_size() { 2 } else { 1 };
                 let diff = x.wrapping_sub(obj.x()) & 0x1FF;
@@ -295,10 +301,6 @@ impl ObjPool {
                 if diff < width as u16 {
                     return Some((offset + i, obj));
                 }
-            }
-
-            if prio > layer {
-                break;
             }
         }
 

@@ -1,19 +1,18 @@
 pub mod background;
 pub mod character;
-pub mod color;
 pub mod object;
+pub mod pixel;
 pub mod registers;
 pub mod window;
 
 use crate::{
     bus::types::Interrupt,
     ppu::{
-        color::{Color15, Color24},
         object::ObjPool,
+        pixel::{Color15, Color24, PixelAccumulator, PixelResult},
         registers::{
             PpuRegister, bldcnt::ColorFx, dispcnt::Background, dispstat::Dispstat, window::Window,
         },
-        window::RenderFlags,
     },
     utils::Reset,
 };
@@ -113,45 +112,51 @@ impl Ppu {
     }
 
     pub fn get_pixel(&self, x: u16, y: u16) -> Color15 {
-        let mut state = RenderingState::new(self.get_current_win(x, y));
+        let window = self.get_current_win(x, y);
+
+        let mut state = RenderingState::new(
+            window,
+            self.window_obj_enable(window),
+            self.window_fx_enable(window),
+        );
 
         for bg in self.pipeline.sorted_bg {
-            state.flags = self.get_render_flags(state.window, bg);
+            let layer = self.registers.bgcnt[bg.to_index()].bg_priority();
 
-            if state.flags.obj
-                && let Some(pixel) = self.get_obj_pixel(x, y, bg)
-            {
-                match self.process_obj_pixel(pixel, &mut state) {
-                    PixelResult::Output(pixel) => return pixel,
-                    PixelResult::Skip => continue,
-                    PixelResult::Stop => break,
-                    PixelResult::Continue => {
-                        state.flags = self.get_render_flags(state.window, bg);
-                    }
+            if let Some(result) = self.process_obj_pixel(x, y, layer, &state) {
+                self.handle_pixel_result(&mut state, result);
+
+                if state.pixel.is_done() {
+                    break;
                 }
             }
 
-            if state.flags.bg
-                && let Some(pixel) = self.get_bg_pixel(x, y, bg)
-            {
-                match self.process_bg_pixel(pixel, bg, &mut state) {
-                    PixelResult::Output(pixel) => return pixel,
-                    PixelResult::Stop => break,
-                    _ => {}
+            state.bg_enabled = self.window_bg_enable(state.window, bg);
+
+            if let Some(result) = self.process_bg_pixel(x, y, bg, &state) {
+                self.handle_pixel_result(&mut state, result);
+
+                if state.pixel.is_done() {
+                    break;
                 }
             }
         }
 
-        let color_fx = self.registers.bldcnt.color_effect();
         let backdrop = self.read_bg_palette(0);
-        let pixel1 = state.target1.unwrap_or(backdrop);
-        let pixel2 = state.target2.unwrap_or(backdrop);
+        let pixel1 = state.pixel.top.unwrap_or(backdrop);
+
+        if !state.pixel.blend {
+            return pixel1;
+        }
+
+        let pixel2 = state.pixel.bottom.unwrap_or(backdrop);
+        let color_fx = self.registers.bldcnt.color_effect();
 
         match color_fx {
-            ColorFx::AlphaBld => self.registers.bldalpha.blend(pixel1, pixel2),
             ColorFx::BrightnessInc => self.registers.bldy.brighten(pixel1),
             ColorFx::BrightnessDec => self.registers.bldy.darken(pixel1),
-            ColorFx::None => pixel1,
+            ColorFx::AlphaBld => self.registers.bldalpha.blend(pixel1, pixel2),
+            _ => pixel1,
         }
     }
 
@@ -196,9 +201,6 @@ impl Ppu {
 
     fn handle_scanline(&mut self) {
         match self.scanline {
-            0 if self.dot == 0 => {
-                self.sort_bg();
-            }
             160..=227 => {
                 self.registers.dispstat.set(Dispstat::VBLANK);
 
@@ -210,6 +212,8 @@ impl Ppu {
                 self.scanline = 0;
                 self.mask_vblank = false;
                 self.registers.dispstat.clear(Dispstat::VBLANK);
+                self.pipeline.window_enabled = self.has_active_win();
+                self.sort_bg();
             }
             _ => {}
         }
@@ -222,6 +226,30 @@ impl Ppu {
             }
         } else {
             self.registers.dispstat.clear(Dispstat::VCOUNT);
+        }
+    }
+
+    fn handle_pixel_result(&self, state: &mut RenderingState, event: PixelResult) {
+        match event {
+            PixelResult::Top(pixel) => {
+                if state.pixel.blend {
+                    state.pixel.blend = false;
+                } else {
+                    state.pixel.top = Some(pixel);
+                }
+            }
+            PixelResult::BlendTop(pixel) => {
+                state.pixel.top = Some(pixel);
+                state.pixel.blend = true;
+            }
+            PixelResult::Bottom(pixel) => {
+                state.pixel.bottom = Some(pixel);
+            }
+            PixelResult::Window => {
+                state.window = Some(Window::Obj);
+                state.obj_enabled = self.window_obj_enable(state.window);
+                state.fx_enabled = self.window_fx_enable(state.window);
+            }
         }
     }
 }
@@ -244,33 +272,28 @@ impl Reset for Ppu {
 #[derive(Debug, Default)]
 pub struct RenderingState {
     window: Option<Window>,
-    flags: RenderFlags,
-    target1: Option<Color15>,
-    target2: Option<Color15>,
+    pixel: PixelAccumulator,
+    obj_enabled: bool,
+    bg_enabled: bool,
+    fx_enabled: bool,
 }
 
 impl RenderingState {
-    pub fn new(window: Option<Window>) -> Self {
+    pub fn new(window: Option<Window>, obj_enabled: bool, fx_enabled: bool) -> Self {
         Self {
             window,
+            obj_enabled,
+            fx_enabled,
             ..Default::default()
         }
     }
 }
 
 #[derive(Debug)]
-pub enum PixelResult {
-    Output(Color15),
-    Skip,
-    Continue,
-    Stop,
-}
-
-#[derive(Debug)]
 struct RenderPipeline {
     sorted_bg: [Background; 4],
     obj_pool: ObjPool,
-    // window_enabled: bool,
+    window_enabled: bool,
 }
 
 impl Default for RenderPipeline {
@@ -283,6 +306,7 @@ impl Default for RenderPipeline {
                 Background::Bg3,
             ],
             obj_pool: ObjPool::default(),
+            window_enabled: false,
         }
     }
 }

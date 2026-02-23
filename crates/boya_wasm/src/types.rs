@@ -133,6 +133,24 @@ impl Default for IOMap {
 }
 
 #[wasm_bindgen]
+#[derive(Clone, Copy)]
+pub enum ObjMode {
+    Normal,
+    SemiTransparent,
+    Window,
+}
+
+impl From<ppu::object::ObjMode> for ObjMode {
+    fn from(value: ppu::object::ObjMode) -> Self {
+        match value {
+            ppu::object::ObjMode::Normal => ObjMode::Normal,
+            ppu::object::ObjMode::SemiTransparent => ObjMode::SemiTransparent,
+            ppu::object::ObjMode::Window => ObjMode::Window,
+        }
+    }
+}
+
+#[wasm_bindgen]
 pub struct Obj {
     pub x: u16,
     pub y: u8,
@@ -147,6 +165,7 @@ pub struct Obj {
     pub vflip: bool,
     pub mosaic: bool,
     pub double_size: bool,
+    pub mode: ObjMode,
 }
 
 impl From<ppu::object::Obj> for Obj {
@@ -165,6 +184,7 @@ impl From<ppu::object::Obj> for Obj {
             vflip: value.vflip(),
             mosaic: value.mosaic(),
             double_size: value.double_size(),
+            mode: value.mode().into(),
             width,
             height,
         }
