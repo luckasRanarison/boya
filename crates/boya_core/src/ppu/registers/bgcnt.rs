@@ -67,7 +67,7 @@ impl ScreenSize {
         }
     }
 
-    pub fn alt_size(self) -> (u16, u16) {
+    pub fn affine_size(self) -> (u16, u16) {
         match self {
             ScreenSize::Mode0 => (128, 128),
             ScreenSize::Mode1 => (256, 256),

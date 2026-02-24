@@ -1,10 +1,13 @@
 use crate::{
     bus::Bus,
     ppu::{
-        Ppu,
+        Ppu, TransformParam,
         character::{CharacterData, CharacterKind},
         pixel::{Color15, PixelContext, PixelResult},
-        registers::dispcnt::{Background, BgMode},
+        registers::{
+            bgcnt::ColorMode,
+            dispcnt::{Background, BgMode},
+        },
     },
     utils::bitflags::Bitflag,
 };
@@ -22,7 +25,6 @@ pub enum BgKind {
 }
 
 #[derive(Debug, Default, Clone, Copy)]
-
 pub struct BgScreen {
     character: u16,
     hflip: bool,
@@ -30,8 +32,8 @@ pub struct BgScreen {
     palette: u8,
 }
 
-impl From<u16> for BgScreen {
-    fn from(value: u16) -> Self {
+impl BgScreen {
+    fn text(value: u16) -> Self {
         Self {
             character: value.get_bits(0, 9),
             hflip: value.has(10),
@@ -39,6 +41,22 @@ impl From<u16> for BgScreen {
             palette: value.get_bits_u8(12, 15),
         }
     }
+
+    fn affine(value: u8) -> Self {
+        Self {
+            character: value.into(),
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct PartialCharData {
+    pub x: u16,
+    pub y: u16,
+    pub transform: Option<TransformParam>,
+    pub color_mode: ColorMode,
+    pub bg_screen: BgScreen,
 }
 
 impl Ppu {
@@ -116,57 +134,88 @@ impl Ppu {
     ) -> Option<Color15> {
         let bg_idx = bg.to_index();
         let bgcnt = self.registers.bgcnt[bg_idx];
-        let bgofs = self.registers.bgofs[bg_idx];
 
-        let (width, height) = bgcnt.screen_mode().text_size();
         let base_screen_offset = bgcnt.screen_block_offset();
         let base_char_offset = bgcnt.char_block_offset();
+        let screen_mode = bgcnt.screen_mode();
 
-        let ox = (x + bgofs.x) % width;
-        let oy = (y + bgofs.y) % height;
-        let char_x = ox % 8;
-        let char_y = oy % 8;
-        let screen_x = (ox / 8) as u32;
-        let screen_y = (oy / 8) as u32;
+        let partial_data = match bg_kind {
+            BgKind::Text => {
+                let bgofs = self.registers.bgofs[bg_idx];
+                let (width, height) = screen_mode.text_size();
 
-        let block_x = screen_x / 32;
-        let block_y = screen_y / 32;
-        let tile_x = screen_x % 32;
-        let tile_y = screen_y % 32;
+                let ox = (x + bgofs.x) % width;
+                let oy = (y + bgofs.y) % height;
+                let screen_x = (ox / 8) as u32;
+                let screen_y = (oy / 8) as u32;
+                let tile_x = screen_x % 32;
+                let tile_y = screen_y % 32;
 
-        let block_id = match (bg_kind, width, height) {
-            (BgKind::Text, 512, 256) => block_x,
-            (BgKind::Text, 256, 512) => block_y,
-            (BgKind::Text, 512, 512) => block_x + block_y * 2,
-            _ => 0,
-        };
+                let block_id = match (width, height) {
+                    (512, 256) => screen_x / 32,
+                    (256, 512) => screen_y / 32,
+                    (512, 512) => (screen_x / 32) + (screen_y / 32) * 2,
+                    _ => 0,
+                };
 
-        let block_address = base_screen_offset + block_id * 2048;
-        let local_tile_id = tile_y * 32 + tile_x;
-        let screen_block_offset = block_address + local_tile_id * 2;
-        let raw_bg_screen = self.vram.read_hword(screen_block_offset);
-        let bg_screen = BgScreen::from(raw_bg_screen);
+                let bg_screen_size = 2;
+                let block_size = 32 * 32 * bg_screen_size;
 
-        let transform = match (bg_kind, bg) {
-            (BgKind::Affine, Background::Bg2) => Some(self.registers.bg2trans.params.clone()),
-            (BgKind::Affine, Background::Bg3) => Some(self.registers.bg3trans.params.clone()),
-            _ => None,
+                let block_address = base_screen_offset + block_id * block_size;
+                let local_tile_id = tile_y * 32 + tile_x;
+                let screen_block_offset = block_address + local_tile_id * bg_screen_size;
+                let raw_bg_screen = self.vram.read_hword(screen_block_offset);
+
+                PartialCharData {
+                    x: ox % 8,
+                    y: oy % 8,
+                    transform: None,
+                    color_mode: bgcnt.color_mode(),
+                    bg_screen: BgScreen::text(raw_bg_screen),
+                }
+            }
+            BgKind::Affine => {
+                let (width, height) = screen_mode.affine_size();
+
+                let bgtrans = match bg {
+                    Background::Bg2 => &self.registers.bg2trans,
+                    Background::Bg3 => &self.registers.bg3trans,
+                    _ => unreachable!(),
+                };
+
+                let (ox, oy) = bgtrans.params.map(x.into(), y.into());
+
+                let tile_x = (ox % width) / 8;
+                let tile_y = (oy % height) / 8;
+
+                let tile_map_index = tile_y * (width / 8) + tile_x;
+                let screen_block_offset = base_screen_offset + tile_map_index as u32;
+                let raw_bg_screen = self.vram.read_byte(screen_block_offset);
+
+                PartialCharData {
+                    x: ox % 8,
+                    y: oy % 8,
+                    transform: None,
+                    color_mode: ColorMode::Palette256,
+                    bg_screen: BgScreen::affine(raw_bg_screen),
+                }
+            }
         };
 
         let char_data = CharacterData {
-            name: bg_screen.character,
+            name: partial_data.bg_screen.character,
             base_offset: base_char_offset,
-            hflip: bg_screen.hflip,
-            vflip: bg_screen.vflip,
-            color: bgcnt.color_mode(),
-            palette: bg_screen.palette,
+            hflip: partial_data.bg_screen.hflip,
+            vflip: partial_data.bg_screen.vflip,
+            color_mode: partial_data.color_mode,
+            palette: partial_data.bg_screen.palette,
             kind: CharacterKind::Background,
             height: 8,
             width: 8,
-            transform,
+            transform: partial_data.transform,
         };
 
-        self.get_char_pixel(char_x, char_y, &char_data)
+        self.get_char_pixel(partial_data.x, partial_data.y, &char_data)
     }
 
     fn get_bg_bmp_pixel(

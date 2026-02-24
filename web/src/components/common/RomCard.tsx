@@ -29,7 +29,7 @@ function RomCard(props: { data: RomData }) {
         <Divider variant="dashed" />
 
         {data.map(({ label, value }) => (
-          <Group justify="space-between">
+          <Group key={label} justify="space-between">
             <Text size="xs" c="dimmed">
               {label}
             </Text>

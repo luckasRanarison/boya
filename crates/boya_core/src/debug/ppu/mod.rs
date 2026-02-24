@@ -57,7 +57,7 @@ impl Ppu {
             base_offset: offset,
             hflip: false,
             vflip: false,
-            color,
+            color_mode: color,
             palette: palette_id,
             kind: CharacterKind::Background,
             height: 8,

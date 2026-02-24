@@ -193,7 +193,7 @@ impl Ppu {
 
         let char_data = CharacterData {
             name: obj.character(),
-            color: obj.color_mode(),
+            color_mode: obj.color_mode(),
             palette: obj.palette(),
             kind: CharacterKind::Object(vram_mapping),
             width,

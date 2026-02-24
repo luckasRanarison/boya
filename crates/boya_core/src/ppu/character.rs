@@ -26,7 +26,7 @@ pub struct CharacterData {
     pub hflip: bool,
     pub vflip: bool,
     pub transform: Option<TransformParam>,
-    pub color: ColorMode,
+    pub color_mode: ColorMode,
     pub palette: u8,
     pub kind: CharacterKind,
 }
@@ -36,8 +36,8 @@ impl Ppu {
         let width = char.width as u16;
         let height = char.height as u16;
 
-        let (cx, cy) = if let Some(transform) = &char.transform {
-            transform.map(x.into(), y.into())
+        let (cx, cy) = if let Some(_transform) = &char.transform {
+            (x, y) // TODO: Always no transform for now
         } else {
             let cx = if char.hflip { width - x - 1 } else { x };
             let cy = if char.vflip { height - y - 1 } else { y };
@@ -51,7 +51,7 @@ impl Ppu {
         let pixel_addr = self.get_pixel_address(cx, cy, char);
         let pixel_byte = self.vram.read_byte(pixel_addr);
 
-        let (base_palette, rel_color_id) = match char.color {
+        let (base_palette, rel_color_id) = match char.color_mode {
             ColorMode::Palette16 => {
                 let (b_start, b_end) = if cx & 1 == 0 { (0, 3) } else { (4, 7) };
                 let color_id = pixel_byte.get_bits(b_start, b_end);
@@ -86,7 +86,7 @@ impl Ppu {
                 let tiles_wide = char.width / 8;
                 let tile_index = (ty * tiles_wide as u16) + tx;
 
-                let (tile_size, pixel_offset) = match char.color {
+                let (tile_size, pixel_offset) = match char.color_mode {
                     ColorMode::Palette16 => (TILE4BPP_SIZE, base_pixel_offset / 2),
                     ColorMode::Palette256 => (TILE8BPP_SIZE, base_pixel_offset),
                 };
@@ -96,7 +96,7 @@ impl Ppu {
                     + pixel_offset as u32
             }
             CharacterKind::Object(VramMapping::Map2D) => {
-                let (tx_offset, pixel_offset) = match char.color {
+                let (tx_offset, pixel_offset) = match char.color_mode {
                     ColorMode::Palette16 => (tx, base_pixel_offset / 2),
                     ColorMode::Palette256 => (tx * 2, base_pixel_offset),
                 };
