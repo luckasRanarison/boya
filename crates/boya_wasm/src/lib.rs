@@ -81,7 +81,7 @@ impl Gba {
     }
 
     #[wasm_bindgen(js_name = "nextInstructions")]
-    pub fn next_instructions(&self, max_length: u16) -> Result<JsValue, JsValue> {
+    pub fn next_instructions(&self, max_length: u16) -> Result<JsValue, JsError> {
         let instructions = self
             .core
             .cpu

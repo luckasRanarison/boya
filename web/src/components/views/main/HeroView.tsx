@@ -3,10 +3,10 @@ import EmulatorView from "./EmulatorView";
 import UploadView from "./UploadView";
 
 function HeroView() {
-  const romHeader = useRuntimeStore((state) => state.romHeader);
+  const rom = useRuntimeStore((state) => state.rom);
 
-  if (romHeader) {
-    return <EmulatorView />;
+  if (rom) {
+    return <EmulatorView rom={rom} />;
   } else {
     return <UploadView />;
   }

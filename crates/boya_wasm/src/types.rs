@@ -192,6 +192,7 @@ impl From<ppu::object::Obj> for Obj {
 }
 
 #[derive(Serialize, Tsify)]
+#[serde(rename_all = "camelCase")]
 pub struct CartridgeHeader {
     pub entry_point: u32,
     pub title: String,

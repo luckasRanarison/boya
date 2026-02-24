@@ -1,4 +1,8 @@
-import { useRuntimeActions, useRuntimeStore } from "@/stores/runtimeStore";
+import {
+  useRuntimeActions,
+  useRuntimeStore,
+  type RomData,
+} from "@/stores/runtimeStore";
 import { Stack, ActionIcon, Box } from "@mantine/core";
 import { useEffect, useRef, useState } from "react";
 import EmulatorFooter from "./EmulatorFooter";
@@ -16,7 +20,7 @@ import FpsCounter from "./FpsCounter";
 import { usePersistantStore } from "@/stores/persistantStore";
 import OnScreenControls from "./OnScreenControls";
 
-function EmulatorView() {
+function EmulatorView(_props: { rom: RomData }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [scale, setScale] = useState(1.5);
   const { toggle, fullscreen, ref: containerRef } = useFullscreen();
@@ -94,12 +98,13 @@ function EmulatorView() {
         height={160}
       />
 
-      <OnScreenControls fullscreen={fullscreen} />
-
       {fullscreen ? (
-        <Box style={{ position: "absolute", top: 20, right: 20 }}>
-          <FpsCounter color="red" />
-        </Box>
+        <>
+          <OnScreenControls fullscreen={fullscreen} />
+          <Box style={{ position: "absolute", top: 20, right: 20 }}>
+            <FpsCounter color="red" />
+          </Box>
+        </>
       ) : (
         <EmulatorFooter canvas={() => canvasRef.current} />
       )}
