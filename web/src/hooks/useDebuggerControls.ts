@@ -12,9 +12,9 @@ import { useActiveRoute } from "./useActiveRoute";
 export function useDebuggerControls() {
   const breakpoints = useBreakpoints();
   const { parent } = useActiveRoute();
+  const rom = useRuntimeStore((state) => state.rom);
   const callstack = useDebuggerStore((state) => state.callstack);
   const running = useRuntimeStore((state) => state.running);
-  const romLoaded = useRuntimeStore((state) => state.romLoaded);
 
   const rt = useRuntimeActions();
   const gotoMemory = useGotoMemory();
@@ -31,7 +31,7 @@ export function useDebuggerControls() {
   };
 
   const reset = () => {
-    if (romLoaded) {
+    if (rom) {
       rt.reset();
       clearState();
       rt.run({ onFrame: renderFrame, breakpoints });
@@ -39,7 +39,7 @@ export function useDebuggerControls() {
   };
 
   const stepInto = () => {
-    if (!running && romLoaded) {
+    if (!running && rom) {
       rt.step({ type: "into" });
       jumpToExec();
     }
@@ -47,26 +47,26 @@ export function useDebuggerControls() {
 
   const stepOut = () => {
     const entry = callstack[callstack.length - 1];
-    if (entry && !running && romLoaded) {
+    if (entry && !running && rom) {
       rt.run({ onFrame: renderFrame, breakpoints: new Set([entry.return]) });
       jumpToExec();
     }
   };
 
   const stepScanline = () => {
-    if (!running && romLoaded) {
+    if (!running && rom) {
       rt.step({ type: "scanline" });
     }
   };
 
   const stepFrame = () => {
-    if (!running && romLoaded) {
+    if (!running && rom) {
       rt.step({ type: "frame" });
     }
   };
 
   const stepIrq = () => {
-    if (!running && romLoaded) {
+    if (!running && rom) {
       rt.run({ onFrame: renderFrame, breakpoints, irq: true });
     }
   };

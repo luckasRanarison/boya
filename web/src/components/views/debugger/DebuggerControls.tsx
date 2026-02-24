@@ -69,8 +69,8 @@ function Wrapper(props: {
 function DebuggerControls(props: { position?: Position }) {
   const floatingWindows = useViewStore((state) => state.floatingWindows);
   const running = useRuntimeStore((state) => state.running);
-  const romLoaded = useRuntimeStore((state) => state.romLoaded);
   const callstack = useDebuggerStore((state) => state.callstack);
+  const rom = useRuntimeStore((state) => state.rom !== undefined);
   const floatingPanel = floatingWindows.includes("panel");
 
   const { toggleWindow } = useViewActions();
@@ -81,12 +81,12 @@ function DebuggerControls(props: { position?: Position }) {
       icon: IconRestore,
       label: "Reset",
       onClick: dbg.reset,
-      disabled: running || !romLoaded,
+      disabled: running || !rom,
     },
     {
       icon: IconPlus,
       label: "Navigate",
-      disabled: running || !romLoaded,
+      disabled: running || !rom,
       options: [
         {
           label: "Step Scanline",
@@ -115,13 +115,13 @@ function DebuggerControls(props: { position?: Position }) {
       icon: running ? IconPlayerPause : IconPlayerPlay,
       label: running ? "Pause" : "Continue",
       onClick: dbg.toggleRun,
-      disabled: !romLoaded,
+      disabled: !rom,
     },
     {
       icon: IconStepInto,
       label: "Step into",
       onClick: dbg.stepInto,
-      disabled: running || !romLoaded,
+      disabled: running || !rom,
     },
     {
       icon: IconStepOut,

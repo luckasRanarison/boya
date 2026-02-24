@@ -14,21 +14,21 @@ export type CpuState = GbaState["cpu"];
 export type InstructionPipeline = ReturnType<CpuState["pipeline"]>;
 
 export function useGba() {
+  const rom = useRuntimeStore((state) => state.rom);
   const cycles = useRuntimeStore((state) => state.cycles);
-  const romLoaded = useRuntimeStore((state) => state.romLoaded);
   const instructionCache = useDebuggerStore((state) => state.instructionCache);
 
   const ioMap: IOMap = useMemo(() => GBA.generateIOMap(), []);
-  const pc = romLoaded ? GBA.execAddress() : 0;
+  const pc = rom ? GBA.execAddress() : 0;
   const nextPc = pc + GBA.instructionSize();
 
   // Accessing SP, LR, or operating mode before boot causes a panic
   return {
     cpu: {
       pc,
-      lr: romLoaded ? GBA.lr() : 0,
-      sp: romLoaded ? GBA.sp() : 0,
-      operatingMode: romLoaded ? GBA.cpuOperatingMode() : undefined,
+      lr: rom ? GBA.lr() : 0,
+      sp: rom ? GBA.sp() : 0,
+      operatingMode: rom ? GBA.cpuOperatingMode() : undefined,
       getRegisters: getCpuRegisterBanks,
 
       pipeline: () =>
@@ -47,6 +47,6 @@ export function useGba() {
 
     cycles,
     scanline: GBA.scanline(),
-    booted: romLoaded,
+    booted: rom,
   };
 }
