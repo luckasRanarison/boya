@@ -1,12 +1,15 @@
+use crate::bus::types::MemoryAccess;
+
 use super::{Arm7tdmi, Instruction};
 
 #[derive(Default)]
 pub struct Pipeline {
-    curr_pc: u32,
-    next_pc: u32,
-    curr_word: Option<u32>,
-    next_word: Option<u32>,
-    curr_instr: Option<Instruction>,
+    pub curr_pc: u32,
+    pub next_pc: u32,
+    pub curr_word: Option<u32>,
+    pub next_word: Option<u32>,
+    pub curr_instr: Option<Instruction>,
+    pub next_access: MemoryAccess,
 }
 
 impl Pipeline {

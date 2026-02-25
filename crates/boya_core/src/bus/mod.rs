@@ -1,22 +1,34 @@
+pub mod cycles;
 pub mod registers;
 pub mod types;
 
 use crate::{
     apu::Apu,
     bus::{
+        cycles::CycleLUT,
         registers::{
             IORegister,
             dma::{
                 DmaAddressControl, DmaData, DmaResult, DmaSpecialTiming, DmaStartTiming, DmaTimer,
             },
         },
-        types::{
-            Cycle, DataType, Interrupt, MemoryAccess, MemoryRegion, MemoryRegionData, WaitState,
-        },
+        types::{Cycle, DataType, Interrupt, MemoryAccess, MemoryRegion},
     },
     ppu::{Ppu, registers::dispstat::Dispstat},
     utils::Reset,
 };
+
+pub const BIOS_PAGE: usize = 0x00;
+pub const EWRAM_PAGE: usize = 0x02;
+pub const IWRAM_PAGE: usize = 0x03;
+pub const IOREG_PAGE: usize = 0x04;
+pub const PALETTE_PAGE: usize = 0x05;
+pub const VRAM_PAGE: usize = 0x06;
+pub const OAM_PAGE: usize = 0x07;
+pub const WS0_PAGE: usize = 0x08;
+pub const WS1_PAGE: usize = 0x0A;
+pub const WS2_PAGE: usize = 0x0C;
+pub const SRAM_PAGE: usize = 0x0E;
 
 pub const BIOS_SIZE: usize = 0x04000; // 16kb
 pub const IWRAM_SIZE: usize = 0x08000; // 32kb
@@ -34,6 +46,8 @@ pub struct GbaBus {
     pub io: IORegister,
     pub ppu: Ppu,
     pub apu: Apu,
+    pub cycles_lut: CycleLUT,
+    pub divider: u32,
 }
 
 impl Default for GbaBus {
@@ -47,6 +61,8 @@ impl Default for GbaBus {
             io: IORegister::new(),
             ppu: Ppu::default(),
             apu: Apu::default(),
+            cycles_lut: CycleLUT::default(),
+            divider: 0,
         }
     }
 }
@@ -79,14 +95,25 @@ impl GbaBus {
     }
 
     pub fn rw_cycle(&self, addr: u32, dt: DataType, access_kind: MemoryAccess) -> Cycle {
-        let region = MemoryRegion::from_address(addr);
-        let data = self.region_data(region);
-        let access = u8::max(dt.size() / data.width.size(), 1) as u32;
+        let page = ((addr >> 24) & 0xF) as usize;
 
-        match access_kind {
-            MemoryAccess::Seq => Cycle::new(0, access, 0, data.waitstate),
-            MemoryAccess::NonSeq => Cycle::new(0, access - 1, 1, data.waitstate),
-        }
+        let cycles = match (dt, access_kind) {
+            (DataType::HWord, MemoryAccess::NonSeq) => self.cycles_lut.n16[page],
+            (DataType::HWord, MemoryAccess::Seq) => self.cycles_lut.s16[page],
+            (DataType::Word, MemoryAccess::NonSeq) => self.cycles_lut.n32[page],
+            (DataType::Word, MemoryAccess::Seq) => self.cycles_lut.s32[page],
+            _ => 1,
+        };
+
+        Cycle(cycles.into())
+        // let region = MemoryRegion::from_address(addr);
+        // let data = self.region_data(region);
+        // let access = u8::max(dt.size() / data.width.size(), 1) as u32;
+        //
+        // match access_kind {
+        //     MemoryAccess::Seq => Cycle::new(0, access, 0, data.waitstate),
+        //     MemoryAccess::NonSeq => Cycle::new(0, access - 1, 1, data.waitstate),
+        // }
     }
 
     // FIXME: currently slow, use slice copy to improve performance
@@ -106,25 +133,6 @@ impl GbaBus {
     #[inline(always)]
     fn read_rom(&self, address: usize) -> u8 {
         self.rom.get(address).copied().unwrap_or_default()
-    }
-
-    fn region_data(&self, region: MemoryRegion) -> MemoryRegionData {
-        let (width, waitstate) = match region {
-            MemoryRegion::BIOS => (DataType::Word, WaitState::default()),
-            MemoryRegion::EWRAM => (DataType::HWord, WaitState::new(2, 2)),
-            MemoryRegion::IWRAM => (DataType::Word, WaitState::default()),
-            MemoryRegion::IO => (DataType::Word, WaitState::default()),
-            MemoryRegion::Palette => (DataType::HWord, self.rendering_wait_state()),
-            MemoryRegion::VRAM => (DataType::HWord, self.rendering_wait_state()),
-            MemoryRegion::OAM => (DataType::Word, self.rendering_wait_state()),
-            MemoryRegion::WaitState0 => (DataType::HWord, self.io.waitcnt.wait_state0()),
-            MemoryRegion::WaitState1 => (DataType::HWord, self.io.waitcnt.wait_state1()),
-            MemoryRegion::WaitState2 => (DataType::HWord, self.io.waitcnt.wait_state2()),
-            MemoryRegion::SRAM => (DataType::HWord, self.io.waitcnt.sram_wait()), // FIXME: Detect save type SRAM/FLASH/EEPROM
-            _ => (DataType::Word, WaitState::default()),
-        };
-
-        MemoryRegionData { width, waitstate }
     }
 
     fn execute_dma(&mut self, dma: &DmaData) {
@@ -218,13 +226,6 @@ impl GbaBus {
                 DmaSpecialTiming::VideoCapture => todo!(), // TODO: Video capture DMA start
             },
         }
-    }
-
-    fn rendering_wait_state(&self) -> WaitState {
-        let n = if self.ppu.rendering() { 1 } else { 0 };
-        let s = if self.ppu.rendering() { 1 } else { 0 };
-
-        WaitState::new(n, s)
     }
 
     fn send_interrupt(&mut self, interrupt: Interrupt) {
@@ -361,6 +362,62 @@ impl<const N: usize> Bus for [u8; N] {
 
     fn write_byte(&mut self, address: u32, value: u8) {
         self[address as usize] = value;
+    }
+}
+
+pub trait ClockedBus: Bus {
+    fn read_byte_clk(&mut self, address: u32, access: MemoryAccess) -> u8 {
+        self.resolve_cycles(address, access, DataType::Byte);
+        self.read_byte(address)
+    }
+
+    fn read_hword_clk(&mut self, address: u32, access: MemoryAccess) -> u16 {
+        self.resolve_cycles(address, access, DataType::HWord);
+        self.read_hword(address)
+    }
+
+    fn read_word_clk(&mut self, address: u32, access: MemoryAccess) -> u32 {
+        self.resolve_cycles(address, access, DataType::Word);
+        self.read_word(address)
+    }
+
+    fn write_byte_clk(&mut self, address: u32, value: u8, access: MemoryAccess) {
+        self.resolve_cycles(address, access, DataType::Byte);
+        self.write_byte(address, value);
+    }
+
+    fn write_hword_clk(&mut self, address: u32, value: u16, access: MemoryAccess) {
+        self.resolve_cycles(address, access, DataType::HWord);
+        self.write_hword(address, value);
+    }
+
+    fn write_word_clk(&mut self, address: u32, value: u32, access: MemoryAccess) {
+        self.resolve_cycles(address, access, DataType::Word);
+        self.write_word(address, value);
+    }
+
+    fn internal_cycles(&mut self, count: u32);
+
+    fn resolve_cycles(&mut self, address: u32, access: MemoryAccess, dt: DataType);
+}
+
+impl ClockedBus for GbaBus {
+    fn internal_cycles(&mut self, count: u32) {
+        self.divider += count;
+    }
+
+    fn resolve_cycles(&mut self, address: u32, access: MemoryAccess, dt: DataType) {
+        let page = ((address >> 24) & 0xF) as usize;
+
+        let cycles = match (dt, access) {
+            (DataType::HWord, MemoryAccess::NonSeq) => self.cycles_lut.n16[page],
+            (DataType::HWord, MemoryAccess::Seq) => self.cycles_lut.s16[page],
+            (DataType::Word, MemoryAccess::NonSeq) => self.cycles_lut.n32[page],
+            (DataType::Word, MemoryAccess::Seq) => self.cycles_lut.s32[page],
+            _ => 1,
+        };
+
+        self.divider += cycles as u32;
     }
 }
 

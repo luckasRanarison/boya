@@ -1,6 +1,6 @@
 use crate::{
     bus::{
-        Bus,
+        Bus, ClockedBus,
         types::{Cycle, DataType, MemoryAccess},
     },
     cpu::{common::*, psr::PsrKind, register::Register},
@@ -230,13 +230,18 @@ impl Arm7tdmi {
             self.registers.set(rn, addr, op_mode);
         }
 
+        let access = MemoryAccess::NonSeq;
+
         let value = match kind {
+            DataType::Byte if signed => self.bus.read_byte_clk(addr, access) as i8 as i32 as u32,
+            DataType::Byte => self.bus.read_byte_clk(addr, access).into(),
             DataType::HWord if signed => {
-                (self.bus.read_hword(addr & !1) as i16 >> ((addr & 1) * 8)) as i32 as u32
+                (self.bus.read_hword_clk(addr & !1, access) as i16 >> ((addr & 1) * 8)) as i32
+                    as u32
             }
-            DataType::Byte if signed => self.bus.read_byte(addr) as i8 as i32 as u32,
-            DataType::Byte => self.bus.read_byte(addr).into(),
-            DataType::HWord => (self.bus.read_hword(addr & !1) as u32).rotate_right((addr & 1) * 8),
+            DataType::HWord => {
+                (self.bus.read_hword_clk(addr & !1, access) as u32).rotate_right((addr & 1) * 8)
+            }
             DataType::Word => self.bus.read_word(addr & !3).rotate_right((addr & 3) * 8),
         };
 
@@ -282,10 +287,14 @@ impl Arm7tdmi {
             self.registers.set(rn, addr, op_mode);
         }
 
+        let access = MemoryAccess::NonSeq;
+
         match kind {
-            DataType::Byte => self.bus.write_byte(addr, (value & 0xFF) as u8),
-            DataType::HWord => self.bus.write_hword(addr & !1, (value & 0xFFFF) as u16),
-            DataType::Word => self.bus.write_word(addr & !3, value),
+            DataType::Byte => self.bus.write_byte_clk(addr, (value & 0xFF) as u8, access),
+            DataType::HWord => self
+                .bus
+                .write_hword_clk(addr & !1, (value & 0xFFFF) as u16, access),
+            DataType::Word => self.bus.write_word_clk(addr & !3, value, access),
         }
 
         match offset.amod {

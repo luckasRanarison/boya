@@ -14,10 +14,11 @@ impl DataType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default, Clone, Copy)]
 pub enum MemoryAccess {
-    Seq,
+    #[default]
     NonSeq,
+    Seq,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -81,7 +82,7 @@ impl WaitState {
 }
 
 #[derive(Debug, Default, Clone, Copy)]
-pub struct Cycle(u32);
+pub struct Cycle(pub u32);
 
 impl Cycle {
     #[inline(always)]
