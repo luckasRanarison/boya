@@ -84,8 +84,8 @@ impl IORegister {
     }
 
     pub fn write_irf(&mut self, address: u32, value: u8) {
-        self.irf
-            .write_byte(address & 1, self.irf.read_byte(address) & !value);
+        let prev = self.irf.read_byte(address);
+        self.irf.write_byte(address, prev & !value);
     }
 }
 

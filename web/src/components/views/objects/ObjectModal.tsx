@@ -22,13 +22,13 @@ import {
   IconLayersIntersect,
   IconPalette,
 } from "@tabler/icons-react";
-import { ObjMode, type Obj } from "boya_wasm";
+import { type Obj } from "boya_wasm";
 import ColorView from "../memory/ColorView";
 
 const objModeMap = {
-  [ObjMode.Normal]: "normal",
-  [ObjMode.Window]: "window",
-  [ObjMode.SemiTransparent]: "semi-transparent",
+  Normal: "normal",
+  Window: "window",
+  SemiTransparent: "semi-transparent",
 };
 
 function ObjectModal(props: {
@@ -62,7 +62,7 @@ function ObjectModal(props: {
     },
     {
       label: "Double",
-      value: obj.double_size,
+      value: obj.doubleSize,
       icon: <IconArrowsMaximize size={14} />,
     },
   ];
@@ -171,11 +171,11 @@ function ObjectModal(props: {
                     Palette
                   </Text>
                   <Text fw={500} size="sm">
-                    ({obj.color_mode === 0 ? "16" : "256"} colors)
+                    ({obj.colorMode === "Palette16" ? "16" : "256"} colors)
                   </Text>
                 </Box>
               </Group>
-              {obj.color_mode === 0 && (
+              {obj.colorMode === "Palette256" && (
                 <Badge variant="dot">Index {obj.palette}</Badge>
               )}
             </Group>

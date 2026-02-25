@@ -34,7 +34,7 @@ export function useDebuggerControls() {
     if (rom) {
       rt.reset();
       clearState();
-      rt.run({ onFrame: renderFrame, breakpoints });
+      rt.run({ onFrame: renderFrame, hooks: { breakpoints } });
     }
   };
 
@@ -48,7 +48,10 @@ export function useDebuggerControls() {
   const stepOut = () => {
     const entry = callstack[callstack.length - 1];
     if (entry && !running && rom) {
-      rt.run({ onFrame: renderFrame, breakpoints: new Set([entry.return]) });
+      rt.run({
+        onFrame: renderFrame,
+        hooks: { breakpoints: new Set([entry.return]) },
+      });
       jumpToExec();
     }
   };
@@ -67,7 +70,7 @@ export function useDebuggerControls() {
 
   const stepIrq = () => {
     if (!running && rom) {
-      rt.run({ onFrame: renderFrame, breakpoints, irq: true });
+      rt.run({ onFrame: renderFrame, hooks: { breakpoints, irq: true } });
     }
   };
 
@@ -75,7 +78,7 @@ export function useDebuggerControls() {
     if (running) {
       rt.pause();
     } else {
-      rt.run({ onFrame: renderFrame, breakpoints });
+      rt.run({ onFrame: renderFrame, hooks: { breakpoints } });
     }
   };
 

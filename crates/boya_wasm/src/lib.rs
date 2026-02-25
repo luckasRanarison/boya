@@ -4,7 +4,7 @@ use boya_core::{Gba as GbaCore, bus::Bus, ppu::pixel::Color24, rom::HEADER_SIZE,
 use wasm_bindgen::prelude::*;
 use web_sys::js_sys::{Uint8Array, Uint32Array};
 
-use crate::types::{Background, CartridgeHeader, ColorMode, IOMap, MemoryRegion, Obj};
+use crate::types::{Background, CartridgeHeader, ColorMode, Hook, IOMap, MemoryRegion, Obj};
 
 #[wasm_bindgen]
 #[derive(Default)]
@@ -40,14 +40,14 @@ impl Gba {
         self.core.reset();
     }
 
-    #[wasm_bindgen(js_name = "debugSyncedStep")]
-    pub fn debug_synced_step(&mut self) -> u32 {
-        self.core.debug_step().cycles().count()
+    #[wasm_bindgen]
+    pub fn step(&mut self) {
+        self.core.step()
     }
 
     #[wasm_bindgen(js_name = "stepFrameWithHooks")]
-    pub fn step_frame_with_hooks(&mut self, breakpoints: &[u32], irq: bool) -> bool {
-        self.core.step_frame_with_hook(breakpoints, irq)
+    pub fn step_frame_with_hooks(&mut self, hooks: Vec<Hook>) -> bool {
+        self.core.step_frame_with_hooks(&hooks)
     }
 
     #[wasm_bindgen(js_name = "stepScanline")]
@@ -225,8 +225,8 @@ impl Gba {
     }
 
     #[wasm_bindgen(js_name = "generateIOMap")]
-    pub fn generate_io_map(&self) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(&IOMap::default())?)
+    pub fn generate_io_map(&self) -> IOMap {
+        IOMap::default()
     }
 
     #[wasm_bindgen(js_name = "writeByte")]
@@ -250,16 +250,15 @@ impl Gba {
     }
 
     #[wasm_bindgen(js_name = "parseHeader")]
-    pub fn parse_header(&mut self, rom: &[u8]) -> Result<JsValue, JsError> {
+    pub fn parse_header(&mut self, rom: &[u8]) -> Result<CartridgeHeader, JsError> {
         let bytes: [u8; HEADER_SIZE] = rom
             .get(..HEADER_SIZE)
             .ok_or(JsError::new("No header found"))?
             .try_into()?;
         let raw_header = boya_core::rom::CartridgeHeader::try_from(bytes)
             .map_err(|err| JsError::new(&err.to_string()))?;
-        let header = CartridgeHeader::from(raw_header);
 
-        Ok(serde_wasm_bindgen::to_value(&header)?)
+        Ok(CartridgeHeader::from(raw_header))
     }
 
     fn get_region(&self, region: MemoryRegion) -> &[u8] {

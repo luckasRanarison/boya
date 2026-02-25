@@ -11,7 +11,7 @@ impl Bus for Bgtrans {
     }
 
     fn write_byte(&mut self, address: u32, value: u8) {
-        match address % 16 {
+        match address & 15 {
             0..=1 => self.params.pa.write_byte(address, value),
             2..=3 => self.params.pb.write_byte(address, value),
             4..=5 => self.params.pc.write_byte(address, value),

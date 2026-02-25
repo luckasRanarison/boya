@@ -7,20 +7,28 @@ pub const WINDOWS: [Window; 2] = [Window::Win0, Window::Win1];
 
 impl Ppu {
     pub fn window_bg_enable(&self, window: Option<Window>, bg: Background) -> bool {
+        if !self.registers.dispcnt.bg_enable(bg) {
+            return false;
+        }
+
         match window {
             Some(Window::Obj) => self.registers.winout.obj_win_bg_enable(bg),
             Some(window) => self.registers.winin.bg_enable(window, bg),
             _ if self.pipeline.window_enabled => self.registers.winout.bg_enable(bg),
-            _ => self.registers.dispcnt.bg_enable(bg),
+            _ => true,
         }
     }
 
     pub fn window_obj_enable(&self, window: Option<Window>) -> bool {
+        if !self.registers.dispcnt.obj_enable() {
+            return false;
+        }
+
         match window {
             Some(Window::Obj) => self.registers.winout.obj_win_obj_enable(),
             Some(window) => self.registers.winin.obj_enable(window),
             _ if self.pipeline.window_enabled => self.registers.winout.obj_enable(),
-            _ => self.registers.dispcnt.obj_enable(),
+            _ => true,
         }
     }
 

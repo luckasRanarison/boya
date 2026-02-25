@@ -14,8 +14,10 @@ type StepKind = "into" | "scanline" | "frame";
 
 type RunParams = {
   onFrame: (gba: Gba) => void;
-  breakpoints?: Set<number>;
-  irq?: boolean;
+  hooks: {
+    breakpoints?: Set<number>;
+    irq?: boolean;
+  };
 };
 
 type RuntimeStore = {
@@ -58,8 +60,6 @@ export const useRuntimeStore = create<RuntimeStore>((set, get) => {
 
     actions: {
       load: (rom) => {
-        const header: CartridgeHeader = GBA.parseHeader(rom);
-
         GBA.reset();
         GBA.loadRom(rom);
         GBA.boot();
@@ -68,7 +68,7 @@ export const useRuntimeStore = create<RuntimeStore>((set, get) => {
           ...prev,
           cycles: GBA.cycles(),
           rom: {
-            header,
+            header: GBA.parseHeader(rom),
             metadata: {
               size: rom.length,
             },
@@ -106,7 +106,11 @@ export const useRuntimeStore = create<RuntimeStore>((set, get) => {
         set((prev) => ({ ...prev, running: true, paused: false }));
 
         const frameCounter = new FrameCounter();
-        const breakpoints = new Uint32Array(params.breakpoints?.values() || []);
+
+        const hooks = [
+          { irq: !!params.hooks?.irq },
+          { breakpoints: [...(params.hooks.breakpoints?.values() ?? [])] },
+        ];
 
         const stepFrame = (ellapsed: number) => {
           const { running, paused } = get();
@@ -120,8 +124,8 @@ export const useRuntimeStore = create<RuntimeStore>((set, get) => {
             callback: (fps) => set((prev) => ({ ...prev, fps })),
           });
 
-          if (breakpoints.length || params.irq) {
-            halt = GBA.stepFrameWithHooks(breakpoints, params.irq ?? false);
+          if (params.hooks) {
+            halt = GBA.stepFrameWithHooks(hooks);
           } else {
             GBA.stepFrame();
           }
@@ -143,7 +147,7 @@ export const useRuntimeStore = create<RuntimeStore>((set, get) => {
       step: (params) => {
         if (params.type === "frame") GBA.stepFrame();
         if (params.type === "scanline") GBA.stepScanline();
-        if (params.type === "into") GBA.debugSyncedStep();
+        if (params.type === "into") GBA.step();
 
         updateCycles();
       },

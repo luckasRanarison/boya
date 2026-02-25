@@ -24,7 +24,7 @@ function EmulatorFooter(props: { canvas: () => HTMLCanvasElement | null }) {
 
   const handleReset = () => {
     rt.reset();
-    rt.run({ onFrame: renderFrame, breakpoints });
+    rt.run({ onFrame: renderFrame, hooks: { breakpoints } });
   };
 
   const handleScreenshot = () => {
@@ -61,7 +61,8 @@ function EmulatorFooter(props: { canvas: () => HTMLCanvasElement | null }) {
       : {
           name: "Continue",
           icon: IconPlayerPlay,
-          action: () => rt.run({ onFrame: renderFrame, breakpoints }),
+          action: () =>
+            rt.run({ onFrame: renderFrame, hooks: { breakpoints } }),
         },
     {
       name: "Stop",

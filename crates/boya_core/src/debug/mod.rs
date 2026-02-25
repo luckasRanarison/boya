@@ -1,5 +1,6 @@
 use crate::{
     Gba,
+    cpu::{common::Exception, psr::Psr},
     debug::cpu::types::Step,
     ppu::{
         object::Obj,
@@ -11,6 +12,16 @@ use crate::{
 pub mod bus;
 pub mod cpu;
 pub mod ppu;
+
+pub trait AsHook {
+    fn as_hook(&self) -> Hook<'_>;
+}
+
+#[derive(Debug)]
+pub enum Hook<'a> {
+    Breakpoints(&'a [u32]),
+    Irq(bool),
+}
 
 impl Gba {
     pub fn debug_step(&mut self) -> Step {
@@ -36,7 +47,7 @@ impl Gba {
         }
     }
 
-    pub fn step_frame_with_hook(&mut self, breakpoints: &[u32], irq: bool) -> bool {
+    pub fn step_frame_with_hooks<H: AsHook>(&mut self, hooks: &[H]) -> bool {
         let inital_state = self.rendering();
         let mut state_switch = false;
 
@@ -45,10 +56,8 @@ impl Gba {
                 state_switch = true;
             }
 
-            if !breakpoints.is_empty() {
-                let curr_addr = self.cpu.exec_address();
-
-                if breakpoints.contains(&curr_addr) {
+            for hook in hooks {
+                if self.resolve_break_hook(hook.as_hook()) {
                     return true;
                 }
             }
@@ -57,11 +66,7 @@ impl Gba {
                 break false; // frame completed
             }
 
-            let step = self.debug_step();
-
-            if irq && matches!(step, Step::Interrupt(_)) {
-                return true;
-            }
+            self.step();
         }
     }
 
@@ -87,5 +92,12 @@ impl Gba {
 
     pub fn render_obj(&self, id: u8) -> Vec<u8> {
         self.cpu.bus.ppu.render_obj(id)
+    }
+
+    fn resolve_break_hook(&self, hook: Hook) -> bool {
+        match hook {
+            Hook::Breakpoints(breakpoints) => breakpoints.contains(&self.cpu.exec_address()),
+            Hook::Irq(irq) => irq && self.cpu.exec_address() == 0x18,
+        }
     }
 }

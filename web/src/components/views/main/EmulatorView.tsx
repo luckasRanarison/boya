@@ -40,7 +40,7 @@ function EmulatorView(_props: { rom: RomData }) {
 
   useEffect(() => {
     if (!paused) {
-      run({ onFrame: renderFrame, breakpoints });
+      run({ onFrame: renderFrame, hooks: { breakpoints } });
     }
   }, [paused, breakpoints, run, renderFrame]);
 

@@ -1,11 +1,11 @@
 use boya_core::{
-    debug::{self, bus::registers::IO_REGISTERS},
+    debug::{self, AsHook, bus::registers::IO_REGISTERS},
     ppu::{
         self,
         registers::{bgcnt, dispcnt},
     },
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tsify::Tsify;
 use wasm_bindgen::prelude::*;
 
@@ -41,8 +41,8 @@ impl From<Background> for dispcnt::Background {
     }
 }
 
-#[wasm_bindgen]
-#[derive(Clone, Copy)]
+#[derive(Tsify, Serialize, Deserialize)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
 pub enum ColorMode {
     Palette16,
     Palette256,
@@ -124,6 +124,7 @@ impl From<&debug::bus::registers::Flag> for Flag {
 }
 
 #[derive(Tsify, Serialize)]
+#[tsify(into_wasm_abi)]
 pub struct IOMap(pub Vec<RegisterEntry>);
 
 impl Default for IOMap {
@@ -132,8 +133,8 @@ impl Default for IOMap {
     }
 }
 
-#[wasm_bindgen]
-#[derive(Clone, Copy)]
+#[derive(Serialize, Tsify)]
+#[tsify(into_wasm_abi)]
 pub enum ObjMode {
     Normal,
     SemiTransparent,
@@ -150,7 +151,9 @@ impl From<ppu::object::ObjMode> for ObjMode {
     }
 }
 
-#[wasm_bindgen]
+#[derive(Serialize, Tsify)]
+#[tsify(into_wasm_abi)]
+#[serde(rename_all = "camelCase")]
 pub struct Obj {
     pub x: u16,
     pub y: u8,
@@ -192,6 +195,7 @@ impl From<ppu::object::Obj> for Obj {
 }
 
 #[derive(Serialize, Tsify)]
+#[tsify(into_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 pub struct CartridgeHeader {
     pub entry_point: u32,
@@ -211,6 +215,23 @@ impl From<boya_core::rom::CartridgeHeader> for CartridgeHeader {
             maker_code: String::from_utf8_lossy(&value.maker_code).to_string(),
             software_version: value.software_version,
             checksum: value.checksum,
+        }
+    }
+}
+
+#[derive(Tsify, Serialize, Deserialize)]
+#[tsify(from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub enum Hook {
+    Breakpoints(Vec<u32>),
+    Irq(bool),
+}
+
+impl AsHook for Hook {
+    fn as_hook(&self) -> debug::Hook<'_> {
+        match self {
+            Hook::Breakpoints(bp) => debug::Hook::Breakpoints(&bp),
+            Hook::Irq(value) => debug::Hook::Irq(*value),
         }
     }
 }

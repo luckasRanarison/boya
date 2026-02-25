@@ -12,7 +12,7 @@ impl Bus for Bgofs {
     }
 
     fn write_byte(&mut self, address: u32, value: u8) {
-        match address % 4 {
+        match address & 3 {
             0..1 => self.x.write_byte(address, value),
             _ => self.y.write_byte(address, value),
         }

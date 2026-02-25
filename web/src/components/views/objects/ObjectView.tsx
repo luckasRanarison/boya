@@ -23,7 +23,7 @@ function ObjectView() {
 
       <SimpleGrid cols={{ base: 5, md: 8, lg: 10, xl: 12 }} spacing="md" p="md">
         {objects.map((obj, id) => (
-          <Stack gap="xs" align="center" onClick={() => setObjId(id)}>
+          <Stack key={id} gap="xs" align="center" onClick={() => setObjId(id)}>
             <Tile
               render={() => GBA.renderObj(id)}
               width={60}

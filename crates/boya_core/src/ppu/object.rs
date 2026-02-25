@@ -224,7 +224,7 @@ impl Ppu {
             ObjPixel::Normal(pixel) if !self.window_fx_enable(ctx.window) => {
                 Some(PixelResult::Top(pixel))
             }
-            ObjPixel::Normal(pixel)
+            ObjPixel::Normal(pixel) | ObjPixel::SemiTransparent(pixel)
                 if self.registers.bldcnt.is_obj_second_target() && ctx.acc.top.is_some() =>
             {
                 Some(PixelResult::Bottom(pixel))
@@ -234,8 +234,12 @@ impl Ppu {
             {
                 Some(PixelResult::BlendTop(pixel))
             }
-            ObjPixel::Normal(pixel) => Some(PixelResult::Top(pixel)),
-            ObjPixel::SemiTransparent(pixel) => Some(PixelResult::BlendTop(pixel)),
+            ObjPixel::SemiTransparent(pixel) if ctx.acc.top.is_none() => {
+                Some(PixelResult::BlendTop(pixel))
+            }
+            ObjPixel::Normal(pixel) | ObjPixel::SemiTransparent(pixel) => {
+                Some(PixelResult::Top(pixel))
+            }
             ObjPixel::Window => Some(PixelResult::Window),
         }
     }

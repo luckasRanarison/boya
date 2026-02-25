@@ -1,6 +1,5 @@
 import { Box, Card, Flex, Select, SimpleGrid, Stack } from "@mantine/core";
 import { useEffect, useState } from "react";
-import { ColorMode } from "boya_wasm";
 
 import ColorView from "./ColorView";
 import Tile from "@/components/common/Tile";
@@ -72,9 +71,7 @@ function TileView(props: { pageStart: number; pageData: Uint8Array }) {
               GBA.renderTile(
                 id,
                 props.pageStart,
-                currentMode === "4bpp"
-                  ? ColorMode.Palette16
-                  : ColorMode.Palette256,
+                currentMode === "4bpp" ? "Palette16" : "Palette256",
                 currentPaletteId,
               )
             }
