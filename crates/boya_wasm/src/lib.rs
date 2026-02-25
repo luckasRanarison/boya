@@ -4,7 +4,7 @@ use boya_core::{Gba as GbaCore, bus::Bus, ppu::pixel::Color24, rom::HEADER_SIZE,
 use wasm_bindgen::prelude::*;
 use web_sys::js_sys::{Uint8Array, Uint32Array};
 
-use crate::types::{Background, CartridgeHeader, ColorMode, Hook, IOMap, MemoryRegion, Obj};
+use crate::types::*;
 
 #[wasm_bindgen]
 #[derive(Default)]
@@ -47,7 +47,8 @@ impl Gba {
 
     #[wasm_bindgen(js_name = "stepFrameWithHooks")]
     pub fn step_frame_with_hooks(&mut self, hooks: Vec<Hook>) -> bool {
-        self.core.step_frame_with_hooks(&hooks)
+        self.core
+            .step_frame_with_hooks(hooks.into_iter().map(|h| h.into()).collect())
     }
 
     #[wasm_bindgen(js_name = "stepScanline")]
@@ -81,16 +82,15 @@ impl Gba {
     }
 
     #[wasm_bindgen(js_name = "nextInstructions")]
-    pub fn next_instructions(&self, max_length: u16) -> Result<JsValue, JsError> {
-        let instructions = self
-            .core
-            .cpu
-            .decode_until_branch(max_length)
-            .into_iter()
-            .map(|(addr, instr)| (addr, instr.format(10)))
-            .collect::<Vec<_>>();
+    pub fn next_instructions(&self, max_length: u16) -> Result<Vec<Instruction>, JsError> {
+        let decoded = self.core.cpu.decode_until_branch(max_length);
 
-        Ok(serde_wasm_bindgen::to_value(&instructions)?)
+        let instructions = decoded
+            .into_iter()
+            .map(|(addr, instr)| Instruction::new(addr, instr))
+            .collect();
+
+        Ok(instructions)
     }
 
     #[wasm_bindgen(js_name = "instructionSize")]
@@ -255,6 +255,7 @@ impl Gba {
             .get(..HEADER_SIZE)
             .ok_or(JsError::new("No header found"))?
             .try_into()?;
+
         let raw_header = boya_core::rom::CartridgeHeader::try_from(bytes)
             .map_err(|err| JsError::new(&err.to_string()))?;
 

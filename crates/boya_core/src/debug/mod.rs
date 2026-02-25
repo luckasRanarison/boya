@@ -1,6 +1,5 @@
 use crate::{
     Gba,
-    cpu::{common::Exception, psr::Psr},
     debug::cpu::types::Step,
     ppu::{
         object::Obj,
@@ -13,13 +12,9 @@ pub mod bus;
 pub mod cpu;
 pub mod ppu;
 
-pub trait AsHook {
-    fn as_hook(&self) -> Hook<'_>;
-}
-
 #[derive(Debug)]
-pub enum Hook<'a> {
-    Breakpoints(&'a [u32]),
+pub enum Hook {
+    Breakpoints(Vec<u32>),
     Irq(bool),
 }
 
@@ -47,7 +42,7 @@ impl Gba {
         }
     }
 
-    pub fn step_frame_with_hooks<H: AsHook>(&mut self, hooks: &[H]) -> bool {
+    pub fn step_frame_with_hooks(&mut self, hooks: Vec<Hook>) -> bool {
         let inital_state = self.rendering();
         let mut state_switch = false;
 
@@ -56,10 +51,14 @@ impl Gba {
                 state_switch = true;
             }
 
-            for hook in hooks {
-                if self.resolve_break_hook(hook.as_hook()) {
+            for hook in &hooks {
+                if self.resolve_break_hook(hook) {
                     return true;
                 }
+            }
+
+            if inital_state != self.rendering() {
+                state_switch = true;
             }
 
             if state_switch && inital_state == self.rendering() {
@@ -94,10 +93,42 @@ impl Gba {
         self.cpu.bus.ppu.render_obj(id)
     }
 
-    fn resolve_break_hook(&self, hook: Hook) -> bool {
+    pub fn bios(&self) -> &[u8] {
+        &self.cpu.bus.bios
+    }
+
+    pub fn ewram(&self) -> &[u8] {
+        self.cpu.bus.ewram.as_slice()
+    }
+
+    pub fn iwram(&self) -> &[u8] {
+        self.cpu.bus.iwram.as_slice()
+    }
+
+    pub fn palette(&self) -> &[u8] {
+        &self.cpu.bus.ppu.palette
+    }
+
+    pub fn vram(&self) -> &[u8] {
+        self.cpu.bus.ppu.vram.as_slice()
+    }
+
+    pub fn oam(&self) -> &[u8] {
+        &self.cpu.bus.ppu.oam
+    }
+
+    pub fn rom(&self) -> &[u8] {
+        &self.cpu.bus.rom
+    }
+
+    pub fn sram(&self) -> &[u8] {
+        self.cpu.bus.sram.as_slice()
+    }
+
+    fn resolve_break_hook(&self, hook: &Hook) -> bool {
         match hook {
             Hook::Breakpoints(breakpoints) => breakpoints.contains(&self.cpu.exec_address()),
-            Hook::Irq(irq) => irq && self.cpu.exec_address() == 0x18,
+            Hook::Irq(irq) => *irq && self.cpu.exec_address() == 0x18,
         }
     }
 }

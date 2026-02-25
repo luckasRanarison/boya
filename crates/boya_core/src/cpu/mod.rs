@@ -49,7 +49,7 @@ impl Arm7tdmi {
         cycles
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn fetch(&mut self) -> u32 {
         let offset = self.instr_size();
         let word = self.bus.read_word(self.pc());
@@ -58,7 +58,7 @@ impl Arm7tdmi {
         word
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn decode(&self, word: u32) -> Instruction {
         if self.is_thumb() {
             Instruction::Thumb(self.decode_thumb(word))
@@ -67,7 +67,7 @@ impl Arm7tdmi {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn exec(&mut self, instruction: Instruction) -> Cycle {
         match instruction {
             Instruction::Thumb(op) => self.exec_thumb(op),
@@ -117,6 +117,13 @@ impl Arm7tdmi {
     #[inline(always)]
     pub fn is_thumb(&self) -> bool {
         self.registers.cpsr.thumb()
+    }
+
+    pub fn override_pc(&mut self, value: u32) {
+        self.registers.set_pc(value);
+        self.pipeline.flush();
+        self.align_pc();
+        self.load_pipeline();
     }
 
     #[inline(always)]
@@ -240,15 +247,5 @@ impl Reset for Arm7tdmi {
         self.registers.cpsr = Psr::default();
         self.pipeline = Pipeline::default();
         self.bus.reset();
-    }
-}
-
-#[cfg(test)]
-impl Arm7tdmi {
-    pub fn override_pc(&mut self, value: u32) {
-        self.registers.set_pc(value);
-        self.pipeline.flush();
-        self.align_pc();
-        self.load_pipeline();
     }
 }

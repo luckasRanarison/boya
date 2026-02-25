@@ -1,6 +1,6 @@
 use crate::{
     bus::{BIOS_SIZE, types::Cycle},
-    cpu::{Arm7tdmi, common::Exception},
+    cpu::{Arm7tdmi, common::Exception, psr::Psr},
     utils::Reset,
 };
 
@@ -65,11 +65,6 @@ impl Gba {
         }
     }
 
-    #[inline(always)]
-    pub fn rendering(&self) -> bool {
-        self.cpu.bus.ppu.rendering()
-    }
-
     pub fn frame_buffer(&self) -> &[u8] {
         self.cpu.bus.ppu.get_frame_buffer()
     }
@@ -78,48 +73,29 @@ impl Gba {
         self.cpu.bus.io.keypad.keyinput = value;
     }
 
-    pub fn bios(&self) -> &[u8] {
-        &self.cpu.bus.bios
+    pub fn skip_bios(&mut self) {
+        self.cpu.registers.fiq[5] = 0x0300_7f00;
+        self.cpu.registers.irq[0] = 0x0300_7fa0;
+        self.cpu.registers.svc[0] = 0x0300_7fe0;
+        self.cpu.registers.abt[0] = 0x0300_7f00;
+        self.cpu.registers.und[0] = 0x0300_7f00;
+        self.cpu.registers.main[13] = 0x0300_7f00;
+        self.cpu.registers.cpsr = Psr::from(0x5F);
+
+        self.cpu.override_pc(0x0800_0000);
     }
 
-    pub fn ewram(&self) -> &[u8] {
-        self.cpu.bus.ewram.as_slice()
-    }
-
-    pub fn iwram(&self) -> &[u8] {
-        self.cpu.bus.iwram.as_slice()
-    }
-
-    // TODO: I/O register array view
-    pub fn io(&self) -> &[u8] {
-        todo!()
-    }
-
-    pub fn palette(&self) -> &[u8] {
-        &self.cpu.bus.ppu.palette
-    }
-
-    pub fn vram(&self) -> &[u8] {
-        self.cpu.bus.ppu.vram.as_slice()
-    }
-
-    pub fn oam(&self) -> &[u8] {
-        &self.cpu.bus.ppu.oam
-    }
-
-    pub fn rom(&self) -> &[u8] {
-        &self.cpu.bus.rom
-    }
-
-    pub fn sram(&self) -> &[u8] {
-        self.cpu.bus.sram.as_slice()
-    }
-
+    #[inline(always)]
     fn sync(&mut self, cycles: Cycle) {
         let count = cycles.count();
 
         self.cpu.bus.tick(count);
         self.cycles += count as u64;
+    }
+
+    #[inline(always)]
+    fn rendering(&self) -> bool {
+        self.cpu.bus.ppu.rendering()
     }
 }
 

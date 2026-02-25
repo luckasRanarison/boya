@@ -38,14 +38,17 @@ export const useDebuggerStore = create<DebuggerStore>((set) => ({
   actions: {
     decode: (count) => {
       const size = GBA.instructionSize();
-      const instructions: [number, string][] = GBA.nextInstructions(count);
+      const instructions = GBA.nextInstructions(count);
 
       set((prev) => ({
         ...prev,
         instructionCache: {
           ...prev.instructionCache,
           ...Object.fromEntries(
-            instructions.map(([addr, value]) => [addr, { value, size }]),
+            instructions.map((instr) => [
+              instr.address,
+              { value: instr.value, size },
+            ]),
           ),
         },
       }));

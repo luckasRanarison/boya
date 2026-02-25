@@ -241,6 +241,7 @@ impl GbaBus {
 }
 
 impl Bus for GbaBus {
+    #[inline]
     fn read_byte(&self, address: u32) -> u8 {
         match address {
             0x0000_0000..=0x0000_3FFF => self.bios[address as usize],
@@ -258,6 +259,7 @@ impl Bus for GbaBus {
         }
     }
 
+    #[inline]
     fn write_byte(&mut self, address: u32, value: u8) {
         match address {
             0x0200_0000..=0x02FF_FFFF => self.ewram[address as usize & 0x3FFFF] = value,

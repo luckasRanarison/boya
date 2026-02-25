@@ -1,5 +1,5 @@
 use boya_core::{
-    debug::{self, AsHook, bus::registers::IO_REGISTERS},
+    debug::{self, bus::registers::IO_REGISTERS, cpu::types::InstructionData},
     ppu::{
         self,
         registers::{bgcnt, dispcnt},
@@ -8,6 +8,22 @@ use boya_core::{
 use serde::{Deserialize, Serialize};
 use tsify::Tsify;
 use wasm_bindgen::prelude::*;
+
+#[derive(Tsify, Serialize)]
+#[tsify(into_wasm_abi)]
+pub struct Instruction {
+    pub address: u32,
+    pub value: String,
+}
+
+impl Instruction {
+    pub fn new(address: u32, data: InstructionData) -> Self {
+        Self {
+            address,
+            value: data.format(10), // TODO: structured data?
+        }
+    }
+}
 
 #[wasm_bindgen]
 pub enum MemoryRegion {
@@ -227,11 +243,11 @@ pub enum Hook {
     Irq(bool),
 }
 
-impl AsHook for Hook {
-    fn as_hook(&self) -> debug::Hook<'_> {
-        match self {
-            Hook::Breakpoints(bp) => debug::Hook::Breakpoints(&bp),
-            Hook::Irq(value) => debug::Hook::Irq(*value),
+impl From<Hook> for debug::Hook {
+    fn from(value: Hook) -> Self {
+        match value {
+            Hook::Breakpoints(bp) => debug::Hook::Breakpoints(bp),
+            Hook::Irq(value) => debug::Hook::Irq(value),
         }
     }
 }
