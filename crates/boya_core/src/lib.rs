@@ -1,6 +1,6 @@
 use crate::{
     bus::{BIOS_SIZE, types::Cycle},
-    cpu::{Arm7tdmi, common::Exception},
+    cpu::{Arm7tdmi, common::Exception, psr::Psr},
     utils::Reset,
 };
 
@@ -65,6 +65,17 @@ impl Gba {
         }
     }
 
+    pub fn skip_bios(&mut self) {
+        self.cpu.registers.main[13] = 0x0300_7F00;
+        self.cpu.registers.fiq[5] = 0x0300_7F00;
+        self.cpu.registers.irq[0] = 0x0300_7F00;
+        self.cpu.registers.abt[0] = 0x0300_7F00;
+        self.cpu.registers.und[0] = 0x0300_7F00;
+        self.cpu.registers.svc[0] = 0x0300_7F00;
+        self.cpu.registers.cpsr = Psr::from(0x5F);
+        self.cpu.override_pc(0x0800_0000);
+    }
+
     #[inline(always)]
     pub fn rendering(&self) -> bool {
         self.cpu.bus.ppu.rendering()
@@ -127,6 +138,22 @@ impl Reset for Gba {
     fn reset(&mut self) {
         self.cpu.reset();
         self.cycles = 0;
+    }
+}
+
+#[derive(Debug)]
+pub struct GbaSettings {
+    pub skip_bios: bool,
+    pub cycle_accuracy: bool,
+    // pub disable_audio: bool,
+}
+
+impl Default for GbaSettings {
+    fn default() -> Self {
+        Self {
+            skip_bios: false,
+            cycle_accuracy: true,
+        }
     }
 }
 

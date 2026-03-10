@@ -25,6 +25,11 @@ impl Gba {
         Ok(())
     }
 
+    #[wasm_bindgen(js_name = "skipBios")]
+    pub fn skip_bios(&mut self) {
+        self.core.skip_bios();
+    }
+
     #[wasm_bindgen(js_name = "loadRom")]
     pub fn load_rom(&mut self, rom: &[u8]) {
         self.core.load_rom(rom);

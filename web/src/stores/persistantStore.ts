@@ -12,6 +12,8 @@ type PersistantStore = {
   decodeDepth: number;
   smoothFilter: boolean;
   debugKeys: boolean;
+  skipBios: boolean;
+  cycleAccuracy: boolean;
 
   set<K extends keyof PersistantStore>(key: K, value: PersistantStore[K]): void;
 };
@@ -26,6 +28,8 @@ export const usePersistantStore = create(
       decodeDepth: 10,
       smoothFilter: false,
       debugKeys: true,
+      skipBios: false,
+      cycleAccuracy: true,
 
       set(key, value) {
         _set((prev) => ({ ...prev, [key]: value }));

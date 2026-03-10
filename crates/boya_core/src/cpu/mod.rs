@@ -29,6 +29,7 @@ pub struct Arm7tdmi {
     pub registers: Register,
     pub pipeline: Pipeline,
     pub bus: GbaBus,
+    pub settings: SystemSettings,
 }
 
 impl Arm7tdmi {
@@ -36,6 +37,7 @@ impl Arm7tdmi {
         Self {
             registers: Register::default(),
             pipeline: Pipeline::default(),
+            settings: SystemSettings::default(),
             bus,
         }
     }
@@ -117,6 +119,13 @@ impl Arm7tdmi {
     #[inline(always)]
     pub fn is_thumb(&self) -> bool {
         self.registers.cpsr.thumb()
+    }
+
+    pub fn override_pc(&mut self, value: u32) {
+        self.registers.set_pc(value);
+        self.pipeline.flush();
+        self.align_pc();
+        self.load_pipeline();
     }
 
     #[inline(always)]
@@ -243,12 +252,17 @@ impl Reset for Arm7tdmi {
     }
 }
 
-#[cfg(test)]
-impl Arm7tdmi {
-    pub fn override_pc(&mut self, value: u32) {
-        self.registers.set_pc(value);
-        self.pipeline.flush();
-        self.align_pc();
-        self.load_pipeline();
+#[derive(Debug)]
+pub struct SystemSettings {
+    pub skip_bios: bool,
+    pub cycle_accuracy: bool,
+}
+
+impl Default for SystemSettings {
+    fn default() -> Self {
+        Self {
+            skip_bios: false,
+            cycle_accuracy: true,
+        }
     }
 }

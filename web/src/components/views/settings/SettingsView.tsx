@@ -1,12 +1,4 @@
-import {
-  Group,
-  Stack,
-  Text,
-  NumberInput,
-  Switch,
-  Kbd,
-  Divider,
-} from "@mantine/core";
+import { Group, Stack, Text, NumberInput, Kbd, Divider } from "@mantine/core";
 import { usePersistantStore } from "../../../stores/persistantStore";
 import {
   formatKeyAction,
@@ -15,6 +7,7 @@ import {
 } from "@/lib/keymap";
 import { useState, Fragment, useEffect } from "react";
 import SettingsCard from "./SettingsCard";
+import SettingsSwitch from "./SettingsSwitch";
 
 const modifiers = ["Shift", "Alt", "Control"];
 
@@ -57,58 +50,51 @@ function SettingsView() {
       w="100%"
       mx="auto"
     >
-      <SettingsCard title="General">
-        <Switch
-          w="100%"
+      <SettingsCard title="Interface">
+        <SettingsSwitch
           label="Dark mode"
-          labelPosition="left"
           checked={settings.theme === "dark"}
-          styles={{
-            body: {
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            },
-          }}
           onChange={() =>
             settings.set("theme", settings.theme === "dark" ? "light" : "dark")
           }
         />
       </SettingsCard>
 
+      <SettingsCard title="Emulation">
+        <SettingsSwitch
+          label="Skip BIOS"
+          description="Skip boot animation"
+          disabled={true} // TODO: implementation
+          checked={settings.skipBios}
+          onChange={() => settings.set("skipBios", !settings.skipBios)}
+        />
+
+        <SettingsSwitch
+          label="Cycle accuracy"
+          description="Performance can be improved if disabled, but it might break some games."
+          disabled={true} // TODO: implementation
+          checked={settings.cycleAccuracy}
+          onChange={() =>
+            settings.set("cycleAccuracy", !settings.cycleAccuracy)
+          }
+        />
+      </SettingsCard>
+
       <SettingsCard title="Graphics">
-        <Switch
-          w="100%"
+        <SettingsSwitch
           label="Smooth filter"
-          labelPosition="left"
           description="Enable anti-aliasing for rendering"
           checked={settings.smoothFilter}
-          styles={{
-            body: {
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            },
-          }}
           onChange={() => settings.set("smoothFilter", !settings.smoothFilter)}
         />
       </SettingsCard>
 
       <SettingsCard title="Gamepad / Controls">
         <Stack>
-          <Switch
-            w="100%"
+          <SettingsSwitch
             label="Display keystrokes"
-            labelPosition="left"
             description="Show pressed buttons in the footer"
             checked={settings.debugKeys}
-            styles={{
-              body: {
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              },
-            }}
             onChange={() => settings.set("debugKeys", !settings.debugKeys)}
           />
           <Divider />
