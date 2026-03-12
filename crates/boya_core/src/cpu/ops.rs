@@ -17,7 +17,6 @@ use super::{
 };
 
 impl Arm7tdmi {
-    #[inline(always)]
     pub fn add_sub_op(
         &mut self,
         dst: Option<u8>,
@@ -61,7 +60,6 @@ impl Arm7tdmi {
         cycle_op + extra_fetch_cycle
     }
 
-    #[inline(always)]
     pub fn shift_op(&mut self, dst: u8, lhs: u8, rhs: Operand, shift: ShiftKind) -> Cycle {
         let op_mode = self.operating_mode();
         let (op_cycle, pc_dst) = self.data_op_cycle(dst.into(), &rhs);
@@ -78,7 +76,6 @@ impl Arm7tdmi {
         op_cycle + extra_fetch_cycle
     }
 
-    #[inline(always)]
     pub fn logical_op<F>(
         &mut self,
         func: F,
@@ -109,7 +106,6 @@ impl Arm7tdmi {
         op_cycle + extra_fetch_cycle
     }
 
-    #[inline(always)]
     pub fn mov_op(&mut self, rd: u8, operand: Operand, update: bool) -> Cycle {
         let (op_cycle, pc_dst) = self.data_op_cycle(rd.into(), &operand);
         let value = self.get_operand_with_shift(operand, update);
@@ -125,7 +121,6 @@ impl Arm7tdmi {
         op_cycle + extra_fetch_cycle
     }
 
-    #[inline(always)]
     pub fn bx_op(&mut self, rs: u8) -> Cycle {
         let value = self.registers.get(rs, self.operating_mode());
         let first_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
@@ -139,7 +134,6 @@ impl Arm7tdmi {
         first_cycle + fetch_cycle.repeat(2)
     }
 
-    #[inline(always)]
     pub fn mul_op(
         &mut self,
         dst: LongOperand,
@@ -203,7 +197,6 @@ impl Arm7tdmi {
         pre_fetch_cycle + internal_cycle
     }
 
-    #[inline(always)]
     pub fn ldr_op(
         &mut self,
         rd: u8,
@@ -261,7 +254,6 @@ impl Arm7tdmi {
         read_cycle + internal_cycle + pre_fetch_cycle + extra_fetch_cycle
     }
 
-    #[inline(always)]
     pub fn str_op(&mut self, rs: u8, rn: u8, kind: DataType, offset: RegisterOffset) -> Cycle {
         let op_mode = self.operating_mode();
         let base = self.registers.get(rn, op_mode);
@@ -303,7 +295,6 @@ impl Arm7tdmi {
         fetch_cycle + write_cycle
     }
 
-    #[inline(always)]
     pub fn stm_op(&mut self, rb: usize, rlist: u16, amod: AddrMode, wb: bool, usr: bool) -> Cycle {
         let op_mode = self.operating_mode();
         let n = self.count_rlist(rlist);
@@ -357,7 +348,6 @@ impl Arm7tdmi {
         pre_fetch_cycle + write_cycle
     }
 
-    #[inline(always)]
     pub fn ldm_op(&mut self, rb: usize, rlist: u16, amod: AddrMode, wb: bool, usr: bool) -> Cycle {
         let op_mode = self.operating_mode();
         let n = self.count_rlist(rlist);
@@ -406,7 +396,6 @@ impl Arm7tdmi {
         pre_fetch_cycle + read_cycle + internal_cycle + extra_fetch_cycle
     }
 
-    #[inline(always)]
     pub fn branch_op(&mut self, cond: Condition, offset: i32) -> Cycle {
         let first_cycle = self.pre_fetch_cycle(MemoryAccess::NonSeq);
 
@@ -483,7 +472,6 @@ impl Arm7tdmi {
         first_cycle + extra_cycle.repeat(2)
     }
 
-    #[inline(always)]
     pub fn store_psr_op(&mut self, rd: u8, kind: PsrKind) -> Cycle {
         let op_mode = self.operating_mode();
 
@@ -497,7 +485,6 @@ impl Arm7tdmi {
         self.pre_fetch_cycle(MemoryAccess::Seq)
     }
 
-    #[inline(always)]
     pub fn update_psr_op(&mut self, op: Operand, mask: u32, kind: PsrKind) -> Cycle {
         let op_mode = self.operating_mode();
         let value = (self.get_operand(op) & mask) | 0b10000;
@@ -512,7 +499,6 @@ impl Arm7tdmi {
         self.pre_fetch_cycle(MemoryAccess::Seq)
     }
 
-    #[inline(always)]
     pub fn swap_op(&mut self, rd: u8, rm: u8, rn: u8, byte: bool) -> Cycle {
         let op_mode = self.operating_mode();
         let addr = self.registers.get(rn, op_mode);

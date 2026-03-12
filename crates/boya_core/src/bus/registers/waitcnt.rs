@@ -44,7 +44,6 @@ impl Waitcnt {
         }
     }
 
-    #[inline(always)]
     fn one_bit_wait(&self, bit: u16, off: u8, on: u8) -> u8 {
         match self.value.get(bit) {
             0 => off,
@@ -52,7 +51,6 @@ impl Waitcnt {
         }
     }
 
-    #[inline(always)]
     fn two_bits_wait(&self, start: u16, end: u16) -> u8 {
         match self.value.get_bits(start, end) {
             0 => 4,

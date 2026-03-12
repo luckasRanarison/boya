@@ -92,7 +92,6 @@ impl Arm7tdmi {
         }
     }
 
-    #[inline(always)]
     pub fn instr_size(&self) -> u8 {
         if self.is_thumb() { 2 } else { 4 }
     }
@@ -109,17 +108,21 @@ impl Arm7tdmi {
         self.pc().saturating_sub(self.instr_size() as u32 * 2)
     }
 
-    #[inline(always)]
     pub fn operating_mode(&self) -> OperatingMode {
         self.registers.cpsr.operating_mode()
     }
 
-    #[inline(always)]
     pub fn is_thumb(&self) -> bool {
         self.registers.cpsr.thumb()
     }
 
-    #[inline(always)]
+    pub fn override_pc(&mut self, value: u32) {
+        self.registers.set_pc(value);
+        self.pipeline.flush();
+        self.align_pc();
+        self.load_pipeline();
+    }
+
     fn pc(&self) -> u32 {
         self.registers.pc()
     }
@@ -240,15 +243,5 @@ impl Reset for Arm7tdmi {
         self.registers.cpsr = Psr::default();
         self.pipeline = Pipeline::default();
         self.bus.reset();
-    }
-}
-
-#[cfg(test)]
-impl Arm7tdmi {
-    pub fn override_pc(&mut self, value: u32) {
-        self.registers.set_pc(value);
-        self.pipeline.flush();
-        self.align_pc();
-        self.load_pipeline();
     }
 }

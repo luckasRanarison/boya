@@ -35,6 +35,7 @@ impl Pipeline {
 }
 
 impl Arm7tdmi {
+    #[inline]
     pub fn load_pipeline(&mut self) {
         let curr_pc = self.pc();
         let word = self.pipeline.next_word.unwrap_or_else(|| self.fetch());
@@ -46,6 +47,7 @@ impl Arm7tdmi {
         self.pipeline.next_pc = self.pc();
     }
 
+    #[inline]
     pub fn sync_pipeline(&mut self) {
         if self.pipeline.next_address() != self.pc() {
             self.align_pc();

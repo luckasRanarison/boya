@@ -118,7 +118,6 @@ pub enum TransBackground {
 }
 
 impl Background {
-    #[inline(always)]
     pub fn to_index(self) -> usize {
         self as usize
     }

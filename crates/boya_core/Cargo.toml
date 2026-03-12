@@ -7,6 +7,7 @@ edition = "2024"
 serde = { workspace = true, optional = true }
 
 [dev-dependencies]
+criterion = "0.8.2"
 insta = "1.46.3"
 
 [features]
@@ -15,3 +16,7 @@ debug = ["serde"]
 [lints.clippy]
 missing_panics_doc = "deny"
 upper_case_acronyms = "allow"
+
+[[bench]]
+name = "benchmark"
+harness = false

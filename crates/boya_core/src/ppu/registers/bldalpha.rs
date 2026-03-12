@@ -14,7 +14,6 @@ impl Bldalpha {
         u16::min(16, self.value.get_bits(8, 12))
     }
 
-    #[inline(always)]
     fn get_intensity(&self, ia: u8, ib: u8) -> u16 {
         u16::min(31, (ia as u16 * self.eva() + ib as u16 * self.evb()) >> 4)
     }

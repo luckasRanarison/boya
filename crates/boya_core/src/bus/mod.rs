@@ -103,7 +103,6 @@ impl GbaBus {
         Some(DmaResult { data, cycles })
     }
 
-    #[inline(always)]
     fn read_rom(&self, address: usize) -> u8 {
         self.rom.get(address).copied().unwrap_or_default()
     }

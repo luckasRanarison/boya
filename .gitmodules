@@ -4,3 +4,6 @@
 [submodule "submodules/armwrestler-gba-fixed"]
 	path = submodules/armwrestler-gba-fixed
 	url = https://github.com/destoer/armwrestler-gba-fixed
+[submodule "submodules/Emu-Docs"]
+	path = submodules/Emu-Docs
+	url = https://github.com/shonumi/Emu-Docs

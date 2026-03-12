@@ -8,7 +8,6 @@ pub enum DataType {
 }
 
 impl DataType {
-    #[inline(always)]
     pub fn size(self) -> u8 {
         self as u8
     }
@@ -84,22 +83,18 @@ impl WaitState {
 pub struct Cycle(u32);
 
 impl Cycle {
-    #[inline(always)]
     pub fn new(i: u32, s: u32, n: u32, ws: WaitState) -> Self {
         Self(i + ws.s as u32 * s + s + ws.n as u32 * n + n)
     }
 
-    #[inline(always)]
     pub fn internal(n: u8) -> Self {
         Self(n as u32)
     }
 
-    #[inline(always)]
     pub fn repeat(self, n: u32) -> Self {
         Self(self.0 * n)
     }
 
-    #[inline(always)]
     pub fn count(self) -> u32 {
         self.0
     }

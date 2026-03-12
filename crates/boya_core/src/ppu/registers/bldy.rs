@@ -10,12 +10,10 @@ impl Bldy {
         u16::min(16, self.value.get_bits(0, 4))
     }
 
-    #[inline(always)]
     fn get_bright_intensity(&self, ia: u8) -> u16 {
         u16::min(31, ia as u16 + (((31 - ia as u16) * self.evy()) >> 4))
     }
 
-    #[inline(always)]
     fn get_dark_intensity(&self, ia: u8) -> u16 {
         u16::min(31, ia as u16 - ((ia as u16 * self.evy()) >> 4))
     }

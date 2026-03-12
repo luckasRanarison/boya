@@ -41,17 +41,14 @@ impl Psr {
 }
 
 impl Psr {
-    #[inline(always)]
     pub fn value(self) -> u32 {
         self.0
     }
 
-    #[inline(always)]
     pub fn get(self, bit: u32) -> u32 {
         self.0.get(bit)
     }
 
-    #[inline(always)]
     pub fn has(self, bit: u32) -> bool {
         self.0.has(bit)
     }
@@ -76,17 +73,14 @@ impl Psr {
         }
     }
 
-    #[inline(always)]
     pub fn thumb(self) -> bool {
         self.has(Self::T)
     }
 
-    #[inline(always)]
     pub fn update(&mut self, bit: u32, value: bool) {
         self.0.update(bit, value);
     }
 
-    #[inline(always)]
     pub fn update_zn(&mut self, value: u32) {
         self.0.update(Self::Z, value == 0);
         self.0.update(Self::N, value.has(31));

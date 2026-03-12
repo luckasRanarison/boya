@@ -35,53 +35,44 @@ where
         + Copy,
     <T as TryInto<u8>>::Error: std::fmt::Debug,
 {
-    #[inline(always)]
     fn get(self, bit: T) -> T {
         (self >> bit) & T::from(1)
     }
 
-    #[inline(always)]
     fn get_u8(self, bit: T) -> u8 {
         self.get(bit).try_into().unwrap()
     }
 
-    #[inline(always)]
     fn set(&mut self, bit: T) {
         *self |= T::from(1) << bit;
     }
 
-    #[inline(always)]
     fn clear(&mut self, bit: T) {
         *self &= !(T::from(1) << bit);
     }
 
-    #[inline(always)]
     fn take(&mut self, bit: Self) -> bool {
         let res = !(T::from(1) << bit);
         *self &= res;
         res != T::from(0)
     }
 
-    #[inline(always)]
     fn set_bits(&mut self, start: T, end: T, value: T) {
         let one = T::from(1);
         let mask = ((one << (end - start + one)) - one) << start;
         *self = (*self & !mask) | ((value << start) & mask);
     }
 
-    #[inline(always)]
     fn get_bits(self, start: T, end: T) -> T {
         let one = T::from(1);
         let mask = (one << (end - start + one)) - one;
         (self >> start) & mask
     }
 
-    #[inline(always)]
     fn get_bits_u8(self, start: T, end: T) -> u8 {
         self.get_bits(start, end).try_into().unwrap()
     }
 
-    #[inline(always)]
     fn has(self, bit: T) -> bool {
         self.get(bit) == T::from(1)
     }
